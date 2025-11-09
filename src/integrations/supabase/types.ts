@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      events: {
+        Row: {
+          created_at: string | null
+          discord_invite: string | null
+          end_at: string
+          faqs: Json | null
+          format: Database["public"]["Enums"]["event_format"]
+          id: string
+          image_url: string | null
+          instagram_handle: string | null
+          is_active: boolean | null
+          location: string
+          long_description: string | null
+          organisers: Json | null
+          overview: string | null
+          prizes: Json | null
+          registration_deadline: string
+          registration_link: string | null
+          rules: string | null
+          schedule: Json | null
+          short_blurb: string
+          slug: string
+          sponsors: Json | null
+          start_at: string
+          tags: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          discord_invite?: string | null
+          end_at: string
+          faqs?: Json | null
+          format: Database["public"]["Enums"]["event_format"]
+          id?: string
+          image_url?: string | null
+          instagram_handle?: string | null
+          is_active?: boolean | null
+          location: string
+          long_description?: string | null
+          organisers?: Json | null
+          overview?: string | null
+          prizes?: Json | null
+          registration_deadline: string
+          registration_link?: string | null
+          rules?: string | null
+          schedule?: Json | null
+          short_blurb: string
+          slug: string
+          sponsors?: Json | null
+          start_at: string
+          tags?: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["event_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          discord_invite?: string | null
+          end_at?: string
+          faqs?: Json | null
+          format?: Database["public"]["Enums"]["event_format"]
+          id?: string
+          image_url?: string | null
+          instagram_handle?: string | null
+          is_active?: boolean | null
+          location?: string
+          long_description?: string | null
+          organisers?: Json | null
+          overview?: string | null
+          prizes?: Json | null
+          registration_deadline?: string
+          registration_link?: string | null
+          rules?: string | null
+          schedule?: Json | null
+          short_blurb?: string
+          slug?: string
+          sponsors?: Json | null
+          start_at?: string
+          tags?: string[] | null
+          title?: string
+          type?: Database["public"]["Enums"]["event_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +109,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      event_format: "Online" | "Offline" | "Hybrid"
+      event_type: "Hackathon" | "Workshop" | "MUN" | "Gaming"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +237,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      event_format: ["Online", "Offline", "Hybrid"],
+      event_type: ["Hackathon", "Workshop", "MUN", "Gaming"],
+    },
   },
 } as const
