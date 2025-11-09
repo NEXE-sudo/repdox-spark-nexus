@@ -64,7 +64,12 @@ export default function Hero() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
             >
-              <Button variant="hero" size="lg" className="group">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="group"
+                onClick={() => window.location.href = '/events'}
+              >
                 View Events
                 <Calendar className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
