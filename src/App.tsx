@@ -6,7 +6,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import EventsList from "./pages/EventsList";
 import EventDetail from "./pages/EventDetail";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import Nav from "@/components/Nav";
 
 const queryClient = new QueryClient();
 
@@ -16,10 +18,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <Nav />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/events" element={<EventsList />} />
           <Route path="/events/:slug" element={<EventDetail />} />
+          <Route path="/contact" element={<Contact />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

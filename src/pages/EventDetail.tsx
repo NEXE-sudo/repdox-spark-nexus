@@ -101,8 +101,30 @@ export default function EventDetail() {
     );
   }
 
+  // Build structured data for the event (schema.org Event)
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": event.title,
+    "startDate": event.start_at,
+    "endDate": event.end_at || undefined,
+    "eventAttendanceMode": event.format === 'Online' ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+    "eventStatus": event.is_active ? 'https://schema.org/EventScheduled' : 'https://schema.org/EventCancelled',
+    "location": event.format === 'Online' ? {"@type": "VirtualLocation", "url": event.registration_link || window.location.href} : {"@type": "Place", "name": event.location},
+    "image": event.image_url ? [event.image_url] : undefined,
+    "description": event.short_blurb || event.overview || event.long_description,
+    "organizer": event.organisers || undefined,
+    "offers": event.registration_link ? {"@type": "Offer", "url": event.registration_link} : undefined,
+    "url": window.location.href,
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {/* Hero */}
       <section className="relative h-[60vh] overflow-hidden">
         <img
@@ -138,7 +160,9 @@ export default function EventDetail() {
               {countdown.isExpired ? (
                 <span>Event has started</span>
               ) : (
-                <span>Starts in {countdown.formatted}</span>
+                <span>
+                  Starts in {`${countdown.days}d ${countdown.hours}h ${countdown.minutes}m ${countdown.seconds}s`}
+                </span>
               )}
             </div>
           </div>

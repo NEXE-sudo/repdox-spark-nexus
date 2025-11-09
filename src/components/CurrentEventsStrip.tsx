@@ -12,6 +12,7 @@ export default function CurrentEventsStrip() {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [srAnnouncement, setSrAnnouncement] = useState<string>('');
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['current-events'],
@@ -44,6 +45,20 @@ export default function CurrentEventsStrip() {
     pauseOnFocus: true,
   });
 
+  // local wrappers to announce pause/resume reasons for screen readers
+  const pauseWithAnnounce = (reason: string) => {
+    pause(reason);
+    setSrAnnouncement(`Carousel paused: ${reason}`);
+    // clear announcement shortly after to avoid repeated reads
+    setTimeout(() => setSrAnnouncement(''), 1200);
+  };
+
+  const resumeWithAnnounce = (reason: string) => {
+    resume(reason);
+    setSrAnnouncement('Carousel resumed');
+    setTimeout(() => setSrAnnouncement(''), 1200);
+  };
+
   // Scroll to current index
   useEffect(() => {
     if (!scrollContainerRef.current || events.length === 0) return;
@@ -56,14 +71,21 @@ export default function CurrentEventsStrip() {
       left: targetScroll,
       behavior: 'smooth',
     });
-  }, [currentIndex, events.length]);
+
+    // Announce visible event title for screen reader users
+    const visible = events[currentIndex];
+    if (visible) {
+      setSrAnnouncement(`Showing event: ${visible.title}`);
+      setTimeout(() => setSrAnnouncement(''), 1200);
+    }
+  }, [currentIndex, events]);
 
   // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartX(e.pageX - (scrollContainerRef.current?.offsetLeft || 0));
     setScrollLeft(scrollContainerRef.current?.scrollLeft || 0);
-    pause('drag');
+    pauseWithAnnounce('drag');
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -78,13 +100,13 @@ export default function CurrentEventsStrip() {
 
   const handleMouseUp = () => {
     setIsDragging(false);
-    setTimeout(() => resume('drag'), 100);
+    setTimeout(() => resumeWithAnnounce('drag'), 100);
   };
 
   const handleMouseLeave = () => {
     if (isDragging) {
       setIsDragging(false);
-      setTimeout(() => resume('drag'), 100);
+      setTimeout(() => resumeWithAnnounce('drag'), 100);
     }
   };
 
@@ -108,11 +130,10 @@ export default function CurrentEventsStrip() {
   return (
     <section 
       className="py-12 px-6 bg-background/50 backdrop-blur-sm border-y border-border/50"
-      onMouseEnter={() => pause('hover')}
-      onMouseLeave={() => resume('hover')}
-      onFocus={() => pause('focus')}
-      onBlur={() => resume('focus')}
-      aria-live="polite"
+      onMouseEnter={() => pauseWithAnnounce('hover')}
+      onMouseLeave={() => resumeWithAnnounce('hover')}
+      onFocus={() => pauseWithAnnounce('focus')}
+      onBlur={() => resumeWithAnnounce('focus')}
       aria-atomic="true"
     >
       <div className="max-w-7xl mx-auto">
@@ -191,6 +212,9 @@ export default function CurrentEventsStrip() {
               />
             </div>
           )}
+        
+          {/* Offscreen live region for announcements (pause/resume/visible item) */}
+          <div className="sr-only" aria-live="polite">{srAnnouncement}</div>
         </div>
       </div>
     </section>
