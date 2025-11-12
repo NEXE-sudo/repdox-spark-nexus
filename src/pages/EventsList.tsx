@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useSearchParams } from "react-router-dom";
@@ -80,6 +82,11 @@ export default function EventsList() {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Discover hackathons, workshops, MUNs, and gaming tournaments. Find your next challenge.
             </p>
+              <div className="mt-6 flex justify-center md:justify-center">
+                <Link to="/events/new">
+                  <Button className="mr-3">Create Event</Button>
+                </Link>
+              </div>
           </motion.div>
         </div>
       </section>

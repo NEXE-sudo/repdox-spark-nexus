@@ -101,6 +101,150 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          full_name: string | null
+          bio: string | null
+          avatar_url: string | null
+          phone: string | null
+          location: string | null
+          website: string | null
+          company: string | null
+          job_title: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          full_name?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          phone?: string | null
+          location?: string | null
+          website?: string | null
+          company?: string | null
+          job_title?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          full_name?: string | null
+          bio?: string | null
+          avatar_url?: string | null
+          phone?: string | null
+          location?: string | null
+          website?: string | null
+          company?: string | null
+          job_title?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ,
+      event_registrations: {
+        Row: {
+          id: string
+          created_at: string | null
+          event_id: string
+          user_id: string | null
+          name: string | null
+          email: string | null
+          phone: string | null
+          message: string | null
+          status: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          event_id: string
+          user_id?: string | null
+          name?: string | null
+          email?: string | null
+          phone?: string | null
+          message?: string | null
+          status?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          event_id?: string
+          user_id?: string | null
+          name?: string | null
+          email?: string | null
+          phone?: string | null
+          message?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "fk_event", columns: ["event_id"], referencedRelation: "events", referencedColumns: ["id"] }
+        ]
+      }
+      ,
+      event_schedules: {
+        Row: {
+          id: string
+          created_at: string | null
+          event_id: string
+          start_at: string | null
+          title: string
+          description: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          event_id: string
+          start_at?: string | null
+          title: string
+          description?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          event_id?: string
+          start_at?: string | null
+          title?: string
+          description?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "fk_event_schedule", columns: ["event_id"], referencedRelation: "events", referencedColumns: ["id"] }
+        ]
+      }
+      ,
+      event_teams: {
+        Row: {
+          id: string
+          created_at: string | null
+          event_id: string
+          name: string
+          description: string | null
+          contact_email: string | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          event_id: string
+          name: string
+          description?: string | null
+          contact_email?: string | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          event_id?: string
+          name?: string
+          description?: string | null
+          contact_email?: string | null
+        }
+        Relationships: [
+          { foreignKeyName: "fk_event_team", columns: ["event_id"], referencedRelation: "events", referencedColumns: ["id"] }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import { useCountdown } from "@/hooks/useCountdown";
 import { Link } from "react-router-dom";
+import { getEventImage } from "@/lib/eventImages";
 
 interface EventCardProps {
   event: {
@@ -23,16 +24,17 @@ interface EventCardProps {
 
 export default function EventCard({ event, compact = false }: EventCardProps) {
   const countdown = useCountdown(event.start_at);
+  const imgSrc = getEventImage(event.image_url) || event.image_url || undefined;
 
-  if (compact) {
+    if (compact) {
     return (
-      <div className="flex-shrink-0 w-[320px] snap-center">
-        <Card className="h-full border-accent/20 bg-card/80 backdrop-blur-sm hover:border-accent transition-all duration-300">
-          <div className="relative h-32 overflow-hidden rounded-t-lg">
+      <div className="flex-shrink-0 w-[380px] snap-center">
+        <Card className="h-full border-accent/20 bg-card/80 backdrop-blur-sm hover:border-accent transition-all duration-300 hover:shadow-lg">
+          <div className="relative h-48 overflow-hidden rounded-t-lg">
             <img
-              src={event.image_url}
+              src={imgSrc}
               alt={event.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
             />
             <Badge 
               variant="secondary" 
@@ -82,7 +84,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
     <Card className="overflow-hidden h-full flex flex-col group border-border/50 hover:border-accent/50 transition-all duration-300">
       <div className="relative h-48 overflow-hidden">
         <img
-          src={event.image_url}
+          src={imgSrc}
           alt={event.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />

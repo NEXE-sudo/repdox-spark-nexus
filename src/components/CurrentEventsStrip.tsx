@@ -21,7 +21,6 @@ export default function CurrentEventsStrip() {
         .from('events')
         .select('*')
         .eq('is_active', true)
-        .gte('start_at', new Date().toISOString())
         .order('start_at', { ascending: true })
         .limit(6);
       
@@ -124,19 +123,30 @@ export default function CurrentEventsStrip() {
   }
 
   if (events.length === 0) {
-    return null;
+    return (
+      <section className="py-16 px-6 bg-accent/5 backdrop-blur-sm border-y border-border/50">
+        <div className="max-w-7xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-2">
+            Upcoming Events
+          </h2>
+          <p className="text-muted-foreground">
+            No events available at the moment. Check back soon!
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return (
     <section 
-      className="py-12 px-6 bg-background/50 backdrop-blur-sm border-y border-border/50"
+      className="py-16 px-0 bg-accent/5 backdrop-blur-sm border-y border-border/50 w-full"
       onMouseEnter={() => pauseWithAnnounce('hover')}
       onMouseLeave={() => resumeWithAnnounce('hover')}
       onFocus={() => pauseWithAnnounce('focus')}
       onBlur={() => resumeWithAnnounce('focus')}
       aria-atomic="true"
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[95vw] mx-auto">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">
             Upcoming Events
@@ -151,7 +161,7 @@ export default function CurrentEventsStrip() {
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-accent/30 hover:bg-accent/10"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-accent/30 hover:bg-accent/10"
             onClick={goToPrev}
             aria-label="Previous event"
           >
@@ -161,7 +171,7 @@ export default function CurrentEventsStrip() {
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-accent/30 hover:bg-accent/10"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-accent/30 hover:bg-accent/10"
             onClick={goToNext}
             aria-label="Next event"
           >
@@ -171,7 +181,7 @@ export default function CurrentEventsStrip() {
           {/* Scrollable Container */}
           <div
             ref={scrollContainerRef}
-            className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide cursor-grab active:cursor-grabbing px-12"
+            className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide cursor-grab active:cursor-grabbing px-16"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -183,24 +193,24 @@ export default function CurrentEventsStrip() {
             ))}
           </div>
 
-          {/* Progress Dots */}
-          <div className="flex justify-center gap-2 mt-6">
-            {events.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToIndex(index)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex 
-                    ? 'w-8 bg-accent' 
-                    : 'w-2 bg-muted hover:bg-accent/50'
-                }`}
-                aria-label={`Go to event ${index + 1}`}
-                aria-current={index === currentIndex}
-              />
-            ))}
-          </div>
+            {/* Progress Dots
+            <div className="flex justify-center gap-2 mt-6">
+              {events.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToIndex(index)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index === currentIndex 
+                      ? 'w-8 bg-accent' 
+                      : 'w-2 bg-muted hover:bg-accent/50'
+                  }`}
+                  aria-label={`Go to event ${index + 1}`}
+                  aria-current={index === currentIndex}
+                />
+              ))}
+            </div> */}
 
-          {/* Progress Bar */}
+          {/* Progress Bar
           {!isPaused && (
             <div className="mt-4 h-1 bg-muted rounded-full overflow-hidden">
               <motion.div
@@ -211,7 +221,7 @@ export default function CurrentEventsStrip() {
                 key={currentIndex}
               />
             </div>
-          )}
+          )} */}
         
           {/* Offscreen live region for announcements (pause/resume/visible item) */}
           <div className="sr-only" aria-live="polite">{srAnnouncement}</div>

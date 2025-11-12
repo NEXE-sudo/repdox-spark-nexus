@@ -1,4 +1,5 @@
-import { Facebook, Twitter, Instagram, Linkedin, Mail } from "lucide-react";
+import { MessageCircle, Instagram } from "lucide-react";
+import Button from "@/components/Logos/instagram";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -12,16 +13,19 @@ export default function Footer() {
             <p className="text-primary-foreground/80 mb-4">
               Think. Build. Transform.
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex gap-3">
               <a
                 href="#"
-                className="inline-flex items-center gap-2 px-3 py-2 bg-background rounded border border-accent/30"
+                className="p-2 bg-background rounded border border-accent/30 hover:bg-background/90 transition-colors"
+                aria-label="Join Discord"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                  <path d="M21 8a9 9 0 10-9 9" stroke="#7C3AED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M8 12l3 2 5-3" stroke="#7C3AED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Join Discord
+                <MessageCircle className="h-5 w-5 text-accent" />
+              </a>
+              <a
+                href="#"
+                aria-label="Follow on Instagram"
+              >
+                <Button/>
               </a>
             </div>
           </div>
