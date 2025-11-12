@@ -265,26 +265,26 @@ export default function Profile() {
   ];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <main className="min-h-screen bg-background">
       <div className="flex h-screen">
         {/* Sidebar */}
-        <aside className="w-72 bg-white border-r border-slate-200 flex flex-col">
+        <aside className="w-72 bg-card border-r border-border flex flex-col">
           {/* Profile Header in Sidebar */}
-          <div className="p-6 border-b border-slate-200">
+          <div className="p-6 border-b border-border">
             <div className="flex flex-col items-center">
-              <div className="h-24 w-24 rounded-full overflow-hidden ring-4 ring-blue-100 flex items-center justify-center bg-blue-50 mb-4">
+              <div className="h-24 w-24 rounded-full overflow-hidden ring-4 ring-accent/20 flex items-center justify-center bg-accent/10 mb-4">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="preview" className="w-full h-full object-cover" />
                 ) : avatarUrl ? (
                   <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-full h-full bg-accent flex items-center justify-center text-accent-foreground text-2xl font-bold">
                     {getInitials()}
                   </div>
                 )}
               </div>
-              <h2 className="text-lg font-bold text-slate-900 text-center">{fullName || 'Your Name'}</h2>
-              <p className="text-sm text-slate-500 text-center">{jobTitle || 'Your Title'}</p>
+              <h2 className="text-lg font-bold text-foreground text-center">{fullName || 'Your Name'}</h2>
+              <p className="text-sm text-muted-foreground text-center">{jobTitle || 'Your Title'}</p>
             </div>
           </div>
 
@@ -299,8 +299,8 @@ export default function Profile() {
                     onClick={() => setActiveSection(section.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                       activeSection === section.id
-                        ? 'bg-blue-50 text-blue-600 font-medium'
-                        : 'text-slate-600 hover:bg-slate-50'
+                        ? 'bg-accent/10 text-accent font-medium'
+                        : 'text-muted-foreground hover:bg-muted'
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -312,7 +312,7 @@ export default function Profile() {
           </nav>
 
           {/* Logout Button */}
-          <div className="p-4 border-t border-slate-200">
+          <div className="p-4 border-t border-border">
             <Button
               onClick={handleSignOut}
               variant="outline"
@@ -334,8 +334,8 @@ export default function Profile() {
             >
               {/* Header */}
               <div className="mb-8">
-                <h1 className="text-4xl font-bold text-slate-900 mb-2">Profile Settings</h1>
-                <p className="text-slate-600">Manage your account information and preferences</p>
+                <h1 className="text-4xl font-bold text-foreground mb-2">Profile Settings</h1>
+                <p className="text-muted-foreground">Manage your account information and preferences</p>
               </div>
 
               {/* Messages */}
@@ -343,7 +343,7 @@ export default function Profile() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+                  className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm"
                 >
                   {error}
                 </motion.div>
@@ -352,24 +352,24 @@ export default function Profile() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm"
+                  className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-green-700 dark:text-green-400 text-sm"
                 >
                   {success}
                 </motion.div>
               )}
 
               {/* Content Sections */}
-              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+              <div className="bg-card rounded-xl shadow-sm border border-border p-8">
                 {activeSection === 'personal' && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Personal Information</h2>
+                    <h2 className="text-2xl font-bold text-foreground mb-6">Personal Information</h2>
                     
                     {/* Avatar Upload */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-3">Profile Picture</label>
-                      <label className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition">
-                        <Upload className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-600">Choose Image</span>
+                      <label className="block text-sm font-medium text-foreground mb-3">Profile Picture</label>
+                      <label className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/30 rounded-lg cursor-pointer hover:bg-accent/20 transition">
+                        <Upload className="w-4 h-4 text-accent" />
+                        <span className="text-sm font-medium text-accent">Choose Image</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -381,13 +381,13 @@ export default function Profile() {
 
                     {/* Full Name */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
                       <input
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Enter your full name"
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                       />
                     </div>
 
@@ -395,13 +395,13 @@ export default function Profile() {
 
                     {/* Bio */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Bio</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Bio</label>
                       <textarea
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
                         placeholder="Tell us about yourself..."
                         rows={4}
-                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition resize-none"
+                        className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition resize-none"
                       />
                     </div>
                   </div>
@@ -409,49 +409,49 @@ export default function Profile() {
 
                 {activeSection === 'professional' && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Professional Details</h2>
+                    <h2 className="text-2xl font-bold text-foreground mb-6">Professional Details</h2>
                     
                     {/* Job Title */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Job Title</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Job Title</label>
                       <div className="relative">
-                        <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                           type="text"
                           value={jobTitle}
                           onChange={(e) => setJobTitle(e.target.value)}
                           placeholder="e.g., Software Engineer, Designer"
-                          className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
                       </div>
                     </div>
 
                     {/* Company */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Company</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Company</label>
                       <div className="relative">
-                        <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                           type="text"
                           value={company}
                           onChange={(e) => setCompany(e.target.value)}
                           placeholder="Your company name"
-                          className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
                       </div>
                     </div>
 
                     {/* Website */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Website</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Website</label>
                       <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                           type="url"
                           value={website}
                           onChange={(e) => setWebsite(e.target.value)}
                           placeholder="https://yourwebsite.com"
-                          className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
                       </div>
                     </div>
@@ -462,44 +462,44 @@ export default function Profile() {
 
                 {activeSection === 'contact' && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Contact Information</h2>
+                    <h2 className="text-2xl font-bold text-foreground mb-6">Contact Information</h2>
                     
                     {/* Email (Read-only) */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                      <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-lg text-slate-600">
+                      <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+                      <div className="flex items-center gap-3 px-4 py-3 bg-muted rounded-lg text-muted-foreground">
                         <Mail className="w-5 h-5" />
                         {user.email}
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                      <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
                     </div>
 
                     {/* Phone */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Phone</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Phone</label>
                       <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                           type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder="+1 (555) 123-4567"
-                          className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
                       </div>
                     </div>
 
                     {/* Location */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Location</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">Location</label>
                       <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                           type="text"
                           value={location}
                           onChange={(e) => setLocation(e.target.value)}
                           placeholder="City, Country"
-                          className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
                       </div>
                     </div>
@@ -507,11 +507,11 @@ export default function Profile() {
                 )}
 
                 {/* Save Button */}
-                <div className="mt-8 pt-6 border-t border-slate-200">
+                <div className="mt-8 pt-6 border-t border-border">
                   <Button
                     onClick={handleSave}
                     disabled={isLoading}
-                    className="w-full sm:w-auto gap-2 bg-blue-600 hover:bg-blue-700"
+                    className="w-full sm:w-auto gap-2 bg-accent hover:bg-accent/90"
                   >
                     <Save className="w-4 h-4" />
                     {isLoading ? 'Saving...' : 'Save Changes'}

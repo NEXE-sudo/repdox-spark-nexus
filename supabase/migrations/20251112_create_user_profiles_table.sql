@@ -20,6 +20,12 @@ create table "public"."user_profiles" (
 -- Enable RLS
 alter table "public"."user_profiles" enable row level security;
 
+-- Anyone can read public profile info (avatar_url, full_name)
+create policy "Anyone can read profiles"
+on "public"."user_profiles"
+for select
+using (true);
+
 -- Users can read their own profile
 create policy "Users can read own profile"
 on "public"."user_profiles"

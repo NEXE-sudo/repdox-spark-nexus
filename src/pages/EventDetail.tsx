@@ -253,15 +253,17 @@ export default function EventDetail() {
         <div className="absolute inset-0 flex items-end">
           <div className="max-w-7xl mx-auto w-full px-6 pb-12">
             <Link to="/events">
-              <Button variant="ghost" size="sm" className="mb-4">
+              <Button variant="ghost" size="sm" className="mb-6">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Events
               </Button>
             </Link>
 
-            <Badge className="mb-4 border-accent/30 bg-background/80 backdrop-blur-sm">
-              {event.type}
-            </Badge>
+            <div className="mb-6">
+              <Badge className="bg-accent text-accent-foreground border-0 px-3 py-1 text-sm font-semibold">
+                {event.type}
+              </Badge>
+            </div>
 
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -291,14 +293,14 @@ export default function EventDetail() {
         <div className="max-w-7xl mx-auto">
           {/* Tabs */}
           <div className="mb-6 px-6">
-            <div className="flex items-center gap-3">
-              <button onClick={() => setTab('details')} className={`px-4 py-2 rounded-t-lg transition-colors ${activeTab==='details' ? 'bg-white border-t border-x border-border' : 'bg-background/80 border border-border/20 hover:bg-background'}`}>
+            <div className="flex items-center gap-3 border-b border-border">
+              <button onClick={() => setTab('details')} className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab==='details' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
                 Details
               </button>
-              <button onClick={() => setTab('schedule')} className={`px-4 py-2 rounded-t-lg transition-colors ${activeTab==='schedule' ? 'bg-white border-t border-x border-border' : 'bg-background/80 border border-border/20 hover:bg-background'}`}>
+              <button onClick={() => setTab('schedule')} className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab==='schedule' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
                 Local Event Schedule
               </button>
-              <button onClick={() => setTab('teams')} className={`px-4 py-2 rounded-t-lg transition-colors ${activeTab==='teams' ? 'bg-white border-t border-x border-border' : 'bg-background/80 border border-border/20 hover:bg-background'}`}>
+              <button onClick={() => setTab('teams')} className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab==='teams' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
                 Teams
               </button>
             </div>
@@ -319,7 +321,7 @@ export default function EventDetail() {
                     <p className="text-sm text-muted-foreground">No schedule available for this event.</p>
                   ) : (
                     <ul className="space-y-4">
-                      {schedules.map((s: any) => (
+                      {schedules.map((s: { id: string; start_at: string; title: string; description?: string }) => (
                         <li key={s.id} className="border rounded p-3">
                           <div className="text-sm text-muted-foreground">
                             {s.start_at ? new Date(s.start_at).toLocaleString() : ''}
@@ -344,7 +346,7 @@ export default function EventDetail() {
                     <p className="text-sm text-muted-foreground">No teams listed for this event.</p>
                   ) : (
                     <div className="space-y-4">
-                      {teams.map((t: any) => (
+                      {teams.map((t: { id: string; name: string; description?: string; contact_email?: string }) => (
                         <div key={t.id} className="border rounded p-3">
                           <div className="font-medium">{t.name}</div>
                           {t.description && <div className="text-sm text-muted-foreground">{t.description}</div>}

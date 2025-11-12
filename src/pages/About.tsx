@@ -95,7 +95,7 @@ export default function About() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  className="p-6 bg-white rounded-lg border border-border/50 shadow-sm hover:shadow-md transition-shadow"
+                  className="p-6 bg-card rounded-lg border border-border/50 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <Icon className="w-10 h-10 text-accent mb-4" />
                   <h3 className="text-xl font-semibold text-foreground mb-2">{value.title}</h3>
@@ -142,7 +142,7 @@ export default function About() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-lg border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                className="bg-card rounded-lg border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="h-32 bg-gradient-to-br from-accent/20 to-accent/5"></div>
                 <div className="p-4">

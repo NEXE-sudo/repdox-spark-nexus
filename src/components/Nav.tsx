@@ -10,6 +10,8 @@ import {
 import CardNav from "@/components/ui/CardNav";
 import logo from "@/assets/logo.svg";
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from "@/contexts/ThemeContext";
+import { Moon, Sun } from "lucide-react";
 import type { User } from '@supabase/supabase-js';
 
 export default function Nav() {
@@ -20,6 +22,7 @@ export default function Nav() {
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
   useEffect(() => {
@@ -212,6 +215,19 @@ export default function Nav() {
 
         {/* Right side - avatar or sign in */}
         <div className="flex items-center gap-3 flex-shrink-0 relative">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5 text-accent" />
+            ) : (
+              <Moon className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
+
           {user ? (
             <div className="relative">
               <button
