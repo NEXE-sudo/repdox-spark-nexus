@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -14,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/hooks/use-toast';
-import { Plus, X, GripVertical, Upload, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, GripVertical, CalendarDays } from 'lucide-react';
+import eventService from '@/lib/eventService';
+import FileUpload from '@/components/ui/File_upload';
 
 // Suggested tags based on common event categories
 const SUGGESTED_TAGS = [
@@ -32,16 +31,18 @@ interface FAQ {
 }
 
 export default function AddEvent() {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     title: '',
     slug: '',
     type: 'Hackathon',
     format: 'Offline',
-    start_at: '',
-    end_at: '',
-    registration_deadline: '',
+    start_date: '',
+    start_time: '09:00',
+    end_date: '',
+    end_time: '18:00',
+    registration_deadline_date: '',
+    registration_deadline_time: '23:59',
     location: '',
     short_blurb: '',
     long_description: '',
@@ -55,8 +56,6 @@ export default function AddEvent() {
   const [scheduleText, setScheduleText] = useState('');
   const [teamsText, setTeamsText] = useState('');
   const [prizeText, setPrizeText] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   // FAQ state management
   const [faqs, setFaqs] = useState<FAQ[]>([{ id: '1', question: '', answer: '' }]);
@@ -67,6 +66,7 @@ export default function AddEvent() {
   const [tagInput, setTagInput] = useState('');
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ file: File; name: string }>>([]);
 
   const onChange = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }));
 
@@ -125,14 +125,9 @@ export default function AddEvent() {
     const trimmedTag = tag.trim();
     if (!trimmedTag) return;
     
-    // Check for duplicates (case-insensitive)
     const duplicate = tags.find(t => t.toLowerCase() === trimmedTag.toLowerCase());
     if (duplicate) {
-      toast({ 
-        title: 'Duplicate tag', 
-        description: `"${duplicate}" already exists. Try a different tag.`,
-        variant: 'destructive'
-      });
+      alert(`"${duplicate}" already exists. Try a different tag.`);
       return;
     }
 
@@ -152,288 +147,386 @@ export default function AddEvent() {
     }
   };
 
-  // Image handlers
-  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    setImageFile(f);
-    
-    if (f) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(f);
-    } else {
-      setImagePreview(null);
+  const handleSubmit = async () => {
+    // Basic client-side validation
+    if (!form.title || !form.start_date || !form.start_time || !form.location) {
+      alert('Please fill required fields: Title, Start date/time and Location');
+      return;
     }
-  };
 
-  const clearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
     setLoading(true);
-
     try {
-      const user = (await supabase.auth.getUser()).data.user;
-      if (!user) {
-        toast({ title: 'Sign in required', description: 'Please sign in to create events.' });
-        setLoading(false);
-        return;
+      const created = await eventService.createEvent({
+        form,
+        tags,
+        scheduleText,
+        teamsText,
+        prizeText,
+        faqs: faqs.map(f => ({ question: f.question, answer: f.answer })),
+        uploadedFiles,
+      });
+
+      alert('Event created successfully!');
+      // Navigate to the event page if slug exists
+      if (created?.slug) {
+        window.location.href = `/events/${created.slug}`;
+      } else {
+        window.history.back();
       }
-
-      let imageUrl: string | null = null;
-      if (imageFile) {
-        const ext = imageFile.name.split('.').pop() || 'jpg';
-        const fileName = `events/${form.slug || form.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('events').upload(fileName, imageFile, { upsert: true });
-        if (upErr) throw upErr;
-        imageUrl = fileName;
+    } catch (err: any) {
+      // Normalize error to a readable message
+      console.error('Create event failed', err);
+      let message = 'Unknown error';
+      try {
+        if (err instanceof Error) {
+          // If the service stringified details into the Error message, try parsing
+          try {
+            const parsed = JSON.parse(err.message);
+            message = parsed?.message || err.message;
+          } catch {
+            message = err.message;
+          }
+        } else if (typeof err === 'string') {
+          message = err;
+        } else if (err && typeof err === 'object') {
+          message = (err as any).message || JSON.stringify(err);
+        }
+      } catch (e) {
+        message = String(err);
       }
-
-      const endAt = form.end_at || new Date(new Date(form.start_at).getTime() + 2 * 60 * 60 * 1000).toISOString();
-      const registrationDeadline = form.registration_deadline || new Date(new Date(form.start_at).getTime() - 24 * 60 * 60 * 1000).toISOString();
-
-      const prizes = prizeText.split('\n').map(l => l.trim()).filter(Boolean);
-      
-      // Filter out empty FAQs
-      const validFaqs = faqs
-        .filter(faq => faq.question.trim() && faq.answer.trim())
-        .map(({ question, answer }) => ({ question, answer }));
-
-      const { data, error } = await supabase.from('events').insert({
-        title: form.title,
-        slug: form.slug || form.title.replace(/[^a-z0-9]/gi, '-').toLowerCase(),
-        type: form.type as 'Hackathon' | 'Workshop' | 'MUN' | 'Gaming',
-        format: form.format as 'Online' | 'Offline' | 'Hybrid',
-        start_at: form.start_at,
-        end_at: endAt,
-        registration_deadline: registrationDeadline,
-        location: form.location,
-        short_blurb: form.short_blurb || form.title,
-        long_description: form.long_description || null,
-        overview: form.overview || null,
-        image_url: imageUrl,
-        tags: tags.length > 0 ? tags : null,
-        rules: form.rules || null,
-        prizes: prizes.length > 0 ? prizes : null,
-        faqs: validFaqs.length > 0 ? validFaqs : null,
-        registration_link: form.registration_link || null,
-        discord_invite: form.discord_invite || null,
-        instagram_handle: form.instagram_handle || null,
-        is_active: true
-      }).select('*').single();
-
-      if (error) throw error;
-
-      if (scheduleText.trim()) {
-        const scheduleLines = scheduleText.split('\n').map(l => l.trim()).filter(Boolean);
-        const scheduleInserts = scheduleLines.map(line => {
-          const parts = line.split('|').map(p => p.trim());
-          return {
-            event_id: data.id,
-            start_at: parts[0] || null,
-            title: parts[1] || parts[0] || 'Schedule item',
-            description: parts[2] || null
-          };
-        });
-        const { error: schedErr } = await supabase.from('event_schedules').insert(scheduleInserts);
-        if (schedErr) throw schedErr;
-      }
-
-      if (teamsText.trim()) {
-        const teamLines = teamsText.split('\n').map(l => l.trim()).filter(Boolean);
-        const teamInserts = teamLines.map(line => {
-          const parts = line.split('|').map(p => p.trim());
-          return {
-            event_id: data.id,
-            name: parts[0],
-            description: parts[1] || null,
-            contact_email: parts[2] || null
-          };
-        });
-        const { error: teamErr } = await supabase.from('event_teams').insert(teamInserts);
-        if (teamErr) throw teamErr;
-      }
-
-      toast({ title: 'Event created', description: 'Your event was created successfully.' });
-      navigate(`/events/${data.slug}`);
-    } catch (err: unknown) {
-      const msg = typeof err === 'object' && err !== null && 'message' in err && typeof (err as Record<string, unknown>).message === 'string'
-        ? ((err as Record<string, unknown>).message as string)
-        : String(err);
-      toast({ title: 'Error', description: msg });
+      alert('Failed to create event: ' + message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background py-12 px-6">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Create Event</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" value={form.title} onChange={(e) => onChange('title', e.target.value)} required />
-          </div>
-          
-          <div>
-            <Label htmlFor="slug">Slug (optional)</Label>
-            <Input id="slug" value={form.slug} onChange={(e) => onChange('slug', e.target.value)} />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Type</Label>
-              <Select value={form.type} onValueChange={(v) => onChange('type', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Hackathon">Hackathon</SelectItem>
-                  <SelectItem value="Workshop">Workshop</SelectItem>
-                  <SelectItem value="MUN">MUN</SelectItem>
-                  <SelectItem value="Gaming">Gaming</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Format</Label>
-              <Select value={form.format} onValueChange={(v) => onChange('format', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Online">Online</SelectItem>
-                  <SelectItem value="Offline">Offline</SelectItem>
-                  <SelectItem value="Hybrid">Hybrid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold tracking-tight mb-2">Create Event</h1>
+          <p className="text-muted-foreground">Fill in the details to create your event</p>
+        </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Start At</Label>
-              <Input type="datetime-local" value={form.start_at} onChange={(e) => onChange('start_at', e.target.value)} required />
-            </div>
-            <div>
-              <Label>End At</Label>
-              <Input type="datetime-local" value={form.end_at} onChange={(e) => onChange('end_at', e.target.value)} />
-            </div>
-          </div>
+        <div className="space-y-8">
+          {/* Basic Information Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Basic Information</h2>
+                <p className="text-sm text-muted-foreground">Essential details about your event</p>
+              </div>
 
-          <div>
-            <Label>Registration Deadline</Label>
-            <Input type="datetime-local" value={form.registration_deadline} onChange={(e) => onChange('registration_deadline', e.target.value)} />
-          </div>
+              <div className="grid gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="text-sm font-medium">Event Title *</Label>
+                  <Input 
+                    id="title" 
+                    value={form.title} 
+                    onChange={(e) => onChange('title', e.target.value)} 
+                    placeholder="Enter event title"
+                    required 
+                    className="h-11"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="slug" className="text-sm font-medium">URL Slug</Label>
+                  <Input 
+                    id="slug" 
+                    value={form.slug} 
+                    onChange={(e) => onChange('slug', e.target.value)}
+                    placeholder="my-awesome-event"
+                    className="h-11"
+                  />
+                  <p className="text-xs text-muted-foreground">Leave empty to auto-generate from title</p>
+                </div>
+                
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Event Type *</Label>
+                    <Select value={form.type} onValueChange={(v) => onChange('type', v)}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Hackathon">Hackathon</SelectItem>
+                        <SelectItem value="Workshop">Workshop</SelectItem>
+                        <SelectItem value="MUN">MUN</SelectItem>
+                        <SelectItem value="Gaming">Gaming</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Format *</Label>
+                    <Select value={form.format} onValueChange={(v) => onChange('format', v)}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Online">Online</SelectItem>
+                        <SelectItem value="Offline">Offline</SelectItem>
+                        <SelectItem value="Hybrid">Hybrid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-          <div>
-            <Label>Location</Label>
-            <Input value={form.location} onChange={(e) => onChange('location', e.target.value)} required />
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-sm font-medium">Location *</Label>
+                  <Input 
+                    id="location"
+                    value={form.location} 
+                    onChange={(e) => onChange('location', e.target.value)}
+                    placeholder="Enter venue or platform"
+                    required
+                    className="h-11"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <Label>Short Blurb (required)</Label>
-            <Input value={form.short_blurb} onChange={(e) => onChange('short_blurb', e.target.value)} required />
-          </div>
+          {/* Date & Time Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5" />
+                  Date & Time
+                </h2>
+                <p className="text-sm text-muted-foreground">Schedule your event</p>
+              </div>
 
-          <div>
-            <Label>Long Description</Label>
-            <Textarea value={form.long_description} onChange={(e) => onChange('long_description', e.target.value)} rows={4} />
-          </div>
+              <div className="space-y-6">
+                {/* Start Date & Time */}
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Start Date & Time *</Label>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <Input 
+                      type="date" 
+                      value={form.start_date} 
+                      onChange={(e) => onChange('start_date', e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                    <Input 
+                      type="time" 
+                      value={form.start_time} 
+                      onChange={(e) => onChange('start_time', e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                </div>
 
-          <div>
-            <Label>Overview / Summary</Label>
-            <Textarea value={form.overview} onChange={(e) => onChange('overview', e.target.value)} rows={4} />
-          </div>
+                {/* End Date & Time */}
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">End Date & Time *</Label>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <Input 
+                      type="date" 
+                      value={form.end_date} 
+                      onChange={(e) => onChange('end_date', e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                    <Input 
+                      type="time" 
+                      value={form.end_time} 
+                      onChange={(e) => onChange('end_time', e.target.value)}
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                </div>
 
-          <div>
-            <Label>Rules</Label>
-            <Textarea value={form.rules} onChange={(e) => onChange('rules', e.target.value)} rows={3} />
-          </div>
+                {/* Registration Deadline */}
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Registration Deadline</Label>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <Input 
+                      type="date" 
+                      value={form.registration_deadline_date} 
+                      onChange={(e) => onChange('registration_deadline_date', e.target.value)}
+                      className="h-11"
+                    />
+                    <Input 
+                      type="time" 
+                      value={form.registration_deadline_time} 
+                      onChange={(e) => onChange('registration_deadline_time', e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <Label>Prizes (one per line)</Label>
-            <Textarea value={prizeText} onChange={(e) => setPrizeText(e.target.value)} rows={3} placeholder="1st Prize - ₹10,000&#10;2nd Prize - ₹5,000&#10;3rd Prize - ₹2,500" />
-          </div>
+          {/* Description Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Description</h2>
+                <p className="text-sm text-muted-foreground">Tell attendees about your event</p>
+              </div>
 
-          {/* Revamped FAQ Section */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">FAQs</Label>
-            <div className="space-y-3">
-              {faqs.map((faq, index) => (
-                <Card 
-                  key={faq.id}
-                  draggable
-                  onDragStart={() => handleDragStart(faq.id)}
-                  onDragOver={(e) => handleDragOver(e, faq.id)}
-                  onDragEnd={handleDragEnd}
-                  className={`cursor-move transition-all ${draggedFaq === faq.id ? 'opacity-50' : ''}`}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <GripVertical className="h-5 w-5 text-muted-foreground mt-2 flex-shrink-0" />
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium text-muted-foreground">Question {index + 1}</span>
-                          {faqs.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeFaq(faq.id)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="short_blurb" className="text-sm font-medium">Short Blurb *</Label>
+                  <Input 
+                    id="short_blurb"
+                    value={form.short_blurb} 
+                    onChange={(e) => onChange('short_blurb', e.target.value)}
+                    placeholder="A brief one-liner about your event"
+                    required
+                    className="h-11"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="overview" className="text-sm font-medium">Overview</Label>
+                  <Textarea 
+                    id="overview"
+                    value={form.overview} 
+                    onChange={(e) => onChange('overview', e.target.value)}
+                    rows={4}
+                    placeholder="High-level summary of your event"
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="long_description" className="text-sm font-medium">Detailed Description</Label>
+                  <Textarea 
+                    id="long_description"
+                    value={form.long_description} 
+                    onChange={(e) => onChange('long_description', e.target.value)}
+                    rows={6}
+                    placeholder="Full details about your event"
+                    className="resize-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="rules" className="text-sm font-medium">Rules & Guidelines</Label>
+                  <Textarea 
+                    id="rules"
+                    value={form.rules} 
+                    onChange={(e) => onChange('rules', e.target.value)}
+                    rows={4}
+                    placeholder="Event rules and participation guidelines"
+                    className="resize-none"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Prizes Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="prizes" className="text-sm font-medium">Prizes</Label>
+                <p className="text-xs text-muted-foreground">Enter one prize per line</p>
+              </div>
+              <Textarea 
+                id="prizes"
+                value={prizeText} 
+                onChange={(e) => setPrizeText(e.target.value)} 
+                rows={5}
+                placeholder="1st Prize - ₹10,000&#10;2nd Prize - ₹5,000&#10;3rd Prize - ₹2,500"
+                className="resize-none font-mono text-sm"
+              />
+            </CardContent>
+          </Card>
+
+          {/* FAQs Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">FAQs</h2>
+                <p className="text-sm text-muted-foreground">Answer common questions</p>
+              </div>
+
+              <div className="space-y-3">
+                {faqs.map((faq, index) => (
+                  <Card 
+                    key={faq.id}
+                    draggable
+                    onDragStart={() => handleDragStart(faq.id)}
+                    onDragOver={(e) => handleDragOver(e, faq.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`cursor-move transition-all hover:shadow-md ${draggedFaq === faq.id ? 'opacity-50 scale-95' : ''}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <GripVertical className="h-5 w-5 text-muted-foreground mt-3 flex-shrink-0" />
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium text-muted-foreground">Question {index + 1}</span>
+                            {faqs.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFaq(faq.id)}
+                                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <Input
+                            placeholder="Enter your question"
+                            value={faq.question}
+                            onChange={(e) => updateFaq(faq.id, 'question', e.target.value)}
+                            className="h-10"
+                          />
+                          <Textarea
+                            placeholder="Enter the answer"
+                            value={faq.answer}
+                            onChange={(e) => updateFaq(faq.id, 'answer', e.target.value)}
+                            rows={3}
+                            className="resize-none"
+                          />
                         </div>
-                        <Input
-                          placeholder="Enter your question"
-                          value={faq.question}
-                          onChange={(e) => updateFaq(faq.id, 'question', e.target.value)}
-                        />
-                        <Textarea
-                          placeholder="Enter the answer"
-                          value={faq.answer}
-                          onChange={(e) => updateFaq(faq.id, 'answer', e.target.value)}
-                          rows={3}
-                        />
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addFaq}
-                className="w-full border-dashed"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Question
-              </Button>
-            </div>
-          </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addFaq}
+                  className="w-full border-dashed border-2 h-12 hover:bg-accent"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Question
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Revamped Tags Section */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Tags</Label>
-            <div className="space-y-3">
+          {/* Tags Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Tags</h2>
+                <p className="text-sm text-muted-foreground">Help people discover your event</p>
+              </div>
+
               {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
+                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-lg border">
                   {tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
+                    <Badge key={tag} variant="secondary" className="gap-1 px-3 py-1.5 text-sm">
                       {tag}
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="ml-1 hover:bg-destructive/20 rounded-full"
+                        className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -449,10 +542,12 @@ export default function AddEvent() {
                   onChange={(e) => handleTagInputChange(e.target.value)}
                   onKeyDown={handleTagKeyDown}
                   onFocus={() => tagInput && setShowTagSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                  className="h-11"
                 />
                 
                 {showTagSuggestions && filteredSuggestions.length > 0 && (
-                  <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto">
+                  <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto shadow-lg">
                     <CardContent className="p-2">
                       <div className="space-y-1">
                         {filteredSuggestions.map(tag => (
@@ -471,90 +566,137 @@ export default function AddEvent() {
                 )}
               </div>
               
-              <div className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Press Enter to add a tag or select from suggestions
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Schedule & Teams Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Schedule & Teams</h2>
+                <p className="text-sm text-muted-foreground">Optional event logistics</p>
               </div>
-            </div>
-          </div>
 
-          <div>
-            <Label>Schedule (Format: YYYY-MM-DDTHH:MM | Title | Description, one per line)</Label>
-            <Textarea value={scheduleText} onChange={(e) => setScheduleText(e.target.value)} rows={4} placeholder="2025-03-15T09:00 | Opening Ceremony | Welcome address&#10;2025-03-15T10:00 | Event Kickoff | Rules and guidelines" />
-          </div>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="schedule" className="text-sm font-medium">Event Schedule</Label>
+                  <p className="text-xs text-muted-foreground">Format: YYYY-MM-DDTHH:MM | Title | Description (one per line)</p>
+                  <Textarea 
+                    id="schedule"
+                    value={scheduleText} 
+                    onChange={(e) => setScheduleText(e.target.value)} 
+                    rows={5}
+                    placeholder="2025-03-15T09:00 | Opening Ceremony | Welcome address&#10;2025-03-15T10:00 | Event Kickoff | Rules and guidelines"
+                    className="resize-none font-mono text-sm"
+                  />
+                </div>
 
-          <div>
-            <Label>Teams (Format: Name | Description | contact_email, one per line)</Label>
-            <Textarea value={teamsText} onChange={(e) => setTeamsText(e.target.value)} rows={3} placeholder="Organizers | Main event team | contact@example.com&#10;Volunteers | Helper team | volunteers@example.com" />
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="teams" className="text-sm font-medium">Event Teams</Label>
+                  <p className="text-xs text-muted-foreground">Format: Name | Description | Email (one per line)</p>
+                  <Textarea 
+                    id="teams"
+                    value={teamsText} 
+                    onChange={(e) => setTeamsText(e.target.value)} 
+                    rows={4}
+                    placeholder="Organizers | Main event team | contact@example.com&#10;Volunteers | Helper team | volunteers@example.com"
+                    className="resize-none font-mono text-sm"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <Label>Registration Link</Label>
-            <Input value={form.registration_link} onChange={(e) => onChange('registration_link', e.target.value)} placeholder="https://..." />
-          </div>
+          {/* Links Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Links & Social</h2>
+                <p className="text-sm text-muted-foreground">Connect with attendees</p>
+              </div>
 
-          <div>
-            <Label>Discord Invite Link</Label>
-            <Input value={form.discord_invite} onChange={(e) => onChange('discord_invite', e.target.value)} placeholder="https://discord.gg/..." />
-          </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="registration_link" className="text-sm font-medium">Registration Link</Label>
+                  <Input 
+                    id="registration_link"
+                    value={form.registration_link} 
+                    onChange={(e) => onChange('registration_link', e.target.value)}
+                    placeholder="https://forms.example.com/register"
+                    className="h-11"
+                  />
+                </div>
 
-          <div>
-            <Label>Instagram Handle</Label>
-            <Input value={form.instagram_handle} onChange={(e) => onChange('instagram_handle', e.target.value)} placeholder="@handle" />
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="discord_invite" className="text-sm font-medium">Discord Invite</Label>
+                  <Input 
+                    id="discord_invite"
+                    value={form.discord_invite} 
+                    onChange={(e) => onChange('discord_invite', e.target.value)}
+                    placeholder="https://discord.gg/yourserver"
+                    className="h-11"
+                  />
+                </div>
 
-          {/* Revamped Image Upload */}
-          <div>
-            <Label className="text-base font-semibold mb-3 block">Event Image</Label>
-            {imagePreview ? (
-              <Card>
-                <CardContent className="p-4">
-                  <div className="relative">
-                    <img src={imagePreview} alt="Preview" className="w-full h-48 object-cover rounded-lg" />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={clearImage}
-                      className="absolute top-2 right-2"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">{imageFile?.name}</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <label className="block">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImage}
-                  className="hidden"
+                <div className="space-y-2">
+                  <Label htmlFor="instagram_handle" className="text-sm font-medium">Instagram Handle</Label>
+                  <Input 
+                    id="instagram_handle"
+                    value={form.instagram_handle} 
+                    onChange={(e) => onChange('instagram_handle', e.target.value)}
+                    placeholder="@yourevent"
+                    className="h-11"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Images & Media Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Images & Media</h2>
+                <p className="text-sm text-muted-foreground">Upload event images or banners</p>
+              </div>
+
+              <div>
+                <FileUpload
+                  maxFiles={1}
+                  maxSizeMB={10}
+                  onFilesChange={(files) => {
+                    // Map hook files to the shape expected by eventService
+                    const mapped = files.map((f: any) => ({ file: f.file as File, name: f.file.name }));
+                    setUploadedFiles(mapped);
+                  }}
                 />
-                <Card className="cursor-pointer hover:bg-accent/50 transition-colors border-2 border-dashed">
-                  <CardContent className="p-8 flex flex-col items-center justify-center text-center">
-                    <div className="bg-primary/10 rounded-full p-4 mb-4">
-                      <ImageIcon className="h-8 w-8 text-primary" />
-                    </div>
-                    <p className="font-medium mb-1">Click to upload event image</p>
-                    <p className="text-sm text-muted-foreground">PNG, JPG, or WEBP (max 5MB)</p>
-                    <Button type="button" variant="secondary" size="sm" className="mt-4">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Choose File
-                    </Button>
-                  </CardContent>
-                </Card>
-              </label>
-            )}
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
-          <div>
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Creating...' : 'Create Event'}
+          {/* Submit Button */}
+          <div className="flex gap-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => window.history.back()}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button"
+              disabled={loading} 
+              className="flex-1 h-12 text-base"
+              onClick={handleSubmit}
+            >
+              {loading ? 'Creating Event...' : 'Create Event'}
             </Button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -31,3 +31,27 @@ export function getEventImage(imageUrl?: string | null) {
   const filename = parts[parts.length - 1].toLowerCase();
   return filenameMap[filename];
 }
+
+// Async helper: if imageUrl is a storage path (not an http url and not mapped),
+// attempt to get a signed URL via storageService.getSignedUrl. Otherwise behave like getEventImage.
+import { getSignedUrl } from './storageService';
+
+export async function getEventImageUrl(imageUrl?: string | null): Promise<string | undefined> {
+  if (!imageUrl) return undefined;
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+
+  const parts = imageUrl.split('/');
+  const filename = parts[parts.length - 1].toLowerCase();
+  const mapped = filenameMap[filename];
+  if (mapped) return mapped;
+
+  // Treat as storage path in 'events' bucket and try to get signed url
+  try {
+    const signed = await getSignedUrl(imageUrl, 'events', 60 * 60);
+    return signed;
+  } catch (e) {
+    // fallback: return the original path so caller can decide
+    console.error('Failed to get signed url for event image', e);
+    return imageUrl;
+  }
+}

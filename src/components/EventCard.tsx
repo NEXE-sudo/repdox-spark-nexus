@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import { useCountdown } from "@/hooks/useCountdown";
 import { Link } from "react-router-dom";
-import { getEventImage } from "@/lib/eventImages";
+import { getEventImage, getEventImageUrl } from "@/lib/eventImages";
+import { useEffect, useState } from 'react';
 
 interface EventCardProps {
   event: {
@@ -24,7 +25,25 @@ interface EventCardProps {
 
 export default function EventCard({ event, compact = false }: EventCardProps) {
   const countdown = useCountdown(event.start_at);
-  const imgSrc = getEventImage(event.image_url) || event.image_url || undefined;
+  const [imgSrc, setImgSrc] = useState<string | undefined>(() => getEventImage(event.image_url) || event.image_url || undefined);
+
+  useEffect(() => {
+    let mounted = true;
+    async function resolve() {
+      if (!event.image_url) return;
+      if (/^https?:\/\//i.test(event.image_url)) return; // already absolute
+      const mapped = getEventImage(event.image_url);
+      if (mapped) return; // mapped to local asset
+      try {
+        const url = await getEventImageUrl(event.image_url);
+        if (mounted && url) setImgSrc(url);
+      } catch (e) {
+        console.error('Failed to resolve event image url', e);
+      }
+    }
+    resolve();
+    return () => { mounted = false; };
+  }, [event.image_url]);
 
     if (compact) {
     return (

@@ -1,7 +1,8 @@
 // Supabase Edge Function (Deno) to create signed URLs for private storage objects.
 // Deploy using the Supabase CLI: `supabase functions deploy get-signed-url`.
 
-import { serve } from 'std/server';
+// Use explicit URL imports so the Supabase bundler can resolve dependencies.
+import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || Deno.env.get('VITE_SUPABASE_URL');

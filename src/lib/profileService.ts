@@ -30,19 +30,15 @@ export interface ProfileUpdateData {
  * Fetch user profile from the database
  */
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  // Use maybeSingle to avoid PostgREST returning a 406 when no row is found.
+  // maybeSingle returns `data` as null if no matching row, without an error.
   const { data, error } = await supabase
     .from('user_profiles')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // Profile does not exist yet
-      return null;
-    }
-    throw error;
-  }
+  if (error) throw error;
 
   return data;
 }
