@@ -23,6 +23,7 @@ interface UserProfile {
   id: string;
   user_id: string;
   full_name: string | null;
+  handle: string | null;
   bio: string | null;
   avatar_url: string | null;
   phone: string | null;
@@ -492,9 +493,9 @@ export default function CommentDetail() {
                     >
                       {post.user_profile?.full_name || "User"}
                     </span>
-                    <span className="text-muted-foreground">
-                      @{post.user_profile?.user_id?.slice(0, 8) || "user"}
-                    </span>
+                  <span className="text-muted-foreground">
+                    @{post.user_profile?.handle || post.user_profile?.user_id?.slice(0, 8) || "user"}
+                  </span>
                     <span className="text-muted-foreground text-sm">
                       {new Date(post.created_at).toLocaleDateString()}
                     </span>
@@ -551,35 +552,18 @@ export default function CommentDetail() {
                   </div>
                 )}
 
-                {/* Engagement Stats */}
-                <div className="flex gap-6 mt-6 text-muted-foreground text-sm border-y border-border py-4">
-                  <div className="hover:text-accent cursor-pointer">
-                    <span className="font-bold text-foreground">
-                      {post.comments_count}
-                    </span>{" "}
-                    Comments
-                  </div>
-                  <div className="hover:text-accent cursor-pointer">
-                    <span className="font-bold text-foreground">
-                      {post.likes_count}
-                    </span>{" "}
-                    Likes
-                  </div>
-                </div>
-
                 {/* Engagement Buttons */}
-                <div className="flex items-center justify-between mt-4 text-muted-foreground py-2 border-b border-border">
-                  <div className="flex gap-4 items-center">
+                <div className="flex items-center justify-between mt-4 text-muted-foreground text-sm">
+                  <div className="flex gap-6 items-center">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         console.log("Comment clicked");
                       }}
-                      className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition"
+                      className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/20 p-2 rounded-full transition active:scale-95"
                     >
-                      <div className="p-2 rounded-full hover:bg-blue-500/20 transition active:scale-95">
-                        <MessageCircle className="w-4 h-4" />
-                      </div>
+                      <MessageCircle className="w-4 h-4" />
+                      <span className="text-xs">{post.comments_count}</span>
                     </button>
 
                     <button
@@ -587,28 +571,21 @@ export default function CommentDetail() {
                         e.stopPropagation();
                         handleLikePost();
                       }}
-                      className={`flex items-center gap-2 transition ${
+                      className={`flex items-center gap-2 p-2 rounded-full transition active:scale-95 ${
                         likedPosts.includes(post.id)
-                          ? "text-red-500"
-                          : "text-muted-foreground hover:text-red-500"
+                          ? "text-red-500 bg-red-500/20"
+                          : "text-muted-foreground hover:text-red-500 hover:bg-red-500/20"
                       }`}
                     >
-                      <div
-                        className={`p-2 rounded-full transition active:scale-95 ${
+                      <Heart
+                        className="w-4 h-4"
+                        fill={
                           likedPosts.includes(post.id)
-                            ? "bg-red-500/20"
-                            : "hover:bg-red-500/20"
-                        }`}
-                      >
-                        <Heart
-                          className="w-4 h-4"
-                          fill={
-                            likedPosts.includes(post.id)
-                              ? "currentColor"
-                              : "none"
-                          }
-                        />
-                      </div>
+                            ? "currentColor"
+                            : "none"
+                        }
+                      />
+                      <span className="text-xs">{post.likes_count}</span>
                     </button>
                   </div>
 
@@ -655,9 +632,7 @@ export default function CommentDetail() {
                           onClick={() => {
                             const lastAt = newComment.lastIndexOf("@");
                             const before = newComment.substring(0, lastAt);
-                            const handle = p.full_name
-                              ? p.full_name.replace(/\s+/g, "")
-                              : p.user_id.slice(0, 8);
+                            const handle = p.handle || p.full_name?.replace(/\s+/g, "") || p.user_id.slice(0, 8);
                             setNewComment(before + `@${handle} `);
                             setShowMentionSuggestions(false);
                           }}
@@ -741,7 +716,7 @@ export default function CommentDetail() {
                             {comment.user_profile?.full_name || "User"}
                           </span>
                           <span className="text-muted-foreground">
-                            @{comment.user_id.slice(0, 8)}
+                            @{comment.user_profile?.handle || comment.user_id.slice(0, 8)}
                           </span>
                           <span className="text-muted-foreground text-sm">
                             {new Date(comment.created_at).toLocaleDateString()}
@@ -784,15 +759,7 @@ export default function CommentDetail() {
           )}
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-72 border-l border-border p-4 hidden lg:flex flex-col sticky top-0 h-full overflow-y-auto bg-muted/50">
-          <div className="rounded-2xl p-4 bg-muted">
-            <h3 className="font-bold mb-2">About this post</h3>
-            <p className="text-sm text-muted-foreground">
-              {post.comments_count} comments • {post.likes_count} likes
-            </p>
-          </div>
-        </div>
+        {/* Right Sidebar - Hidden on Comment Page */}
       </div>
 
       {/* Status Messages */}

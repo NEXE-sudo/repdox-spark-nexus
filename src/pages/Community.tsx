@@ -46,6 +46,7 @@ interface UserProfile {
   id: string;
   user_id: string;
   full_name: string | null;
+  handle: string | null;
   bio: string | null;
   avatar_url: string | null;
   phone: string | null;
@@ -953,10 +954,8 @@ export default function Community() {
                             onClick={() => {
                               const lastAt = newPost.lastIndexOf("@");
                               const before = newPost.substring(0, lastAt);
-                              // insert a readable mention handle (use full_name if available)
-                              const handle = p.full_name
-                                ? p.full_name.replace(/\s+/g, "")
-                                : p.user_id.slice(0, 8);
+                              // insert the user's handle from profile
+                              const handle = p.handle || p.full_name?.replace(/\s+/g, "") || p.user_id.slice(0, 8);
                               setNewPost(before + `@${handle} `);
                               setShowMentionSuggestions(false);
                             }}
@@ -969,7 +968,7 @@ export default function Community() {
                                 {p.full_name || p.user_id}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                @{p.user_id.slice(0, 8)}
+                                @{p.handle || p.user_id.slice(0, 8)}
                               </div>
                             </div>
                           </div>
@@ -1221,10 +1220,7 @@ export default function Community() {
                           {post.user_profile?.full_name || "Anonymous"}
                         </h3>
                         <span className="text-muted-foreground">
-                          @
-                          {post.user_profile?.full_name
-                            ?.toLowerCase()
-                            .replace(" ", "") || "user"}
+                          @{post.user_profile?.handle || post.user_profile?.full_name?.toLowerCase().replace(" ", "") || "user"}
                         </span>
                         <span className="text-muted-foreground">·</span>
                         <span className="text-muted-foreground text-sm">
@@ -1285,11 +1281,7 @@ export default function Community() {
                             }}
                           >
                             <VolumeX className="w-4 h-4 mr-2" />
-                            Mute @
-                            {post.user_profile?.full_name?.replace(
-                              /\s+/g,
-                              ""
-                            ) || post.user_id.slice(0, 8)}
+                            Mute @{post.user_profile?.handle || post.user_profile?.full_name?.replace(/\s+/g, "") || post.user_id.slice(0, 8)}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

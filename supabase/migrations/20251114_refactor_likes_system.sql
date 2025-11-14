@@ -38,18 +38,29 @@ CREATE INDEX IF NOT EXISTS idx_user_poll_votes_user_id ON user_poll_votes(user_i
 CREATE INDEX IF NOT EXISTS idx_user_poll_votes_poll_id ON user_poll_votes(poll_id);
 
 -- Step 7: Populate likes_count from existing posts_likes data if it exists
-UPDATE community_posts cp
-SET likes_count = (
-    SELECT COUNT(*) FROM posts_likes pl 
-    WHERE pl.post_id = cp.id
-)
-WHERE EXISTS (SELECT 1 FROM posts_likes WHERE post_id = cp.id);
+-- Only run if posts_likes table exists
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'posts_likes') THEN
+        UPDATE community_posts cp
+        SET likes_count = (
+            SELECT COUNT(*) FROM posts_likes pl 
+            WHERE pl.post_id = cp.id
+        )
+        WHERE EXISTS (SELECT 1 FROM posts_likes WHERE post_id = cp.id);
+    END IF;
+END $$;
 
--- Step 8: Copy existing likes from posts_likes to new user_post_likes table
-INSERT INTO user_post_likes (user_id, post_id, created_at)
-SELECT user_id, post_id, COALESCE(created_at, NOW())
-FROM posts_likes
-ON CONFLICT DO NOTHING;
+-- Step 8: Copy existing likes from posts_likes to new user_post_likes table if it exists
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'posts_likes') THEN
+        INSERT INTO user_post_likes (user_id, post_id, created_at)
+        SELECT user_id, post_id, COALESCE(created_at, NOW())
+        FROM posts_likes
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
 
 -- Step 9: Enable RLS on new tables
 ALTER TABLE user_post_likes ENABLE ROW LEVEL SECURITY;
@@ -65,7 +76,7 @@ CREATE POLICY "Users can like posts" ON user_post_likes
 CREATE POLICY "Users can unlike their own likes" ON user_post_likes
     FOR DELETE USING (auth.uid()::TEXT = user_id::TEXT);
 
--- Step 11: Create RLS policies for user_poll_votes
+-- Step 11: Create RLS policies for user_poll_votes (if not exists)
 CREATE POLICY "Users can view all poll votes" ON user_poll_votes
     FOR SELECT USING (true);
 
