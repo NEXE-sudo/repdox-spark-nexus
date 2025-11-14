@@ -1,11 +1,25 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { supabase } from '@/integrations/supabase/client';
-import { uploadAvatar as uploadAvatarService, getAvatarSignedUrl } from '@/lib/profileService';
-import type { User } from '@supabase/supabase-js';
-import { Button } from '@/components/ui/button';
-import { Mail, Save, Upload, LogOut, User as UserIcon, Briefcase, Phone, MapPin, Globe } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  uploadAvatar as uploadAvatarService,
+  getAvatarSignedUrl,
+} from "@/lib/profileService";
+import type { User } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
+import {
+  Mail,
+  Save,
+  Upload,
+  LogOut,
+  User as UserIcon,
+  Briefcase,
+  Phone,
+  MapPin,
+  Globe,
+  Calendar,
+} from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -18,141 +32,156 @@ interface UserProfile {
   website: string | null;
   company: string | null;
   job_title: string | null;
+  date_of_birth?: string | null;
   created_at: string;
   updated_at: string;
 }
 
+const sections = [
+  { id: "personal", label: "Personal Info", icon: UserIcon },
+  { id: "professional", label: "Professional", icon: Briefcase },
+  { id: "contact", label: "Contact", icon: Phone },
+];
+
 export default function Profile() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { userId } = useParams();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [activeSection, setActiveSection] = useState('personal');
+  const [activeSection, setActiveSection] = useState("personal");
+
+  // Form states
+  const [fullName, setFullName] = useState("");
+  const [handle, setHandle] = useState("");
+  const [bio, setBio] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [company, setCompany] = useState("");
+  const [website, setWebsite] = useState("");
+  const [phone, setPhone] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState<string>("");
+
+  // Avatar states
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // UI states
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Form state
-  const [fullName, setFullName] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
-  const [company, setCompany] = useState('');
-  const [phone, setPhone] = useState('');
-  const [location, setLocation] = useState('');
-  const [website, setWebsite] = useState('');
-  const [bio, setBio] = useState('');
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  // avatarPath stores the storage path (avatars/...) saved in DB
-  const [avatarPath, setAvatarPath] = useState<string | null>(null);
-  // avatarUrl stores a temporary signed URL used for img src
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
+  // Load user and profile on mount
   useEffect(() => {
-    const loadUserAndProfile = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        navigate('/signin');
+    loadUserProfile();
+  }, []);
+
+  // Load avatar URL when profile changes
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      loadAvatarUrl(profile.avatar_url);
+    }
+  }, [profile?.avatar_url]);
+
+  const loadUserProfile = async () => {
+    try {
+      const {
+        data: { user: currentUser },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      // If a userId param is present, load that profile for viewing (public view)
+      if (userId) {
+        // try to load profile by param
+        const { data: profileData, error: profileError } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
+
+        if (profileError && profileError.code !== "PGRST116") {
+          throw profileError;
+        }
+
+        if (profileData) {
+          setProfile(profileData);
+        }
+
+        // set current user if available (not required to view another profile)
+        if (!userError && currentUser) setUser(currentUser);
         return;
       }
 
-      setUser(userData.user);
-      setAvatarUrl(deriveAvatarUrl(userData.user));
+      if (userError) throw userError;
+      if (!currentUser) {
+        navigate("/login");
+        return;
+      }
 
-      // Fetch user profile from database
+      setUser(currentUser);
+
       const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', userData.user.id)
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", currentUser.id)
         .single();
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching profile:', profileError);
+      if (profileError && profileError.code !== "PGRST116") {
+        throw profileError;
       }
 
       if (profileData) {
         setProfile(profileData);
-        setFullName(profileData.full_name || '');
-        setJobTitle(profileData.job_title || '');
-        setCompany(profileData.company || '');
-        setPhone(profileData.phone || '');
-        setLocation(profileData.location || '');
-        setWebsite(profileData.website || '');
-        setBio(profileData.bio || '');
-        if (profileData.avatar_url) {
-          // avatar_url in DB stores the storage path (avatars/xxx.jpg)
-          setAvatarPath(profileData.avatar_url);
-          try {
-            const signed = await getAvatarSignedUrl(profileData.avatar_url, 60 * 60);
-            setAvatarUrl(signed);
-          } catch (err) {
-            console.error('Failed to get signed URL for avatar:', err);
-          }
-        }
+        setFullName(profileData.full_name || "");
+        setHandle(profileData.handle || "");
+        setBio(profileData.bio || "");
+        setJobTitle(profileData.job_title || "");
+        setCompany(profileData.company || "");
+        setWebsite(profileData.website || "");
+        setPhone(profileData.phone || "");
+        setLocationInput(profileData.location || "");
+        setDateOfBirth(profileData["Date of Birth"] || "");
       }
-    };
-
-    loadUserAndProfile();
-  }, [navigate]);
-
-  const deriveAvatarUrl = (user: User): string | null => {
-    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-
-    if (typeof meta['avatar_url'] === 'string') return meta['avatar_url'] as string;
-    if (typeof meta['picture'] === 'string') return meta['picture'] as string;
-
-    const identities = (user as unknown as { identities?: Array<Record<string, unknown>> }).identities;
-    if (Array.isArray(identities)) {
-      for (const id of identities) {
-        const idData = (id && (id.identity_data ?? {})) as Record<string, unknown>;
-        if (typeof idData['avatar_url'] === 'string') return idData['avatar_url'] as string;
-        if (typeof idData['picture'] === 'string') return idData['picture'] as string;
-      }
+    } catch (err) {
+      console.error("Error loading profile:", err);
+      setError("Failed to load profile data");
     }
+  };
 
-    return null;
+  const loadAvatarUrl = async (path: string) => {
+    try {
+      const url = await getAvatarSignedUrl(path);
+      setAvatarUrl(url);
+    } catch (err) {
+      console.error("Error loading avatar:", err);
+    }
+  };
+
+  const getInitials = () => {
+    if (fullName) {
+      return fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (user?.email) {
+      return user.email[0].toUpperCase();
+    }
+    return "U";
   };
 
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Client-side enforce max 2MB
-    const MAX_BYTES = 2 * 1024 * 1024;
-    if (file.size > MAX_BYTES) {
-      setError('File too large. Maximum allowed size is 2 MB');
-      return;
-    }
-
-    setError(null);
-    setAvatarFile(file);
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      setAvatarPreview(evt.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const uploadAvatar = async (file: File): Promise<string | null> => {
-    if (!user) return null;
-
-    try {
-      const ext = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${ext}`;
-      const filePath = `avatars/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      return publicUrlData.publicUrl;
-    } catch (err) {
-      console.error('Avatar upload failed:', err);
-      return null;
+    if (file) {
+      setAvatarFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -164,75 +193,51 @@ export default function Profile() {
     setSuccess(null);
 
     try {
-      let newAvatarUrl = avatarUrl;
+      let avatarPath = profile?.avatar_url;
 
-      // Upload avatar if selected
+      // Upload avatar if a new one is selected
       if (avatarFile) {
-        // uploadAvatarService returns storage path (avatars/..)
-        const path = await uploadAvatarService(user.id, avatarFile);
-        if (path) {
-          newAvatarUrl = path; // store path into DB field
-          setAvatarPath(path);
-          try {
-            const signed = await getAvatarSignedUrl(path, 60 * 60);
-            setAvatarUrl(signed);
-          } catch (err) {
-            console.error('Failed to get signed URL after upload', err);
-          }
-        } else {
-          throw new Error('Failed to upload avatar');
-        }
+        avatarPath = await uploadAvatarService(user.id, avatarFile);
       }
 
-      // Prepare profile update data
-      const profileUpdate = {
-        full_name: fullName,
-        job_title: jobTitle,
-        company: company,
-        phone: phone,
-        location: location,
-        website: website,
-        bio: bio,
-        // avatar_url stores storage path for private buckets
-        avatar_url: newAvatarUrl,
-        updated_at: new Date().toISOString()
-      };
-
-      // Update or insert profile
-      if (profile) {
-        // Update existing profile
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update(profileUpdate)
-          .eq('user_id', user.id);
-
-        if (updateError) throw updateError;
-      } else {
-        // Insert new profile
-        const { error: insertError } = await supabase
-          .from('user_profiles')
-          .insert({
+      // Upsert profile data
+      const { error: upsertError } = await supabase
+        .from("user_profiles")
+        .upsert(
+          {
             user_id: user.id,
-            ...profileUpdate
-          });
+            full_name: fullName || null,
+            handle: handle || null,
+            bio: bio || null,
+            job_title: jobTitle || null,
+            company: company || null,
+            website: website || null,
+            phone: phone || null,
+            location: locationInput || null,
+            "Date of Birth": dateOfBirth || null,
+            avatar_url: avatarPath,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "user_id",
+          }
+        );
 
-        if (insertError) throw insertError;
-      }
+      if (upsertError) throw upsertError;
 
-      // Refetch profile
-      const { data: updatedProfile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (updatedProfile) setProfile(updatedProfile);
-
-      setSuccess('Profile updated successfully!');
+      setSuccess("Profile updated successfully!");
       setAvatarFile(null);
       setAvatarPreview(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to update profile';
+
+      // Reload profile data
+      await loadUserProfile();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: unknown) {
+      console.error("Error saving profile:", err);
+      const message =
+        err instanceof Error ? err.message : "Failed to save profile";
       setError(message);
     } finally {
       setIsLoading(false);
@@ -240,29 +245,24 @@ export default function Profile() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
-  const getInitials = () => {
-    if (fullName) {
-      return fullName
-        .split(' ')
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase();
+    try {
+      await supabase.auth.signOut();
+      navigate("/login");
+    } catch (err) {
+      console.error("Error signing out:", err);
     }
-    return user?.email?.[0].toUpperCase() || 'U';
   };
 
-  if (!user) return null;
-
-  const sections = [
-    { id: 'personal', label: 'Personal Info', icon: UserIcon },
-    { id: 'professional', label: 'Professional', icon: Briefcase },
-    { id: 'contact', label: 'Contact', icon: Phone },
-  ];
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -274,17 +274,29 @@ export default function Profile() {
             <div className="flex flex-col items-center">
               <div className="h-24 w-24 rounded-full overflow-hidden ring-4 ring-accent/20 flex items-center justify-center bg-accent/10 mb-4">
                 {avatarPreview ? (
-                  <img src={avatarPreview} alt="preview" className="w-full h-full object-cover" />
+                  <img
+                    src={avatarPreview}
+                    alt="preview"
+                    className="w-full h-full object-cover"
+                  />
                 ) : avatarUrl ? (
-                  <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+                  <img
+                    src={avatarUrl}
+                    alt="avatar"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full bg-accent flex items-center justify-center text-accent-foreground text-2xl font-bold">
                     {getInitials()}
                   </div>
                 )}
               </div>
-              <h2 className="text-lg font-bold text-foreground text-center">{fullName || 'Your Name'}</h2>
-              <p className="text-sm text-muted-foreground text-center">{jobTitle || 'Your Title'}</p>
+              <h2 className="text-lg font-bold text-foreground text-center">
+                {fullName || "Your Name"}
+              </h2>
+              <p className="text-sm text-muted-foreground text-center">
+                {jobTitle || "Your Title"}
+              </p>
             </div>
           </div>
 
@@ -299,8 +311,8 @@ export default function Profile() {
                     onClick={() => setActiveSection(section.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                       activeSection === section.id
-                        ? 'bg-accent/10 text-accent font-medium'
-                        : 'text-muted-foreground hover:bg-muted'
+                        ? "bg-accent/10 text-accent font-medium"
+                        : "text-muted-foreground hover:bg-muted"
                     }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -334,8 +346,12 @@ export default function Profile() {
             >
               {/* Header */}
               <div className="mb-8">
-                <h1 className="text-4xl font-bold text-foreground mb-2">Profile Settings</h1>
-                <p className="text-muted-foreground">Manage your account information and preferences</p>
+                <h1 className="text-4xl font-bold text-foreground mb-2">
+                  Profile Settings
+                </h1>
+                <p className="text-muted-foreground">
+                  Manage your account information and preferences
+                </p>
               </div>
 
               {/* Messages */}
@@ -360,16 +376,22 @@ export default function Profile() {
 
               {/* Content Sections */}
               <div className="bg-card rounded-xl shadow-sm border border-border p-8">
-                {activeSection === 'personal' && (
+                {activeSection === "personal" && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-foreground mb-6">Personal Information</h2>
-                    
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Personal Information
+                    </h2>
+
                     {/* Avatar Upload */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-3">Profile Picture</label>
+                      <label className="block text-sm font-medium text-foreground mb-3">
+                        Profile Picture
+                      </label>
                       <label className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/30 rounded-lg cursor-pointer hover:bg-accent/20 transition">
                         <Upload className="w-4 h-4 text-accent" />
-                        <span className="text-sm font-medium text-accent">Choose Image</span>
+                        <span className="text-sm font-medium text-accent">
+                          Choose Image
+                        </span>
                         <input
                           type="file"
                           accept="image/*"
@@ -381,7 +403,9 @@ export default function Profile() {
 
                     {/* Full Name */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Full Name
+                      </label>
                       <input
                         type="text"
                         value={fullName}
@@ -391,11 +415,52 @@ export default function Profile() {
                       />
                     </div>
 
+                    {/* Handle (Twitter-style @handle) */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        @Handle (like @twitter)
+                      </label>
+                      <div className="flex items-center">
+                        <span className="px-4 py-3 bg-muted border border-r-0 border-border rounded-l-lg text-muted-foreground">
+                          @
+                        </span>
+                        <input
+                          type="text"
+                          value={handle}
+                          onChange={(e) =>
+                            setHandle(e.target.value.replace(/\s+/g, ""))
+                          }
+                          placeholder="your_handle"
+                          className="flex-1 px-4 py-3 border border-border rounded-r-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        This is required to post in the community. Keep it
+                        unique and memorable.
+                      </p>
+                    </div>
 
+                    {/* Date of Birth */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Date of Birth
+                      </label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                        <input
+                          type="date"
+                          value={dateOfBirth}
+                          onChange={(e) => setDateOfBirth(e.target.value)}
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                        />
+                      </div>
+                    </div>
 
                     {/* Bio */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Bio</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Bio
+                      </label>
                       <textarea
                         value={bio}
                         onChange={(e) => setBio(e.target.value)}
@@ -407,13 +472,17 @@ export default function Profile() {
                   </div>
                 )}
 
-                {activeSection === 'professional' && (
+                {activeSection === "professional" && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-foreground mb-6">Professional Details</h2>
-                    
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Professional Details
+                    </h2>
+
                     {/* Job Title */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Job Title</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Job Title
+                      </label>
                       <div className="relative">
                         <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
@@ -428,7 +497,9 @@ export default function Profile() {
 
                     {/* Company */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Company</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Company
+                      </label>
                       <div className="relative">
                         <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
@@ -443,7 +514,9 @@ export default function Profile() {
 
                     {/* Website */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Website</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Website
+                      </label>
                       <div className="relative">
                         <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
@@ -458,25 +531,31 @@ export default function Profile() {
                   </div>
                 )}
 
-
-
-                {activeSection === 'contact' && (
+                {activeSection === "contact" && (
                   <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-foreground mb-6">Contact Information</h2>
-                    
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Contact Information
+                    </h2>
+
                     {/* Email (Read-only) */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Email
+                      </label>
                       <div className="flex items-center gap-3 px-4 py-3 bg-muted rounded-lg text-muted-foreground">
                         <Mail className="w-5 h-5" />
                         {user.email}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Email cannot be changed
+                      </p>
                     </div>
 
                     {/* Phone */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Phone</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Phone
+                      </label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
@@ -484,22 +563,24 @@ export default function Profile() {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder="+1 (555) 123-4567"
-                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
                       </div>
                     </div>
 
                     {/* Location */}
                     <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">Location</label>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Location
+                      </label>
                       <div className="relative">
                         <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                           type="text"
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
+                          value={locationInput}
+                          onChange={(e) => setLocationInput(e.target.value)}
                           placeholder="City, Country"
-                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
                       </div>
                     </div>
@@ -514,7 +595,7 @@ export default function Profile() {
                     className="w-full sm:w-auto gap-2 bg-accent hover:bg-accent/90"
                   >
                     <Save className="w-4 h-4" />
-                    {isLoading ? 'Saving...' : 'Save Changes'}
+                    {isLoading ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </div>

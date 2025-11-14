@@ -57,8 +57,9 @@ export default function AddEvent() {
   const [teamsText, setTeamsText] = useState('');
   const [prizeText, setPrizeText] = useState('');
   
-  // FAQ state management
-  const [faqs, setFaqs] = useState<FAQ[]>([{ id: '1', question: '', answer: '' }]);
+  // FAQ state management (start empty; user can opt-in)
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [showFaqs, setShowFaqs] = useState(false);
   const [draggedFaq, setDraggedFaq] = useState<string | null>(null);
 
   // Tag state management
@@ -443,72 +444,96 @@ export default function AddEvent() {
             </CardContent>
           </Card>
 
-          {/* FAQs Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">FAQs</h2>
-                <p className="text-sm text-muted-foreground">Answer common questions</p>
-              </div>
+          {/* FAQs: optional. Show toggle first. */}
+          <div className="mb-4">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showFaqs}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  setShowFaqs(on);
+                  if (on && faqs.length === 0) {
+                    // initialize one blank FAQ
+                    setFaqs([{ id: Date.now().toString(), question: '', answer: '' }]);
+                  }
+                  if (!on) {
+                    // clear faqs when toggle off
+                    setFaqs([]);
+                  }
+                }}
+              />
+              <span className="text-sm">Add FAQs</span>
+            </label>
+          </div>
 
-              <div className="space-y-3">
-                {faqs.map((faq, index) => (
-                  <Card 
-                    key={faq.id}
-                    draggable
-                    onDragStart={() => handleDragStart(faq.id)}
-                    onDragOver={(e) => handleDragOver(e, faq.id)}
-                    onDragEnd={handleDragEnd}
-                    className={`cursor-move transition-all hover:shadow-md ${draggedFaq === faq.id ? 'opacity-50 scale-95' : ''}`}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <GripVertical className="h-5 w-5 text-muted-foreground mt-3 flex-shrink-0" />
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-medium text-muted-foreground">Question {index + 1}</span>
-                            {faqs.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeFaq(faq.id)}
-                                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
+          {showFaqs && (
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2">
+                  <h2 className="text-xl font-semibold">FAQs</h2>
+                  <p className="text-sm text-muted-foreground">Answer common questions</p>
+                </div>
+
+                <div className="space-y-3">
+                  {faqs.map((faq, index) => (
+                    <Card
+                      key={faq.id}
+                      draggable
+                      onDragStart={() => handleDragStart(faq.id)}
+                      onDragOver={(e) => handleDragOver(e, faq.id)}
+                      onDragEnd={handleDragEnd}
+                      className={`cursor-move transition-all hover:shadow-md ${draggedFaq === faq.id ? 'opacity-50 scale-95' : ''}`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <GripVertical className="h-5 w-5 text-muted-foreground mt-3 flex-shrink-0" />
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium text-muted-foreground">Question {index + 1}</span>
+                              {faqs.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFaq(faq.id)}
+                                  className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <Input
+                              placeholder="Enter your question"
+                              value={faq.question}
+                              onChange={(e) => updateFaq(faq.id, 'question', e.target.value)}
+                              className="h-10"
+                            />
+                            <Textarea
+                              placeholder="Enter the answer"
+                              value={faq.answer}
+                              onChange={(e) => updateFaq(faq.id, 'answer', e.target.value)}
+                              rows={3}
+                              className="resize-none"
+                            />
                           </div>
-                          <Input
-                            placeholder="Enter your question"
-                            value={faq.question}
-                            onChange={(e) => updateFaq(faq.id, 'question', e.target.value)}
-                            className="h-10"
-                          />
-                          <Textarea
-                            placeholder="Enter the answer"
-                            value={faq.answer}
-                            onChange={(e) => updateFaq(faq.id, 'answer', e.target.value)}
-                            rows={3}
-                            className="resize-none"
-                          />
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addFaq}
-                  className="w-full border-dashed border-2 h-12 hover:bg-accent"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Question
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addFaq}
+                    className="w-full border-dashed border-2 h-12 hover:bg-accent"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Question
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Tags Card */}
           <Card>

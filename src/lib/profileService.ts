@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+  import { supabase } from '@/integrations/supabase/client';
 
 export interface UserProfile {
   id: string;
@@ -105,24 +105,48 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
 
   const ext = file.name.split('.').pop() ?? 'jpg';
   const fileName = `${userId}-${Date.now()}.${ext}`;
+  // uploadPath should be relative to the bucket root (do NOT include the bucket name)
+  const uploadPath = fileName;
+  // dbPath is what we store in the DB so other code can detect the bucket (avatars/...)
   const filePath = `avatars/${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file, { upsert: true });
+  // Upload avatar to the storage bucket. RLS policies in the database control access.
+  try {
+    console.debug('[uploadAvatar] uploading to bucket=avatars, uploadPath=', uploadPath, 'dbPath=', filePath, 'file.name=', file.name, 'file.size=', file.size);
 
-  if (uploadError) throw uploadError;
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(uploadPath, file, { upsert: true });
 
-  // For private buckets we store the storage path (avatars/...) in DB
-  // and return the filePath so caller can request a signed URL for display.
-  return filePath;
+    if (uploadError) {
+      const msg = typeof uploadError === 'object' && uploadError !== null && 'message' in uploadError
+        ? String((uploadError as { message?: unknown }).message ?? '')
+        : String(uploadError);
+      console.error('[uploadAvatar] upload failed:', msg);
+      throw new Error(`Avatar upload failed: ${msg}`);
+    }
+
+    console.debug('[uploadAvatar] upload successful, stored path:', filePath);
+
+    // For private buckets we store the storage path (avatars/...) in DB
+    // and return the filePath so caller can request a signed URL for display.
+    return filePath;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[uploadAvatar] Exception during upload:', msg);
+    throw err instanceof Error ? err : new Error(msg);
+  }
 }
 
 /**
  * Create a temporary signed URL for a private avatar file.
  * Returns a signed URL string valid for `expiresIn` seconds.
+ * filePath can be a full path like "avatars/user-id-timestamp.jpg" or just "user-id-timestamp.jpg"
  */
 export async function getAvatarSignedUrl(filePath: string, expiresIn = 60 * 60): Promise<string> {
+  // Strip the "avatars/" prefix if present (since createSignedUrl expects path relative to bucket root)
+  const objectPath = filePath.startsWith('avatars/') ? filePath.substring('avatars/'.length) : filePath;
+
   // If a Supabase Edge Function URL is provided via env, use it. The Edge Function
   // will sign the URL using the Service Role key (safer for private buckets).
   const functionsUrl = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
@@ -130,7 +154,7 @@ export async function getAvatarSignedUrl(filePath: string, expiresIn = 60 * 60):
     const resp = await fetch(`${functionsUrl.replace(/\/$/, '')}/get-avatar-signed-url`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: filePath, expires: expiresIn }),
+      body: JSON.stringify({ path: objectPath, expires: expiresIn }),
     });
 
     if (!resp.ok) {
@@ -145,7 +169,7 @@ export async function getAvatarSignedUrl(filePath: string, expiresIn = 60 * 60):
   // Fallback: use client-side signing (requires appropriate permissions)
   const { data, error } = await supabase.storage
     .from('avatars')
-    .createSignedUrl(filePath, expiresIn);
+    .createSignedUrl(objectPath, expiresIn);
 
   if (error) throw error;
   return data.signedUrl;
@@ -156,19 +180,28 @@ export async function getAvatarSignedUrl(filePath: string, expiresIn = 60 * 60):
  */
 export async function deleteAvatar(avatarOrPath: string): Promise<void> {
   // Accept either a storage path (avatars/...) or a full public/signed URL
-  let filePath = avatarOrPath;
+  let objectPath = avatarOrPath;
+  
+  // If it's a URL, extract the object path
   try {
     const url = new URL(avatarOrPath);
     const parts = url.pathname.split('/');
     const idx = parts.indexOf('avatars');
-    if (idx >= 0) filePath = parts.slice(idx).join('/');
+    if (idx >= 0) {
+      // Extract everything after 'avatars' (e.g., "avatars/filename.jpg" -> "filename.jpg")
+      objectPath = parts.slice(idx + 1).join('/');
+    }
   } catch (e) {
-    // not a url, assume it's already a path
+    // not a URL, assume it's already a path
+    // Strip "avatars/" prefix if present since remove() expects relative path
+    if (objectPath.startsWith('avatars/')) {
+      objectPath = objectPath.substring('avatars/'.length);
+    }
   }
 
   const { error } = await supabase.storage
     .from('avatars')
-    .remove([filePath]);
+    .remove([objectPath]);
 
   if (error) throw error;
 }

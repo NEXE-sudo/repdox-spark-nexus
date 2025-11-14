@@ -12,6 +12,8 @@ import Contact from "./pages/Contact";
 import SignIn from "./pages/SignIn";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
+import Community from "./pages/Community";
+import CommentDetail from "./pages/CommentDetail";
 import NotFound from "./pages/NotFound";
 import Nav from "@/components/Nav";
 
@@ -35,6 +37,9 @@ const App = () => {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:userId" element={<Profile />} />
+                <Route path="/community" element={<Community />} />
+                <Route path="/community/:postId" element={<CommentDetail />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

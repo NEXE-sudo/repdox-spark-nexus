@@ -21,14 +21,37 @@ export default function AuthForm() {
         if (isLogin) {
           const { data, error } = await supabase.auth.signInWithPassword({ email, password });
           if (error) throw error;
-          // signed in
-          navigate('/');
+          // signed in - check if profile exists
+          if (data.user) {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('id, full_name, date_of_birth')
+              .eq('user_id', data.user.id)
+              .maybeSingle();
+            
+            // Check if profile is incomplete
+            if (!profile || !profile.full_name || !profile.date_of_birth) {
+              navigate('/profile?onboard=true');
+            } else {
+              navigate('/');
+            }
+          } else {
+            navigate('/');
+          }
         } else {
           const { data, error } = await supabase.auth.signUp({ email, password });
           if (error) throw error;
-          // After sign up, supabase may send confirmation email depending on project settings
-          alert('Sign-up successful. Please check your email to confirm your account (if required).');
-          navigate('/');
+          
+          // After sign up, redirect to profile with onboarding flag
+          if (data.user) {
+            // New user - always show onboarding
+            alert('Sign-up successful! Please complete your profile.');
+            navigate('/profile?onboard=true');
+          } else {
+            // Shouldn't happen, but fallback
+            alert('Sign-up successful. Please check your email to confirm your account (if required).');
+            navigate('/');
+          }
         }
       } catch (err: unknown) {
         console.error(err);
@@ -43,7 +66,14 @@ export default function AuthForm() {
   const handleOAuth = (provider: 'google' | 'github') => {
     (async () => {
       try {
-        const { data, error } = await supabase.auth.signInWithOAuth({ provider });
+        // For OAuth, we need to handle the redirect differently
+        // Set the redirect URL to the profile page with onboarding flag
+        const { data, error } = await supabase.auth.signInWithOAuth({ 
+          provider,
+          options: {
+            redirectTo: `${window.location.origin}/profile?onboard=true`
+          }
+        });
         if (error) throw error;
         // This will redirect the user to the provider's consent screen
       } catch (err: unknown) {

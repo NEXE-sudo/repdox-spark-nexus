@@ -1,111 +1,164 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+import type { User } from '@supabase/supabase-js';
+
+type UploadedFile = { file: File; name: string };
+type FAQ = { question: string; answer: string };
 
 export interface CreateEventPayload {
-  form: Record<string, any>;
-  tags: string[];
+  form: {
+    title: string;
+    slug?: string;
+    type?: string;
+    format?: string;
+    start_date: string; // YYYY-MM-DD
+    start_time: string; // HH:mm
+    end_date?: string;
+    end_time?: string;
+    registration_deadline_date?: string;
+    registration_deadline_time?: string;
+    location: string;
+    short_blurb?: string;
+    long_description?: string;
+    overview?: string;
+    rules?: string;
+    registration_link?: string;
+    discord_invite?: string;
+    instagram_handle?: string;
+  };
+  tags?: string[];
   scheduleText?: string;
   teamsText?: string;
   prizeText?: string;
-  faqs?: Array<{ question: string; answer: string }>;
-  uploadedFiles?: Array<{ file: File; name: string }>;
+  faqs?: FAQ[];
+  uploadedFiles?: UploadedFile[];
 }
 
 /**
  * Create event and related records (schedules, teams).
- * Returns the created event row as returned by Supabase.
+ * - Enforces authenticated user (created_by)
+ * - Retries slug on unique-violation
+ * - Stores the storage path in image_url (not a signed URL)
  */
 export async function createEvent(payload: CreateEventPayload) {
   const { form, tags, scheduleText, teamsText, prizeText, faqs, uploadedFiles } = payload;
 
-  // Basic validation for required fields
+  // Basic validation
   if (!form?.title) throw new Error('Title is required');
   if (!form?.start_date || !form?.start_time) throw new Error('Start date and time are required');
   if (!form?.location) throw new Error('Location is required');
 
-  // Build required start_at timestamp
-  const startAt = form.start_date && form.start_time ? new Date(`${form.start_date}T${form.start_time}`) : null;
+  // Require authenticated user so created_by can be set and RLS policies work
+  const userRes = await supabase.auth.getUser();
+  // supabase.auth.getUser() returns { data: { user } } in client
+  const user = (userRes?.data?.user ?? null) as User | null;
+  if (!user || !user.id) {
+    throw new Error('Authentication required to create events');
+  }
 
-  // Build details JSON for fields that don't exist on the `events` table
-  // Compute end_at and registration_deadline (events table requires them)
+  const startAt = new Date(`${form.start_date}T${form.start_time}`);
   const endAt = form.end_date && form.end_time
     ? new Date(`${form.end_date}T${form.end_time}`)
-    : (startAt ? new Date(startAt.getTime() + 8 * 60 * 60 * 1000) : null); // default +8h
-
+    : new Date(startAt.getTime() + 8 * 60 * 60 * 1000);
   const registrationDeadline = form.registration_deadline_date && form.registration_deadline_time
     ? new Date(`${form.registration_deadline_date}T${form.registration_deadline_time}`)
-    : (startAt ? new Date(startAt.getTime() - 24 * 60 * 60 * 1000) : null); // default -1 day
+    : new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
 
-  // Build event row for main events table. Map rich fields to the columns declared in migrations.
-  const eventRow: Record<string, any> = {
+  // Build base event object (no slug yet, slug will be attempted with uniqueness)
+  const baseEvent: Record<string, unknown> = {
     title: form.title,
-    slug: form.slug && form.slug.trim() !== '' ? form.slug.trim() : slugify(form.title || ''),
-    type: form.type,
-    format: form.format,
-    start_at: startAt ? startAt.toISOString() : undefined,
-    end_at: endAt ? endAt.toISOString() : undefined,
-    registration_deadline: registrationDeadline ? registrationDeadline.toISOString() : undefined,
+    type: form.type || null,
+    format: form.format || null,
+    start_at: startAt.toISOString(),
+    end_at: endAt.toISOString(),
+    registration_deadline: registrationDeadline.toISOString(),
     location: form.location,
-    short_blurb: form.short_blurb || '',
-    long_description: form.long_description || null,
-    overview: form.overview || null,
-    rules: form.rules || null,
+    short_blurb: form.short_blurb ?? '',
+    long_description: form.long_description ?? null,
+    overview: form.overview ?? null,
+    rules: form.rules ?? null,
     prizes: prizeText ? prizeText.split('\n').map(p => p.trim()).filter(Boolean) : null,
     faqs: faqs && faqs.length ? faqs.map(f => ({ question: f.question, answer: f.answer })) : null,
-    registration_link: form.registration_link || null,
-    discord_invite: form.discord_invite || null,
-    instagram_handle: form.instagram_handle || null,
+    registration_link: form.registration_link ?? null,
+    discord_invite: form.discord_invite ?? null,
+    instagram_handle: form.instagram_handle ?? null,
     tags: tags && tags.length ? tags : null,
-    image_url: uploadedFiles && uploadedFiles.length ? uploadedFiles[0].name : null,
+    image_url: null,
+    created_by: user.id,
   };
 
-  // If there are uploaded files, upload the first one to Supabase Storage bucket 'events'
+  // Handle upload (first file only). Store path in image_url.
   if (uploadedFiles && uploadedFiles.length > 0) {
     try {
       const file = uploadedFiles[0].file;
       const ext = file.name.split('.').pop() ?? 'jpg';
-      const base = (eventRow.slug || slugify(eventRow.title || 'event')).replace(/[^a-z0-9-]/g, '');
+      const base = (form.slug && form.slug.trim() !== '' ? form.slug : slugify(form.title || 'event')).replace(/[^a-z0-9-]/g, '');
       const fileName = `${base}-${Date.now()}.${ext}`;
-      const filePath = fileName; // store at root of bucket or change to `events/${fileName}` if desired
+      const filePath = `events/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('events')
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
-        throw uploadError;
+        const msg = typeof uploadError === 'object' && uploadError !== null && 'message' in uploadError
+          ? String((uploadError as { message?: unknown }).message ?? '')
+          : String(uploadError);
+        console.warn('Supabase upload error (continuing without image):', msg);
+      } else {
+        baseEvent.image_url = filePath;
       }
-
-      // Try to get a public URL for the uploaded file
-      // Always store the storage path (filePath) for private buckets.
-      // A signed URL will be generated at render time via the Edge Function.
-      eventRow.image_url = filePath;
-    } catch (err: any) {
-      console.error('Failed to upload event image', err);
-      // Don't block the event creation for image upload failure; log and continue
+    } catch (err) {
+      console.warn('Failed to upload event image, continuing without image', err);
     }
   }
 
-  // Insert event with improved error handling
-  const { data: eventData, error: eventError } = await supabase
-    .from('events')
-    .insert(eventRow)
-    .select('*')
-    .single();
+  // Slug uniqueness: attempt inserting up to N times with slug variants
+  const maxAttempts = 5;
+  let lastError: unknown = null;
+  let createdEvent: Database['public']['Tables']['events']['Row'] | null = null;
+  const requestedSlug = form.slug && form.slug.trim() !== '' ? form.slug.trim() : slugify(form.title || '');
 
-  if (eventError) {
-    // Throw a readable error so UI can display a message
-    const msg = eventError.message || 'Unknown error inserting event';
-    const details = { message: msg, code: (eventError as any).code, details: (eventError as any).details };
-    throw new Error(JSON.stringify(details));
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const candidateSlug = attempt === 0 ? requestedSlug : `${requestedSlug}-${generateSuffix(4)}`;
+    const eventPayload = { ...baseEvent, slug: candidateSlug } as unknown as Database['public']['Tables']['events']['Insert'];
+
+    const { data, error } = await supabase
+      .from('events')
+      .insert(eventPayload as Database['public']['Tables']['events']['Insert'])
+      .select('*')
+      .single();
+
+    if (!error) {
+      createdEvent = data as Database['public']['Tables']['events']['Row'];
+      break;
+    }
+
+    // detect unique-violation for slug and retry
+    const errorObj = error as unknown as { message?: string; code?: string };
+    const message = String(errorObj?.message ?? '');
+    const isUniqueViolation = message.toLowerCase().includes('duplicate') || (typeof errorObj?.code === 'string' && errorObj.code.startsWith('23'));
+
+    lastError = error;
+    if (!isUniqueViolation) {
+      // not a uniqueness issue, stop retrying
+      break;
+    }
+
+    // else continue and try another slug
   }
 
-  const eventId = eventData.id as string;
+  if (!createdEvent) {
+    // Provide helpful error context
+    throw new Error(`Failed to create event: ${JSON.stringify(lastError ?? 'unknown')}`);
+  }
 
-  // Parse and insert schedules
+  const eventId = createdEvent.id as string;
+
+  // Insert schedules if provided
   if (scheduleText && scheduleText.trim()) {
     const lines = scheduleText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const scheduleInserts = lines.map(line => {
-      // Format: 2025-03-15T09:00 | Title | Description
       const parts = line.split('|').map(p => p.trim());
       const start = parts[0] || null;
       const title = parts[1] || 'Schedule Item';
@@ -118,22 +171,19 @@ export async function createEvent(payload: CreateEventPayload) {
       };
     });
 
-    // Insert schedules in a single call
     const { error: schedulesError } = await supabase
       .from('event_schedules')
       .insert(scheduleInserts);
 
     if (schedulesError) {
-      console.error('Failed to insert schedules', schedulesError);
-      throw new Error(JSON.stringify({ message: schedulesError.message, details: (schedulesError as any).details }));
+      console.warn('Failed to insert schedules', schedulesError);
     }
   }
 
-  // Parse and insert teams
+  // Insert teams if provided
   if (teamsText && teamsText.trim()) {
     const lines = teamsText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
     const teamInserts = lines.map(line => {
-      // Format: Name | Description | Email
       const parts = line.split('|').map(p => p.trim());
       return {
         event_id: eventId,
@@ -148,12 +198,11 @@ export async function createEvent(payload: CreateEventPayload) {
       .insert(teamInserts);
 
     if (teamsError) {
-      console.error('Failed to insert teams', teamsError);
-      throw new Error(JSON.stringify({ message: teamsError.message, details: (teamsError as any).details }));
+      console.warn('Failed to insert teams', teamsError);
     }
   }
 
-  return eventData;
+  return createdEvent;
 }
 
 function slugify(text: string) {
@@ -166,4 +215,12 @@ function slugify(text: string) {
     .replace(/-+/g, '-');
 }
 
+function generateSuffix(len = 4) {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let out = '';
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
 export default { createEvent };
+

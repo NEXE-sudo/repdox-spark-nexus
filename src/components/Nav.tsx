@@ -29,7 +29,7 @@ export default function Nav() {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     let mounted = true;
@@ -37,11 +37,51 @@ export default function Nav() {
       const { data } = await supabase.auth.getUser();
       if (!mounted) return;
       setUser(data?.user ?? null);
+
+      // If there's a logged-in user, check whether they already have a profile.
+      // If not, redirect them to the Profile page to complete onboarding.
+      try {
+        const u = data?.user;
+        if (u) {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('user_id', u.id)
+            .maybeSingle();
+          if (!profile) {
+            // only navigate if we're not already on the profile page
+            if (window.location.pathname !== '/profile') {
+              navigate('/profile?onboard=1');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error checking onboarding status:', err);
+      }
     };
     load();
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      // When auth state changes (e.g. sign in), check onboarding
+      (async () => {
+        const u = session?.user;
+        if (!u) return;
+        try {
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('id')
+            .eq('user_id', u.id)
+            .maybeSingle();
+          if (!profile) {
+            if (window.location.pathname !== '/profile') {
+              navigate('/profile?onboard=1');
+            }
+          }
+        } catch (err) {
+          console.error('Error checking onboarding status after auth change:', err);
+        }
+      })();
     });
 
     return () => {
@@ -57,21 +97,25 @@ export default function Nav() {
       setAvatarSrc(null);
       return;
     }
-
     const fetchAvatar = async () => {
       try {
         // First try to get avatar and full_name from user_profiles table
-        const { data: profile } = await supabase
+        const { data: profile, error: profileErr } = await supabase
           .from('user_profiles')
           .select('avatar_url, full_name')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
+
+        if (profileErr) {
+          console.error('Error fetching profile in Nav:', profileErr);
+        }
 
         if (profile?.avatar_url) {
           setAvatarPath(profile.avatar_url);
           // get signed url for private bucket
           try {
-            const { data } = await supabase.storage.from('avatars').createSignedUrl(profile.avatar_url, 60 * 60);
+            const objectPath = profile.avatar_url.startsWith('avatars/') ? profile.avatar_url.substring('avatars/'.length) : profile.avatar_url;
+            const { data } = await supabase.storage.from('avatars').createSignedUrl(objectPath, 60 * 60);
             setAvatarSrc(data.signedUrl);
           } catch (e) {
             console.error('Failed to create signed URL for avatar in Nav', e);
@@ -83,6 +127,7 @@ export default function Nav() {
           setFullName(profile.full_name);
         }
 
+        // If we found a profile, stop here
         if (profile) return;
       } catch (err) {
         console.error('Error fetching profile:', err);
@@ -131,10 +176,22 @@ export default function Nav() {
     };
 
     fetchAvatar();
+
+    // Listen for profile updates emitted by the Profile page so the navbar reflects changes immediately
+    const onProfileUpdated = async (e: Event) => {
+      // Re-run the same logic to pick up new avatar
+      await fetchAvatar();
+    };
+    window.addEventListener('profile:updated', onProfileUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener('profile:updated', onProfileUpdated as EventListener);
+    };
   }, [user]);
 
   const navigationLinks = [
     { href: "/events", label: "Events" },
+    { href: "/community", label: "Community" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
   ];
