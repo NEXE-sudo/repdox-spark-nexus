@@ -393,10 +393,10 @@ export default function Community() {
       // Fallback: try to load posts without poll join
       try {
         const now = new Date().toISOString();
-        const { data: postsWithoutPoll, error: fallbackError } =
-          await (supabase
-            .from("community_posts")
-            .select(`
+        const { data: postsWithoutPoll, error: fallbackError } = await (supabase
+          .from("community_posts")
+          .select(
+            `
               *,
               user_profile:user_id (
                 id,
@@ -414,10 +414,11 @@ export default function Community() {
                 created_at,
                 updated_at
               )
-            `)
-            .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
-            .order("created_at", { ascending: false })
-            .limit(50) as any);
+            `
+          )
+          .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
+          .order("created_at", { ascending: false })
+          .limit(50) as any);
 
         if (fallbackError) throw fallbackError;
         setFeedPosts((postsWithoutPoll || []) as FeedPost[]);
@@ -1532,15 +1533,17 @@ export default function Community() {
 
                     {/* Images Display */}
                     {post.images_urls && post.images_urls.length > 0 && (
-                      <div className={`grid gap-2 mt-3 mb-3 rounded-lg overflow-hidden ${
-                        post.images_urls.length === 1
-                          ? "grid-cols-1"
-                          : post.images_urls.length === 2
-                          ? "grid-cols-2"
-                          : post.images_urls.length === 3
-                          ? "grid-cols-3"
-                          : "grid-cols-2"
-                      }`}>
+                      <div
+                        className={`grid gap-2 mt-3 mb-3 rounded-lg overflow-hidden ${
+                          post.images_urls.length === 1
+                            ? "grid-cols-1"
+                            : post.images_urls.length === 2
+                            ? "grid-cols-2"
+                            : post.images_urls.length === 3
+                            ? "grid-cols-3"
+                            : "grid-cols-2"
+                        }`}
+                      >
                         {post.images_urls.slice(0, 4).map((img, idx) => (
                           <img
                             key={idx}
