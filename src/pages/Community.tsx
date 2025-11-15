@@ -40,6 +40,8 @@ import {
   VolumeX,
   Trash2,
   Edit,
+  GripVertical,
+  Plus,
 } from "lucide-react";
 
 interface UserProfile {
@@ -123,6 +125,13 @@ export default function Community() {
     address?: string;
   } | null>(null);
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollQuestion, setPollQuestion] = useState<string>("");
+  const [pollDuration, setPollDuration] = useState<{ days: number; hours: number; minutes: number }>({
+    days: 1,
+    hours: 0,
+    minutes: 0,
+  });
+  const [draggedPollOption, setDraggedPollOption] = useState<number | null>(null);
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [scheduledTime, setScheduledTime] = useState<string>("");
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
@@ -678,11 +687,21 @@ export default function Community() {
       // If poll exists, create it
       if (pollOptions.some((opt) => opt.trim())) {
         const validOptions = pollOptions.filter((opt) => opt.trim());
-        if (validOptions.length >= 2 && postData && postData[0]) {
+        if (validOptions.length >= 2 && postData && postData[0] && pollQuestion.trim()) {
+          // Calculate poll expiry time based on duration
+          const now = new Date();
+          const expiryTime = new Date(
+            now.getTime() +
+              pollDuration.days * 24 * 60 * 60 * 1000 +
+              pollDuration.hours * 60 * 60 * 1000 +
+              pollDuration.minutes * 60 * 1000
+          );
+
           await (supabase.from("polls").insert({
             post_id: postData[0].id,
-            question: "Poll Question",
+            question: pollQuestion,
             options: validOptions,
+            expires_at: expiryTime.toISOString(),
           }) as any);
         }
       }
@@ -693,6 +712,8 @@ export default function Community() {
       setSelectedGif(null);
       setUserLocation(null);
       setPollOptions(["", ""]);
+      setPollQuestion("");
+      setPollDuration({ days: 1, hours: 0, minutes: 0 });
       setShowPollCreator(false);
       setScheduledTime("");
       await Promise.all([loadFeedPosts(), loadTrendingHashtags()]);
@@ -955,7 +976,10 @@ export default function Community() {
                               const lastAt = newPost.lastIndexOf("@");
                               const before = newPost.substring(0, lastAt);
                               // insert the user's handle from profile
-                              const handle = p.handle || p.full_name?.replace(/\s+/g, "") || p.user_id.slice(0, 8);
+                              const handle =
+                                p.handle ||
+                                p.full_name?.replace(/\s+/g, "") ||
+                                p.user_id.slice(0, 8);
                               setNewPost(before + `@${handle} `);
                               setShowMentionSuggestions(false);
                             }}
@@ -1042,35 +1066,136 @@ export default function Community() {
 
                 {/* Poll Creator */}
                 {showPollCreator && (
-                  <div className="border border-border rounded-lg p-3 mt-3 mb-3 space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Poll question"
-                      className="w-full bg-transparent border border-border rounded p-2 text-foreground placeholder:text-muted-foreground outline-none focus:border-accent"
-                    />
-                    {pollOptions.map((option, idx) => (
+                  <div className="border border-border rounded-lg p-4 mt-3 mb-3 space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Ask a question</label>
                       <input
-                        key={idx}
                         type="text"
-                        value={option}
-                        onChange={(e) => {
-                          const newOptions = [...pollOptions];
-                          newOptions[idx] = e.target.value;
-                          setPollOptions(newOptions);
-                        }}
-                        placeholder={`Option ${idx + 1}`}
+                        placeholder="What would you like to ask?"
+                        value={pollQuestion}
+                        onChange={(e) => setPollQuestion(e.target.value)}
                         className="w-full bg-transparent border border-border rounded p-2 text-foreground placeholder:text-muted-foreground outline-none focus:border-accent"
                       />
-                    ))}
+                    </div>
+
+                    {/* Poll Options */}
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Choices</label>
+                      <div className="space-y-2">
+                        {pollOptions.map((option, idx) => (
+                          <div
+                            key={idx}
+                            draggable
+                            onDragStart={() => setDraggedPollOption(idx)}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              if (draggedPollOption !== null && draggedPollOption !== idx) {
+                                const newOptions = [...pollOptions];
+                                const [removed] = newOptions.splice(draggedPollOption, 1);
+                                newOptions.splice(idx, 0, removed);
+                                setPollOptions(newOptions);
+                                setDraggedPollOption(idx);
+                              }
+                            }}
+                            onDragEnd={() => setDraggedPollOption(null)}
+                            className="flex items-center gap-2"
+                          >
+                            <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+                            <input
+                              type="text"
+                              value={option}
+                              onChange={(e) => {
+                                const newOptions = [...pollOptions];
+                                newOptions[idx] = e.target.value;
+                                setPollOptions(newOptions);
+                              }}
+                              placeholder={`Choice ${idx + 1}`}
+                              className="flex-1 bg-transparent border border-border rounded p-2 text-foreground placeholder:text-muted-foreground outline-none focus:border-accent"
+                            />
+                            {pollOptions.length > 2 && (
+                              <button
+                                onClick={() => {
+                                  setPollOptions(pollOptions.filter((_, i) => i !== idx));
+                                }}
+                                className="p-1 text-red-500 hover:bg-red-500/10 rounded transition"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Add Option Button */}
                     <Button
                       onClick={() => {
-                        setPollOptions([...pollOptions, ""]);
+                        if (pollOptions.length < 5) {
+                          setPollOptions([...pollOptions, ""]);
+                        }
                       }}
                       variant="outline"
-                      className="w-full"
+                      className="w-full text-xs"
+                      disabled={pollOptions.length >= 5}
                     >
-                      Add Option
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Choice (Max 5)
                     </Button>
+
+                    {/* Poll Duration */}
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">How long should this poll run?</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">Days</label>
+                          <select
+                            value={pollDuration.days}
+                            onChange={(e) =>
+                              setPollDuration({ ...pollDuration, days: parseInt(e.target.value) })
+                            }
+                            className="w-full bg-muted border border-border rounded p-2 text-foreground text-sm outline-none focus:border-accent"
+                          >
+                            {[0, 1, 2, 3, 4, 5, 6, 7].map((d) => (
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">Hours</label>
+                          <select
+                            value={pollDuration.hours}
+                            onChange={(e) =>
+                              setPollDuration({ ...pollDuration, hours: parseInt(e.target.value) })
+                            }
+                            className="w-full bg-muted border border-border rounded p-2 text-foreground text-sm outline-none focus:border-accent"
+                          >
+                            {Array.from({ length: 24 }).map((_, h) => (
+                              <option key={h} value={h}>
+                                {h}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">Minutes</label>
+                          <select
+                            value={pollDuration.minutes}
+                            onChange={(e) =>
+                              setPollDuration({ ...pollDuration, minutes: parseInt(e.target.value) })
+                            }
+                            className="w-full bg-muted border border-border rounded p-2 text-foreground text-sm outline-none focus:border-accent"
+                          >
+                            {[0, 15, 30, 45].map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -1220,7 +1345,12 @@ export default function Community() {
                           {post.user_profile?.full_name || "Anonymous"}
                         </h3>
                         <span className="text-muted-foreground">
-                          @{post.user_profile?.handle || post.user_profile?.full_name?.toLowerCase().replace(" ", "") || "user"}
+                          @
+                          {post.user_profile?.handle ||
+                            post.user_profile?.full_name
+                              ?.toLowerCase()
+                              .replace(" ", "") ||
+                            "user"}
                         </span>
                         <span className="text-muted-foreground">·</span>
                         <span className="text-muted-foreground text-sm">
@@ -1281,7 +1411,13 @@ export default function Community() {
                             }}
                           >
                             <VolumeX className="w-4 h-4 mr-2" />
-                            Mute @{post.user_profile?.handle || post.user_profile?.full_name?.replace(/\s+/g, "") || post.user_id.slice(0, 8)}
+                            Mute @
+                            {post.user_profile?.handle ||
+                              post.user_profile?.full_name?.replace(
+                                /\s+/g,
+                                ""
+                              ) ||
+                              post.user_id.slice(0, 8)}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
