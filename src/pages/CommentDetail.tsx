@@ -130,6 +130,7 @@ export default function CommentDetail() {
             id,
             user_id,
             full_name,
+            handle,
             bio,
             avatar_url,
             job_title,
@@ -167,6 +168,7 @@ export default function CommentDetail() {
             id,
             user_id,
             full_name,
+            handle,
             bio,
             avatar_url,
             job_title,
@@ -226,10 +228,10 @@ export default function CommentDetail() {
     try {
       let query = supabase
         .from("user_profiles")
-        .select("id,user_id,full_name,avatar_url");
+        .select("id,user_id,full_name,handle,avatar_url");
       if (current.length > 0) {
         query = query.or(
-          `full_name.ilike.%${current}%,user_id.ilike.%${current}%`
+          `full_name.ilike.%${current}%,user_id.ilike.%${current}%,handle.ilike.%${current}%`
         );
       }
 
@@ -303,7 +305,10 @@ export default function CommentDetail() {
     }
   };
 
-  const handleDeleteComment = async (commentId: string, commentUserId: string) => {
+  const handleDeleteComment = async (
+    commentId: string,
+    commentUserId: string
+  ) => {
     if (user?.id !== commentUserId) {
       setError("You can only delete your own comments");
       return;
@@ -578,89 +583,84 @@ export default function CommentDetail() {
                 {post.user_profile?.full_name?.[0] || "U"}
               </div>
               <div className="flex-1">
-                  <div className="flex items-center justify-between cursor-pointer group">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="font-bold hover:underline"
-                        onClick={() => navigate(`/profile/${post.user_id}`)}
-                      >
-                        {post.user_profile?.full_name || "User"}
-                      </span>
-                      <span className="text-muted-foreground">
-                        @
-                        {post.user_profile?.handle ||
-                          post.user_profile?.user_id?.slice(0, 8) ||
-                          "user"}
-                      </span>
-                      <span className="text-muted-foreground text-sm">
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          className="p-2 text-muted-foreground rounded-full hover:bg-accent/20 hover:text-accent transition active:scale-95"
-                        >
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {user?.id === post.user_id && (
-                          <>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // In a real app, this would open an edit modal
-                                setSuccess("Edit feature coming soon!");
-                                setTimeout(() => setSuccess(null), 2000);
-                              }}
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Edit post
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeletePost(post.id, post.user_id);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2 text-red-500" />
-                              <span className="text-red-500">
-                                Delete post
-                              </span>
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReportPost(post.id);
-                          }}
-                        >
-                          <Flag className="w-4 h-4 mr-2" />
-                          Report post
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMuteAuthor(post.user_id);
-                          }}
-                        >
-                          <VolumeX className="w-4 h-4 mr-2" />
-                          Mute @
-                          {post.user_profile?.handle ||
-                            post.user_profile?.full_name?.replace(
-                              /\s+/g,
-                              ""
-                            ) ||
-                            post.user_id.slice(0, 8)}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                <div className="flex items-center justify-between cursor-pointer group">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="font-bold hover:underline"
+                      onClick={() => navigate(`/profile/${post.user_id}`)}
+                    >
+                      {post.user_profile?.full_name || "User"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      @
+                      {post.user_profile?.handle ||
+                        post.user_profile?.user_id?.slice(0, 8) ||
+                        "user"}
+                    </span>
+                    <span className="text-muted-foreground text-sm">
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        className="p-2 text-muted-foreground rounded-full hover:bg-accent/20 hover:text-accent transition active:scale-95"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {user?.id === post.user_id && (
+                        <>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // In a real app, this would open an edit modal
+                              setSuccess("Edit feature coming soon!");
+                              setTimeout(() => setSuccess(null), 2000);
+                            }}
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit post
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePost(post.id, post.user_id);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2 text-red-500" />
+                            <span className="text-red-500">Delete post</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReportPost(post.id);
+                        }}
+                      >
+                        <Flag className="w-4 h-4 mr-2" />
+                        Report post
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMuteAuthor(post.user_id);
+                        }}
+                      >
+                        <VolumeX className="w-4 h-4 mr-2" />
+                        Mute @
+                        {post.user_profile?.handle ||
+                          post.user_profile?.full_name?.replace(/\s+/g, "") ||
+                          post.user_id.slice(0, 8)}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
 
                 {/* Content */}
                 <p className="text-foreground mt-4 text-lg break-words whitespace-pre-wrap">
@@ -797,7 +797,7 @@ export default function CommentDetail() {
                               {p.full_name || p.user_id}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              @{p.user_id.slice(0, 8)}
+                              @{p.handle || p.user_id.slice(0, 8)}
                             </div>
                           </div>
                         </div>
@@ -899,7 +899,10 @@ export default function CommentDetail() {
                                 <DropdownMenuItem
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDeleteComment(comment.id, comment.user_id);
+                                    handleDeleteComment(
+                                      comment.id,
+                                      comment.user_id
+                                    );
                                   }}
                                 >
                                   <Trash2 className="w-4 h-4 mr-2 text-red-500" />

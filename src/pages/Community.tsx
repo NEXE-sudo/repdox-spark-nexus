@@ -126,12 +126,18 @@ export default function Community() {
   } | null>(null);
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [pollQuestion, setPollQuestion] = useState<string>("");
-  const [pollDuration, setPollDuration] = useState<{ days: number; hours: number; minutes: number }>({
+  const [pollDuration, setPollDuration] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+  }>({
     days: 1,
     hours: 0,
     minutes: 0,
   });
-  const [draggedPollOption, setDraggedPollOption] = useState<number | null>(null);
+  const [draggedPollOption, setDraggedPollOption] = useState<number | null>(
+    null
+  );
   const [showPollCreator, setShowPollCreator] = useState(false);
   const [scheduledTime, setScheduledTime] = useState<string>("");
   const [showHashtagSuggestions, setShowHashtagSuggestions] = useState(false);
@@ -226,11 +232,11 @@ export default function Community() {
       // If no input after @, show some recent profiles
       let query = supabase
         .from("user_profiles")
-        .select("id,user_id,full_name,avatar_url");
+        .select("id,user_id,full_name,handle,avatar_url");
 
       if (current.length > 0) {
         query = query.or(
-          `full_name.ilike.%${current}%,user_id.ilike.%${current}%`
+          `full_name.ilike.%${current}%,user_id.ilike.%${current}%,handle.ilike.%${current}%`
         );
       }
 
@@ -341,6 +347,7 @@ export default function Community() {
             id,
             user_id,
             full_name,
+            handle,
             bio,
             avatar_url,
             job_title,
@@ -687,7 +694,12 @@ export default function Community() {
       // If poll exists, create it
       if (pollOptions.some((opt) => opt.trim())) {
         const validOptions = pollOptions.filter((opt) => opt.trim());
-        if (validOptions.length >= 2 && postData && postData[0] && pollQuestion.trim()) {
+        if (
+          validOptions.length >= 2 &&
+          postData &&
+          postData[0] &&
+          pollQuestion.trim()
+        ) {
           // Calculate poll expiry time based on duration
           const now = new Date();
           const expiryTime = new Date(
@@ -1068,7 +1080,9 @@ export default function Community() {
                 {showPollCreator && (
                   <div className="border border-border rounded-lg p-4 mt-3 mb-3 space-y-3">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Ask a question</label>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                        Ask a question
+                      </label>
                       <input
                         type="text"
                         placeholder="What would you like to ask?"
@@ -1080,7 +1094,9 @@ export default function Community() {
 
                     {/* Poll Options */}
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Choices</label>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                        Choices
+                      </label>
                       <div className="space-y-2">
                         {pollOptions.map((option, idx) => (
                           <div
@@ -1089,9 +1105,15 @@ export default function Community() {
                             onDragStart={() => setDraggedPollOption(idx)}
                             onDragOver={(e) => {
                               e.preventDefault();
-                              if (draggedPollOption !== null && draggedPollOption !== idx) {
+                              if (
+                                draggedPollOption !== null &&
+                                draggedPollOption !== idx
+                              ) {
                                 const newOptions = [...pollOptions];
-                                const [removed] = newOptions.splice(draggedPollOption, 1);
+                                const [removed] = newOptions.splice(
+                                  draggedPollOption,
+                                  1
+                                );
                                 newOptions.splice(idx, 0, removed);
                                 setPollOptions(newOptions);
                                 setDraggedPollOption(idx);
@@ -1115,7 +1137,9 @@ export default function Community() {
                             {pollOptions.length > 2 && (
                               <button
                                 onClick={() => {
-                                  setPollOptions(pollOptions.filter((_, i) => i !== idx));
+                                  setPollOptions(
+                                    pollOptions.filter((_, i) => i !== idx)
+                                  );
                                 }}
                                 className="p-1 text-red-500 hover:bg-red-500/10 rounded transition"
                               >
@@ -1144,14 +1168,21 @@ export default function Community() {
 
                     {/* Poll Duration */}
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">How long should this poll run?</label>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                        How long should this poll run?
+                      </label>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Days</label>
+                          <label className="text-xs text-muted-foreground">
+                            Days
+                          </label>
                           <select
                             value={pollDuration.days}
                             onChange={(e) =>
-                              setPollDuration({ ...pollDuration, days: parseInt(e.target.value) })
+                              setPollDuration({
+                                ...pollDuration,
+                                days: parseInt(e.target.value),
+                              })
                             }
                             className="w-full bg-muted border border-border rounded p-2 text-foreground text-sm outline-none focus:border-accent"
                           >
@@ -1163,11 +1194,16 @@ export default function Community() {
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Hours</label>
+                          <label className="text-xs text-muted-foreground">
+                            Hours
+                          </label>
                           <select
                             value={pollDuration.hours}
                             onChange={(e) =>
-                              setPollDuration({ ...pollDuration, hours: parseInt(e.target.value) })
+                              setPollDuration({
+                                ...pollDuration,
+                                hours: parseInt(e.target.value),
+                              })
                             }
                             className="w-full bg-muted border border-border rounded p-2 text-foreground text-sm outline-none focus:border-accent"
                           >
@@ -1179,11 +1215,16 @@ export default function Community() {
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Minutes</label>
+                          <label className="text-xs text-muted-foreground">
+                            Minutes
+                          </label>
                           <select
                             value={pollDuration.minutes}
                             onChange={(e) =>
-                              setPollDuration({ ...pollDuration, minutes: parseInt(e.target.value) })
+                              setPollDuration({
+                                ...pollDuration,
+                                minutes: parseInt(e.target.value),
+                              })
                             }
                             className="w-full bg-muted border border-border rounded p-2 text-foreground text-sm outline-none focus:border-accent"
                           >
