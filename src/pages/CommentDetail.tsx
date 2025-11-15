@@ -28,6 +28,7 @@ import {
   Trash2,
   Edit,
 } from "lucide-react";
+import { getPreferredMapUrl } from "@/lib/geolocationUtils";
 
 interface UserProfile {
   id: string;
@@ -683,13 +684,23 @@ export default function CommentDetail() {
 
                 {/* Location */}
                 {post.location && (
-                  <div className="flex items-center gap-2 text-sm text-accent mt-4 mb-4">
-                    <MapPin className="w-4 h-4" />
-                    <span>
+                  <button
+                    onClick={() => {
+                      const mapUrl = getPreferredMapUrl(
+                        post.location.latitude,
+                        post.location.longitude,
+                        post.location.address
+                      );
+                      window.open(mapUrl, "_blank");
+                    }}
+                    className="flex items-center gap-2 text-sm text-accent mt-4 mb-4 hover:underline cursor-pointer hover:opacity-80 transition"
+                  >
+                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">
                       {post.location.address ||
-                        `${post.location.latitude}, ${post.location.longitude}`}
+                        `${post.location.latitude.toFixed(6)}, ${post.location.longitude.toFixed(6)}`}
                     </span>
-                  </div>
+                  </button>
                 )}
 
                 {/* Scheduled Indicator */}

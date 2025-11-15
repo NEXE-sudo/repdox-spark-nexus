@@ -43,6 +43,11 @@ import {
   GripVertical,
   Plus,
 } from "lucide-react";
+import {
+  reverseGeocodeLocation,
+  getPreferredMapUrl,
+  type LocationData,
+} from "@/lib/geolocationUtils";
 
 interface UserProfile {
   id: string;
@@ -818,13 +823,24 @@ export default function Community() {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
-          // In a real app, you'd use a geocoding API to get the address
-          setUserLocation({
-            latitude,
-            longitude,
-            address: `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
-          });
-          setSuccess("Location added!");
+          try {
+            // Get readable address from coordinates
+            const locationData = await reverseGeocodeLocation(
+              latitude,
+              longitude
+            );
+            setUserLocation(locationData);
+            setSuccess("Location added!");
+          } catch (err) {
+            console.error("Geocoding error:", err);
+            // Fallback to coordinates only
+            setUserLocation({
+              latitude,
+              longitude,
+              address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+            });
+            setSuccess("Location added (coordinates only)!");
+          }
         },
         () => {
           setError("Failed to get location");
@@ -1494,13 +1510,23 @@ export default function Community() {
 
                     {/* Location Display */}
                     {post.location && (
-                      <div className="flex items-center gap-2 text-sm text-accent mb-3">
-                        <MapPin className="w-4 h-4" />
-                        <span>
+                      <button
+                        onClick={() => {
+                          const mapUrl = getPreferredMapUrl(
+                            post.location.latitude,
+                            post.location.longitude,
+                            post.location.address
+                          );
+                          window.open(mapUrl, "_blank");
+                        }}
+                        className="flex items-center gap-2 text-sm text-accent mb-3 hover:underline cursor-pointer hover:opacity-80 transition"
+                      >
+                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">
                           {post.location.address ||
-                            `${post.location.latitude}, ${post.location.longitude}`}
+                            `${post.location.latitude.toFixed(6)}, ${post.location.longitude.toFixed(6)}`}
                         </span>
-                      </div>
+                      </button>
                     )}
 
                     {/* Poll Display */}
