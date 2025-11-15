@@ -580,9 +580,18 @@ export default function CommentDetail() {
           {/* Original Post */}
           <div className="border-b border-border p-6 flex-shrink-0">
             <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80">
-                {post.user_profile?.full_name?.[0] || "U"}
-              </div>
+              {post.user_profile?.avatar_url ? (
+                <img
+                  src={post.user_profile.avatar_url}
+                  alt={post.user_profile.full_name || "User"}
+                  className="w-12 h-12 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
+                  onClick={() => navigate(`/profile/${post.user_id}`)}
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition">
+                  {post.user_profile?.full_name?.[0] || "U"}
+                </div>
+              )}
               <div className="flex-1">
                 <div className="flex items-center justify-between cursor-pointer group">
                   <div className="flex items-center gap-2">
@@ -698,7 +707,9 @@ export default function CommentDetail() {
                     <MapPin className="w-4 h-4 flex-shrink-0" />
                     <span className="truncate">
                       {post.location.address ||
-                        `${post.location.latitude.toFixed(6)}, ${post.location.longitude.toFixed(6)}`}
+                        `${post.location.latitude.toFixed(
+                          6
+                        )}, ${post.location.longitude.toFixed(6)}`}
                     </span>
                   </button>
                 )}
@@ -800,9 +811,17 @@ export default function CommentDetail() {
                             setShowMentionSuggestions(false);
                           }}
                         >
-                          <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold">
-                            {p.full_name?.[0] || "U"}
-                          </div>
+                          {p.avatar_url ? (
+                            <img
+                              src={p.avatar_url}
+                              alt={p.full_name || "User"}
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold flex-shrink-0">
+                              {p.full_name?.[0] || "U"}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-foreground">
                               {p.full_name || p.user_id}
@@ -861,12 +880,21 @@ export default function CommentDetail() {
                   className="border-b border-border p-4 hover:bg-muted/30 transition"
                 >
                   <div className="flex gap-4">
-                    <div
-                      className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80"
-                      onClick={() => navigate(`/profile/${comment.user_id}`)}
-                    >
-                      {comment.user_profile?.full_name?.[0] || "U"}
-                    </div>
+                    {comment.user_profile?.avatar_url ? (
+                      <img
+                        src={comment.user_profile.avatar_url}
+                        alt={comment.user_profile.full_name || "User"}
+                        className="w-12 h-12 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
+                        onClick={() => navigate(`/profile/${comment.user_id}`)}
+                      />
+                    ) : (
+                      <div
+                        className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition"
+                        onClick={() => navigate(`/profile/${comment.user_id}`)}
+                      >
+                        {comment.user_profile?.full_name?.[0] || "U"}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between cursor-pointer group">
                         <div className="flex items-center gap-2">

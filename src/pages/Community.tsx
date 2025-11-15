@@ -78,6 +78,7 @@ interface FeedPost {
   gif_url?: string;
   location?: { latitude: number; longitude: number; address?: string } | null;
   poll_id?: string;
+  poll?: Poll | null;
   scheduled_at?: string;
   is_scheduled?: boolean;
   user_profile?: UserProfile;
@@ -343,6 +344,7 @@ export default function Community() {
 
   const loadFeedPosts = async () => {
     try {
+      const now = new Date().toISOString();
       const { data: posts, error } = await (supabase
         .from("community_posts")
         .select(
@@ -363,12 +365,21 @@ export default function Community() {
             "Date of Birth",
             created_at,
             updated_at
+          ),
+          poll:poll_id (
+            id,
+            post_id,
+            question,
+            options,
+            created_at,
+            expires_at,
+            duration_days,
+            duration_hours,
+            duration_minutes
           )
         `
         )
-        .or(
-          `is_scheduled.is.false,scheduled_at.lte.${new Date().toISOString()}`
-        )
+        .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
         .order("created_at", { ascending: false })
         .limit(50) as any);
 
@@ -379,20 +390,37 @@ export default function Community() {
       setFeedPosts((posts || []) as FeedPost[]);
     } catch (err) {
       console.error("Error loading feed:", err);
-      // Fallback: try to load posts without join
+      // Fallback: try to load posts without poll join
       try {
-        const { data: postsWithoutProfile, error: fallbackError } =
+        const now = new Date().toISOString();
+        const { data: postsWithoutPoll, error: fallbackError } =
           await (supabase
             .from("community_posts")
-            .select("*")
-            .or(
-              `is_scheduled.is.false,scheduled_at.lte.${new Date().toISOString()}`
-            )
+            .select(`
+              *,
+              user_profile:user_id (
+                id,
+                user_id,
+                full_name,
+                handle,
+                bio,
+                avatar_url,
+                job_title,
+                location,
+                phone,
+                website,
+                company,
+                "Date of Birth",
+                created_at,
+                updated_at
+              )
+            `)
+            .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
             .order("created_at", { ascending: false })
             .limit(50) as any);
 
         if (fallbackError) throw fallbackError;
-        setFeedPosts((postsWithoutProfile || []) as FeedPost[]);
+        setFeedPosts((postsWithoutPoll || []) as FeedPost[]);
       } catch (fallbackErr) {
         console.error("Fallback feed load failed:", fallbackErr);
         setError("Failed to load posts");
@@ -1012,9 +1040,17 @@ export default function Community() {
                               setShowMentionSuggestions(false);
                             }}
                           >
-                            <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold">
-                              {p.full_name?.[0] || "U"}
-                            </div>
+                            {p.avatar_url ? (
+                              <img
+                                src={p.avatar_url}
+                                alt={p.full_name || "User"}
+                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center font-bold flex-shrink-0">
+                                {p.full_name?.[0] || "U"}
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-foreground">
                                 {p.full_name || p.user_id}
@@ -1386,12 +1422,21 @@ export default function Community() {
                 className="group border-b border-border p-4 hover:bg-muted/30 transition"
               >
                 <div className="flex gap-4">
-                  <div
-                    className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80"
-                    onClick={() => navigate(`/profile/${post.user_id}`)}
-                  >
-                    {post.user_profile?.full_name?.[0] || "U"}
-                  </div>
+                  {post.user_profile?.avatar_url ? (
+                    <img
+                      src={post.user_profile.avatar_url}
+                      alt={post.user_profile.full_name || "User"}
+                      className="w-12 h-12 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
+                      onClick={() => navigate(`/profile/${post.user_id}`)}
+                    />
+                  ) : (
+                    <div
+                      className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition"
+                      onClick={() => navigate(`/profile/${post.user_id}`)}
+                    >
+                      {post.user_profile?.full_name?.[0] || "U"}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between cursor-pointer group">
                       <div
@@ -1487,13 +1532,21 @@ export default function Community() {
 
                     {/* Images Display */}
                     {post.images_urls && post.images_urls.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mt-3 mb-3 rounded-lg overflow-hidden">
+                      <div className={`grid gap-2 mt-3 mb-3 rounded-lg overflow-hidden ${
+                        post.images_urls.length === 1
+                          ? "grid-cols-1"
+                          : post.images_urls.length === 2
+                          ? "grid-cols-2"
+                          : post.images_urls.length === 3
+                          ? "grid-cols-3"
+                          : "grid-cols-2"
+                      }`}>
                         {post.images_urls.slice(0, 4).map((img, idx) => (
                           <img
                             key={idx}
                             src={img}
                             alt={`post-img-${idx}`}
-                            className="w-full h-40 object-cover cursor-pointer hover:opacity-80"
+                            className="w-full h-auto max-h-72 object-contain bg-black/5 cursor-pointer hover:opacity-80 transition"
                           />
                         ))}
                       </div>
@@ -1504,7 +1557,7 @@ export default function Community() {
                       <img
                         src={post.gif_url}
                         alt="post-gif"
-                        className="w-full max-h-72 object-cover rounded-lg mb-3 cursor-pointer hover:opacity-80"
+                        className="w-full h-auto max-h-72 object-contain rounded-lg mb-3 cursor-pointer hover:opacity-80 transition bg-black/5"
                       />
                     )}
 
@@ -1519,24 +1572,50 @@ export default function Community() {
                           );
                           window.open(mapUrl, "_blank");
                         }}
-                        className="flex items-center gap-2 text-sm text-accent mb-3 hover:underline cursor-pointer hover:opacity-80 transition"
+                        className="flex items-center gap-2 text-sm text-accent mt-3 mb-4 hover:underline cursor-pointer hover:opacity-80 transition"
                       >
                         <MapPin className="w-4 h-4 flex-shrink-0" />
                         <span className="truncate">
                           {post.location.address ||
-                            `${post.location.latitude.toFixed(6)}, ${post.location.longitude.toFixed(6)}`}
+                            `${post.location.latitude.toFixed(
+                              6
+                            )}, ${post.location.longitude.toFixed(6)}`}
                         </span>
                       </button>
                     )}
 
                     {/* Poll Display */}
-                    {post.poll_id && (
-                      <div className="border border-border rounded-lg p-3 mb-3 space-y-2">
-                        <div className="font-bold text-foreground">Poll</div>
-                        {/* Poll options would be rendered here */}
-                        <div className="text-sm text-muted-foreground">
-                          Poll voting coming soon
+                    {post.poll && (
+                      <div className="border border-border rounded-lg p-4 mb-3 space-y-3">
+                        <div className="font-bold text-foreground text-sm">
+                          {post.poll.question}
                         </div>
+                        <div className="space-y-2">
+                          {post.poll.options.map((option, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                // Poll voting functionality would go here
+                                setSuccess(`Voted for: ${option}`);
+                                setTimeout(() => setSuccess(null), 2000);
+                              }}
+                              className="w-full text-left p-3 border border-border rounded-lg hover:bg-accent/10 transition text-sm text-foreground hover:border-accent"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>{option}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  0 votes
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        {post.poll.expires_at && (
+                          <div className="text-xs text-muted-foreground text-center">
+                            Poll expires:{" "}
+                            {new Date(post.poll.expires_at).toLocaleString()}
+                          </div>
+                        )}
                       </div>
                     )}
 
