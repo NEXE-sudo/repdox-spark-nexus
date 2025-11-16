@@ -23,21 +23,7 @@ CREATE TABLE IF NOT EXISTS user_post_likes (
 CREATE INDEX IF NOT EXISTS idx_user_post_likes_user_id ON user_post_likes(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_post_likes_post_id ON user_post_likes(post_id);
 
--- Step 5: Create a junction table for poll votes
-CREATE TABLE IF NOT EXISTS user_poll_votes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES user_profiles(user_id) ON DELETE CASCADE,
-    poll_id UUID NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
-    selected_option TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(user_id, poll_id)
-);
-
--- Step 6: Create index for poll votes
-CREATE INDEX IF NOT EXISTS idx_user_poll_votes_user_id ON user_poll_votes(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_poll_votes_poll_id ON user_poll_votes(poll_id);
-
--- Step 7: Populate likes_count from existing posts_likes data if it exists
+-- Step 5: Populate likes_count from existing posts_likes data if it exists
 -- Only run if posts_likes table exists
 DO $$ 
 BEGIN
@@ -51,7 +37,7 @@ BEGIN
     END IF;
 END $$;
 
--- Step 8: Copy existing likes from posts_likes to new user_post_likes table if it exists
+-- Step 6: Copy existing likes from posts_likes to new user_post_likes table if it exists
 DO $$ 
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'posts_likes') THEN
@@ -62,11 +48,10 @@ BEGIN
     END IF;
 END $$;
 
--- Step 9: Enable RLS on new tables
+-- Step 7: Enable RLS on new tables
 ALTER TABLE user_post_likes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_poll_votes ENABLE ROW LEVEL SECURITY;
 
--- Step 10: Create RLS policies for user_post_likes
+-- Step 8: Create RLS policies for user_post_likes
 CREATE POLICY "Users can view all post likes" ON user_post_likes
     FOR SELECT USING (true);
 
@@ -75,13 +60,3 @@ CREATE POLICY "Users can like posts" ON user_post_likes
 
 CREATE POLICY "Users can unlike their own likes" ON user_post_likes
     FOR DELETE USING (auth.uid()::TEXT = user_id::TEXT);
-
--- Step 11: Create RLS policies for user_poll_votes (if not exists)
-CREATE POLICY "Users can view all poll votes" ON user_poll_votes
-    FOR SELECT USING (true);
-
-CREATE POLICY "Users can vote on polls" ON user_poll_votes
-    FOR INSERT WITH CHECK (auth.uid()::TEXT = user_id::TEXT);
-
-CREATE POLICY "Users can change their vote" ON user_poll_votes
-    FOR UPDATE USING (auth.uid()::TEXT = user_id::TEXT);
