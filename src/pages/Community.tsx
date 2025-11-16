@@ -728,17 +728,21 @@ export default function Community() {
       // If poll exists, create it
       if (pollOptions.some((opt) => opt.trim())) {
         const validOptions = pollOptions.filter((opt) => opt.trim());
-        
+
         // Check for duplicate options (case-insensitive)
-        const normalizedOptions = validOptions.map((opt) => opt.trim().toLowerCase());
+        const normalizedOptions = validOptions.map((opt) =>
+          opt.trim().toLowerCase()
+        );
         const uniqueOptions = new Set(normalizedOptions);
-        
+
         if (uniqueOptions.size !== normalizedOptions.length) {
-          setError("Poll options cannot be duplicates. Please use unique options.");
+          setError(
+            "Poll options cannot be duplicates. Please use unique options."
+          );
           setIsLoading(false);
           return;
         }
-        
+
         if (
           validOptions.length >= 2 &&
           postData &&
@@ -1172,7 +1176,8 @@ export default function Community() {
                           const isDuplicate =
                             optionTrimmed &&
                             pollOptions.findIndex(
-                              (opt) => opt.trim().toLowerCase() === optionTrimmed
+                              (opt) =>
+                                opt.trim().toLowerCase() === optionTrimmed
                             ) !== idx;
 
                           return (

@@ -5,6 +5,7 @@
 ### Features Implemented ✅
 
 #### 1. Username & Profile Picture Display
+
 - User's full name shows in posts and comments
 - Avatar image displays (or initial letter fallback)
 - Works in:
@@ -14,6 +15,7 @@
 - Implemented in: `Community.tsx`, `CommentDetail.tsx`
 
 #### 2. Poll Option Validation
+
 - Prevents duplicate poll options
 - Real-time validation as user types
 - Visual feedback: red border + error message
@@ -21,6 +23,7 @@
 - Case-insensitive comparison
 
 #### 3. Codebase Cleanup
+
 - Removed 32 temporary documentation files
 - Removed 31 unused UI components
 - Project now cleaner and faster
@@ -34,6 +37,7 @@ npx supabase db push
 ```
 
 This one command will:
+
 - Add foreign key constraint for polls
 - Enable polls to appear in posts
 - Create performance index
@@ -41,12 +45,14 @@ This one command will:
 ### Files Changed
 
 **Frontend (Community.tsx):**
+
 - Poll validation logic
 - Avatar display
 - Real-time validation UI
 - Post button disabling
 
 **Backend Migration:**
+
 - `20251116_add_poll_fk_constraint.sql`
 
 ### Documentation Created
@@ -76,6 +82,7 @@ npx supabase db push
 ```
 
 Then test:
+
 1. Create a post with poll
 2. Verify poll appears in feed
 3. Test voting
