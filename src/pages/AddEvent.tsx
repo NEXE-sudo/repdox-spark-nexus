@@ -1,27 +1,43 @@
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Plus, X, GripVertical, CalendarDays } from 'lucide-react';
-import eventService from '@/lib/eventService';
-import FileUpload from '@/components/ui/File_upload';
+} from "@/components/ui/select";
+import { Plus, X, GripVertical, CalendarDays } from "lucide-react";
+import eventService from "@/lib/eventService";
+import FileUpload from "@/components/ui/File_upload";
 
 // Suggested tags based on common event categories
 const SUGGESTED_TAGS = [
-  'Technology', 'Innovation', 'AI/ML', 'Blockchain', 'Web Development',
-  'Mobile Apps', 'Gaming', 'Design', 'UI/UX', 'Prizes', 'Networking',
-  'Workshop', 'Beginner Friendly', 'Open Source', 'Hardware', 'IoT',
-  'Data Science', 'Cybersecurity', 'Cloud Computing', 'Startup'
+  "Technology",
+  "Innovation",
+  "AI/ML",
+  "Blockchain",
+  "Web Development",
+  "Mobile Apps",
+  "Gaming",
+  "Design",
+  "UI/UX",
+  "Prizes",
+  "Networking",
+  "Workshop",
+  "Beginner Friendly",
+  "Open Source",
+  "Hardware",
+  "IoT",
+  "Data Science",
+  "Cybersecurity",
+  "Cloud Computing",
+  "Startup",
 ];
 
 interface FAQ {
@@ -33,30 +49,30 @@ interface FAQ {
 export default function AddEvent() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    title: '',
-    slug: '',
-    type: 'Hackathon',
-    format: 'Offline',
-    start_date: '',
-    start_time: '09:00',
-    end_date: '',
-    end_time: '18:00',
-    registration_deadline_date: '',
-    registration_deadline_time: '23:59',
-    location: '',
-    short_blurb: '',
-    long_description: '',
-    overview: '',
-    rules: '',
-    registration_link: '',
-    discord_invite: '',
-    instagram_handle: ''
+    title: "",
+    slug: "",
+    type: "Hackathon",
+    format: "Offline",
+    start_date: "",
+    start_time: "09:00",
+    end_date: "",
+    end_time: "18:00",
+    registration_deadline_date: "",
+    registration_deadline_time: "23:59",
+    location: "",
+    short_blurb: "",
+    long_description: "",
+    overview: "",
+    rules: "",
+    registration_link: "",
+    discord_invite: "",
+    instagram_handle: "",
   });
-  
-  const [scheduleText, setScheduleText] = useState('');
-  const [teamsText, setTeamsText] = useState('');
-  const [prizeText, setPrizeText] = useState('');
-  
+
+  const [scheduleText, setScheduleText] = useState("");
+  const [teamsText, setTeamsText] = useState("");
+  const [prizeText, setPrizeText] = useState("");
+
   // FAQ state management (start empty; user can opt-in)
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [showFaqs, setShowFaqs] = useState(false);
@@ -64,26 +80,32 @@ export default function AddEvent() {
 
   // Tag state management
   const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState("");
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{ file: File; name: string }>>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<
+    Array<{ file: File; name: string }>
+  >([]);
 
   const onChange = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }));
 
   // FAQ handlers
   const addFaq = () => {
-    setFaqs([...faqs, { id: Date.now().toString(), question: '', answer: '' }]);
+    setFaqs([...faqs, { id: Date.now().toString(), question: "", answer: "" }]);
   };
 
   const removeFaq = (id: string) => {
     if (faqs.length > 1) {
-      setFaqs(faqs.filter(f => f.id !== id));
+      setFaqs(faqs.filter((f) => f.id !== id));
     }
   };
 
-  const updateFaq = (id: string, field: 'question' | 'answer', value: string) => {
-    setFaqs(faqs.map(f => f.id === id ? { ...f, [field]: value } : f));
+  const updateFaq = (
+    id: string,
+    field: "question" | "answer",
+    value: string
+  ) => {
+    setFaqs(faqs.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
   };
 
   const handleDragStart = (id: string) => {
@@ -94,8 +116,8 @@ export default function AddEvent() {
     e.preventDefault();
     if (!draggedFaq || draggedFaq === id) return;
 
-    const draggedIndex = faqs.findIndex(f => f.id === draggedFaq);
-    const targetIndex = faqs.findIndex(f => f.id === id);
+    const draggedIndex = faqs.findIndex((f) => f.id === draggedFaq);
+    const targetIndex = faqs.findIndex((f) => f.id === id);
 
     const newFaqs = [...faqs];
     const [removed] = newFaqs.splice(draggedIndex, 1);
@@ -111,9 +133,9 @@ export default function AddEvent() {
   const handleTagInputChange = (value: string) => {
     setTagInput(value);
     if (value.trim()) {
-      const filtered = SUGGESTED_TAGS.filter(tag => 
-        tag.toLowerCase().includes(value.toLowerCase()) && 
-        !tags.includes(tag)
+      const filtered = SUGGESTED_TAGS.filter(
+        (tag) =>
+          tag.toLowerCase().includes(value.toLowerCase()) && !tags.includes(tag)
       );
       setFilteredSuggestions(filtered);
       setShowTagSuggestions(true);
@@ -125,24 +147,26 @@ export default function AddEvent() {
   const addTag = (tag: string) => {
     const trimmedTag = tag.trim();
     if (!trimmedTag) return;
-    
-    const duplicate = tags.find(t => t.toLowerCase() === trimmedTag.toLowerCase());
+
+    const duplicate = tags.find(
+      (t) => t.toLowerCase() === trimmedTag.toLowerCase()
+    );
     if (duplicate) {
       alert(`"${duplicate}" already exists. Try a different tag.`);
       return;
     }
 
     setTags([...tags, trimmedTag]);
-    setTagInput('');
+    setTagInput("");
     setShowTagSuggestions(false);
   };
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter(t => t !== tagToRemove));
+    setTags(tags.filter((t) => t !== tagToRemove));
   };
 
   const handleTagKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       addTag(tagInput);
     }
@@ -151,8 +175,19 @@ export default function AddEvent() {
   const handleSubmit = async () => {
     // Basic client-side validation
     if (!form.title || !form.start_date || !form.start_time || !form.location) {
-      alert('Please fill required fields: Title, Start date/time and Location');
+      alert("Please fill required fields: Title, Start date/time and Location");
       return;
+    }
+
+    console.log("[AddEvent] uploadedFiles:", uploadedFiles);
+    console.log("[AddEvent] uploadedFiles length:", uploadedFiles.length);
+    if (uploadedFiles.length > 0) {
+      console.log(
+        "[AddEvent] First file:",
+        uploadedFiles[0].file.name,
+        uploadedFiles[0].file.type,
+        uploadedFiles[0].file.size
+      );
     }
 
     setLoading(true);
@@ -163,11 +198,14 @@ export default function AddEvent() {
         scheduleText,
         teamsText,
         prizeText,
-        faqs: faqs.map(f => ({ question: f.question, answer: f.answer })),
+        faqs: faqs.map((f) => ({ question: f.question, answer: f.answer })),
         uploadedFiles,
       });
 
-      alert('Event created successfully!');
+      console.log("[AddEvent] Created event:", created);
+      console.log("[AddEvent] Created event slug:", created?.slug);
+
+      alert("Event created successfully!");
       // Navigate to the event page if slug exists
       if (created?.slug) {
         window.location.href = `/events/${created.slug}`;
@@ -176,8 +214,8 @@ export default function AddEvent() {
       }
     } catch (err: any) {
       // Normalize error to a readable message
-      console.error('Create event failed', err);
-      let message = 'Unknown error';
+      console.error("Create event failed", err);
+      let message = "Unknown error";
       try {
         if (err instanceof Error) {
           // If the service stringified details into the Error message, try parsing
@@ -187,15 +225,15 @@ export default function AddEvent() {
           } catch {
             message = err.message;
           }
-        } else if (typeof err === 'string') {
+        } else if (typeof err === "string") {
           message = err;
-        } else if (err && typeof err === 'object') {
+        } else if (err && typeof err === "object") {
           message = (err as any).message || JSON.stringify(err);
         }
       } catch (e) {
         message = String(err);
       }
-      alert('Failed to create event: ' + message);
+      alert("Failed to create event: " + message);
     } finally {
       setLoading(false);
     }
@@ -206,8 +244,12 @@ export default function AddEvent() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight mb-2">Create Event</h1>
-          <p className="text-muted-foreground">Fill in the details to create your event</p>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">
+            Create Event
+          </h1>
+          <p className="text-muted-foreground">
+            Fill in the details to create your event
+          </p>
         </div>
 
         <div className="space-y-8">
@@ -216,38 +258,49 @@ export default function AddEvent() {
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Basic Information</h2>
-                <p className="text-sm text-muted-foreground">Essential details about your event</p>
+                <p className="text-sm text-muted-foreground">
+                  Essential details about your event
+                </p>
               </div>
 
               <div className="grid gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium">Event Title *</Label>
-                  <Input 
-                    id="title" 
-                    value={form.title} 
-                    onChange={(e) => onChange('title', e.target.value)} 
+                  <Label htmlFor="title" className="text-sm font-medium">
+                    Event Title *
+                  </Label>
+                  <Input
+                    id="title"
+                    value={form.title}
+                    onChange={(e) => onChange("title", e.target.value)}
                     placeholder="Enter event title"
-                    required 
+                    required
                     className="h-11"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Label htmlFor="slug" className="text-sm font-medium">URL Slug</Label>
-                  <Input 
-                    id="slug" 
-                    value={form.slug} 
-                    onChange={(e) => onChange('slug', e.target.value)}
+                  <Label htmlFor="slug" className="text-sm font-medium">
+                    URL Slug
+                  </Label>
+                  <Input
+                    id="slug"
+                    value={form.slug}
+                    onChange={(e) => onChange("slug", e.target.value)}
                     placeholder="my-awesome-event"
                     className="h-11"
                   />
-                  <p className="text-xs text-muted-foreground">Leave empty to auto-generate from title</p>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to auto-generate from title
+                  </p>
                 </div>
-                
+
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Event Type *</Label>
-                    <Select value={form.type} onValueChange={(v) => onChange('type', v)}>
+                    <Select
+                      value={form.type}
+                      onValueChange={(v) => onChange("type", v)}
+                    >
                       <SelectTrigger className="h-11">
                         <SelectValue />
                       </SelectTrigger>
@@ -259,10 +312,13 @@ export default function AddEvent() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Format *</Label>
-                    <Select value={form.format} onValueChange={(v) => onChange('format', v)}>
+                    <Select
+                      value={form.format}
+                      onValueChange={(v) => onChange("format", v)}
+                    >
                       <SelectTrigger className="h-11">
                         <SelectValue />
                       </SelectTrigger>
@@ -276,11 +332,13 @@ export default function AddEvent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-medium">Location *</Label>
-                  <Input 
+                  <Label htmlFor="location" className="text-sm font-medium">
+                    Location *
+                  </Label>
+                  <Input
                     id="location"
-                    value={form.location} 
-                    onChange={(e) => onChange('location', e.target.value)}
+                    value={form.location}
+                    onChange={(e) => onChange("location", e.target.value)}
                     placeholder="Enter venue or platform"
                     required
                     className="h-11"
@@ -298,25 +356,29 @@ export default function AddEvent() {
                   <CalendarDays className="h-5 w-5" />
                   Date & Time
                 </h2>
-                <p className="text-sm text-muted-foreground">Schedule your event</p>
+                <p className="text-sm text-muted-foreground">
+                  Schedule your event
+                </p>
               </div>
 
               <div className="space-y-6">
                 {/* Start Date & Time */}
                 <div className="space-y-4">
-                  <Label className="text-sm font-medium">Start Date & Time *</Label>
+                  <Label className="text-sm font-medium">
+                    Start Date & Time *
+                  </Label>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <Input 
-                      type="date" 
-                      value={form.start_date} 
-                      onChange={(e) => onChange('start_date', e.target.value)}
+                    <Input
+                      type="date"
+                      value={form.start_date}
+                      onChange={(e) => onChange("start_date", e.target.value)}
                       required
                       className="h-11"
                     />
-                    <Input 
-                      type="time" 
-                      value={form.start_time} 
-                      onChange={(e) => onChange('start_time', e.target.value)}
+                    <Input
+                      type="time"
+                      value={form.start_time}
+                      onChange={(e) => onChange("start_time", e.target.value)}
                       required
                       className="h-11"
                     />
@@ -325,19 +387,21 @@ export default function AddEvent() {
 
                 {/* End Date & Time */}
                 <div className="space-y-4">
-                  <Label className="text-sm font-medium">End Date & Time *</Label>
+                  <Label className="text-sm font-medium">
+                    End Date & Time *
+                  </Label>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <Input 
-                      type="date" 
-                      value={form.end_date} 
-                      onChange={(e) => onChange('end_date', e.target.value)}
+                    <Input
+                      type="date"
+                      value={form.end_date}
+                      onChange={(e) => onChange("end_date", e.target.value)}
                       required
                       className="h-11"
                     />
-                    <Input 
-                      type="time" 
-                      value={form.end_time} 
-                      onChange={(e) => onChange('end_time', e.target.value)}
+                    <Input
+                      type="time"
+                      value={form.end_time}
+                      onChange={(e) => onChange("end_time", e.target.value)}
                       required
                       className="h-11"
                     />
@@ -346,18 +410,24 @@ export default function AddEvent() {
 
                 {/* Registration Deadline */}
                 <div className="space-y-4">
-                  <Label className="text-sm font-medium">Registration Deadline</Label>
+                  <Label className="text-sm font-medium">
+                    Registration Deadline
+                  </Label>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <Input 
-                      type="date" 
-                      value={form.registration_deadline_date} 
-                      onChange={(e) => onChange('registration_deadline_date', e.target.value)}
+                    <Input
+                      type="date"
+                      value={form.registration_deadline_date}
+                      onChange={(e) =>
+                        onChange("registration_deadline_date", e.target.value)
+                      }
                       className="h-11"
                     />
-                    <Input 
-                      type="time" 
-                      value={form.registration_deadline_time} 
-                      onChange={(e) => onChange('registration_deadline_time', e.target.value)}
+                    <Input
+                      type="time"
+                      value={form.registration_deadline_time}
+                      onChange={(e) =>
+                        onChange("registration_deadline_time", e.target.value)
+                      }
                       className="h-11"
                     />
                   </div>
@@ -371,16 +441,20 @@ export default function AddEvent() {
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Description</h2>
-                <p className="text-sm text-muted-foreground">Tell attendees about your event</p>
+                <p className="text-sm text-muted-foreground">
+                  Tell attendees about your event
+                </p>
               </div>
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="short_blurb" className="text-sm font-medium">Short Blurb *</Label>
-                  <Input 
+                  <Label htmlFor="short_blurb" className="text-sm font-medium">
+                    Short Blurb *
+                  </Label>
+                  <Input
                     id="short_blurb"
-                    value={form.short_blurb} 
-                    onChange={(e) => onChange('short_blurb', e.target.value)}
+                    value={form.short_blurb}
+                    onChange={(e) => onChange("short_blurb", e.target.value)}
                     placeholder="A brief one-liner about your event"
                     required
                     className="h-11"
@@ -388,11 +462,13 @@ export default function AddEvent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="overview" className="text-sm font-medium">Overview</Label>
-                  <Textarea 
+                  <Label htmlFor="overview" className="text-sm font-medium">
+                    Overview
+                  </Label>
+                  <Textarea
                     id="overview"
-                    value={form.overview} 
-                    onChange={(e) => onChange('overview', e.target.value)}
+                    value={form.overview}
+                    onChange={(e) => onChange("overview", e.target.value)}
                     rows={4}
                     placeholder="High-level summary of your event"
                     className="resize-none"
@@ -400,11 +476,18 @@ export default function AddEvent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="long_description" className="text-sm font-medium">Detailed Description</Label>
-                  <Textarea 
+                  <Label
+                    htmlFor="long_description"
+                    className="text-sm font-medium"
+                  >
+                    Detailed Description
+                  </Label>
+                  <Textarea
                     id="long_description"
-                    value={form.long_description} 
-                    onChange={(e) => onChange('long_description', e.target.value)}
+                    value={form.long_description}
+                    onChange={(e) =>
+                      onChange("long_description", e.target.value)
+                    }
                     rows={6}
                     placeholder="Full details about your event"
                     className="resize-none"
@@ -412,11 +495,13 @@ export default function AddEvent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="rules" className="text-sm font-medium">Rules & Guidelines</Label>
-                  <Textarea 
+                  <Label htmlFor="rules" className="text-sm font-medium">
+                    Rules & Guidelines
+                  </Label>
+                  <Textarea
                     id="rules"
-                    value={form.rules} 
-                    onChange={(e) => onChange('rules', e.target.value)}
+                    value={form.rules}
+                    onChange={(e) => onChange("rules", e.target.value)}
                     rows={4}
                     placeholder="Event rules and participation guidelines"
                     className="resize-none"
@@ -430,13 +515,17 @@ export default function AddEvent() {
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="prizes" className="text-sm font-medium">Prizes</Label>
-                <p className="text-xs text-muted-foreground">Enter one prize per line</p>
+                <Label htmlFor="prizes" className="text-sm font-medium">
+                  Prizes
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Enter one prize per line
+                </p>
               </div>
-              <Textarea 
+              <Textarea
                 id="prizes"
-                value={prizeText} 
-                onChange={(e) => setPrizeText(e.target.value)} 
+                value={prizeText}
+                onChange={(e) => setPrizeText(e.target.value)}
                 rows={5}
                 placeholder="1st Prize - ₹10,000&#10;2nd Prize - ₹5,000&#10;3rd Prize - ₹2,500"
                 className="resize-none font-mono text-sm"
@@ -455,7 +544,9 @@ export default function AddEvent() {
                   setShowFaqs(on);
                   if (on && faqs.length === 0) {
                     // initialize one blank FAQ
-                    setFaqs([{ id: Date.now().toString(), question: '', answer: '' }]);
+                    setFaqs([
+                      { id: Date.now().toString(), question: "", answer: "" },
+                    ]);
                   }
                   if (!on) {
                     // clear faqs when toggle off
@@ -472,7 +563,9 @@ export default function AddEvent() {
               <CardContent className="pt-6 space-y-4">
                 <div className="space-y-2">
                   <h2 className="text-xl font-semibold">FAQs</h2>
-                  <p className="text-sm text-muted-foreground">Answer common questions</p>
+                  <p className="text-sm text-muted-foreground">
+                    Answer common questions
+                  </p>
                 </div>
 
                 <div className="space-y-3">
@@ -483,14 +576,18 @@ export default function AddEvent() {
                       onDragStart={() => handleDragStart(faq.id)}
                       onDragOver={(e) => handleDragOver(e, faq.id)}
                       onDragEnd={handleDragEnd}
-                      className={`cursor-move transition-all hover:shadow-md ${draggedFaq === faq.id ? 'opacity-50 scale-95' : ''}`}
+                      className={`cursor-move transition-all hover:shadow-md ${
+                        draggedFaq === faq.id ? "opacity-50 scale-95" : ""
+                      }`}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3">
                           <GripVertical className="h-5 w-5 text-muted-foreground mt-3 flex-shrink-0" />
                           <div className="flex-1 space-y-3">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium text-muted-foreground">Question {index + 1}</span>
+                              <span className="text-sm font-medium text-muted-foreground">
+                                Question {index + 1}
+                              </span>
                               {faqs.length > 1 && (
                                 <Button
                                   type="button"
@@ -506,13 +603,17 @@ export default function AddEvent() {
                             <Input
                               placeholder="Enter your question"
                               value={faq.question}
-                              onChange={(e) => updateFaq(faq.id, 'question', e.target.value)}
+                              onChange={(e) =>
+                                updateFaq(faq.id, "question", e.target.value)
+                              }
                               className="h-10"
                             />
                             <Textarea
                               placeholder="Enter the answer"
                               value={faq.answer}
-                              onChange={(e) => updateFaq(faq.id, 'answer', e.target.value)}
+                              onChange={(e) =>
+                                updateFaq(faq.id, "answer", e.target.value)
+                              }
                               rows={3}
                               className="resize-none"
                             />
@@ -540,13 +641,19 @@ export default function AddEvent() {
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Tags</h2>
-                <p className="text-sm text-muted-foreground">Help people discover your event</p>
+                <p className="text-sm text-muted-foreground">
+                  Help people discover your event
+                </p>
               </div>
 
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-lg border">
-                  {tags.map(tag => (
-                    <Badge key={tag} variant="secondary" className="gap-1 px-3 py-1.5 text-sm">
+                  {tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="gap-1 px-3 py-1.5 text-sm"
+                    >
                       {tag}
                       <button
                         type="button"
@@ -559,7 +666,7 @@ export default function AddEvent() {
                   ))}
                 </div>
               )}
-              
+
               <div className="relative">
                 <Input
                   placeholder="Type to search or add new tags..."
@@ -567,15 +674,17 @@ export default function AddEvent() {
                   onChange={(e) => handleTagInputChange(e.target.value)}
                   onKeyDown={handleTagKeyDown}
                   onFocus={() => tagInput && setShowTagSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                  onBlur={() =>
+                    setTimeout(() => setShowTagSuggestions(false), 200)
+                  }
                   className="h-11"
                 />
-                
+
                 {showTagSuggestions && filteredSuggestions.length > 0 && (
                   <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto shadow-lg">
                     <CardContent className="p-2">
                       <div className="space-y-1">
-                        {filteredSuggestions.map(tag => (
+                        {filteredSuggestions.map((tag) => (
                           <button
                             key={tag}
                             type="button"
@@ -590,7 +699,7 @@ export default function AddEvent() {
                   </Card>
                 )}
               </div>
-              
+
               <p className="text-xs text-muted-foreground">
                 Press Enter to add a tag or select from suggestions
               </p>
@@ -602,17 +711,24 @@ export default function AddEvent() {
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Schedule & Teams</h2>
-                <p className="text-sm text-muted-foreground">Optional event logistics</p>
+                <p className="text-sm text-muted-foreground">
+                  Optional event logistics
+                </p>
               </div>
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="schedule" className="text-sm font-medium">Event Schedule</Label>
-                  <p className="text-xs text-muted-foreground">Format: YYYY-MM-DDTHH:MM | Title | Description (one per line)</p>
-                  <Textarea 
+                  <Label htmlFor="schedule" className="text-sm font-medium">
+                    Event Schedule
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Format: YYYY-MM-DDTHH:MM | Title | Description (one per
+                    line)
+                  </p>
+                  <Textarea
                     id="schedule"
-                    value={scheduleText} 
-                    onChange={(e) => setScheduleText(e.target.value)} 
+                    value={scheduleText}
+                    onChange={(e) => setScheduleText(e.target.value)}
                     rows={5}
                     placeholder="2025-03-15T09:00 | Opening Ceremony | Welcome address&#10;2025-03-15T10:00 | Event Kickoff | Rules and guidelines"
                     className="resize-none font-mono text-sm"
@@ -620,12 +736,16 @@ export default function AddEvent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="teams" className="text-sm font-medium">Event Teams</Label>
-                  <p className="text-xs text-muted-foreground">Format: Name | Description | Email (one per line)</p>
-                  <Textarea 
+                  <Label htmlFor="teams" className="text-sm font-medium">
+                    Event Teams
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Format: Name | Description | Email (one per line)
+                  </p>
+                  <Textarea
                     id="teams"
-                    value={teamsText} 
-                    onChange={(e) => setTeamsText(e.target.value)} 
+                    value={teamsText}
+                    onChange={(e) => setTeamsText(e.target.value)}
                     rows={4}
                     placeholder="Organizers | Main event team | contact@example.com&#10;Volunteers | Helper team | volunteers@example.com"
                     className="resize-none font-mono text-sm"
@@ -640,38 +760,59 @@ export default function AddEvent() {
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Links & Social</h2>
-                <p className="text-sm text-muted-foreground">Connect with attendees</p>
+                <p className="text-sm text-muted-foreground">
+                  Connect with attendees
+                </p>
               </div>
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="registration_link" className="text-sm font-medium">Registration Link</Label>
-                  <Input 
+                  <Label
+                    htmlFor="registration_link"
+                    className="text-sm font-medium"
+                  >
+                    Registration Link
+                  </Label>
+                  <Input
                     id="registration_link"
-                    value={form.registration_link} 
-                    onChange={(e) => onChange('registration_link', e.target.value)}
+                    value={form.registration_link}
+                    onChange={(e) =>
+                      onChange("registration_link", e.target.value)
+                    }
                     placeholder="https://forms.example.com/register"
                     className="h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="discord_invite" className="text-sm font-medium">Discord Invite</Label>
-                  <Input 
+                  <Label
+                    htmlFor="discord_invite"
+                    className="text-sm font-medium"
+                  >
+                    Discord Invite
+                  </Label>
+                  <Input
                     id="discord_invite"
-                    value={form.discord_invite} 
-                    onChange={(e) => onChange('discord_invite', e.target.value)}
+                    value={form.discord_invite}
+                    onChange={(e) => onChange("discord_invite", e.target.value)}
                     placeholder="https://discord.gg/yourserver"
                     className="h-11"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="instagram_handle" className="text-sm font-medium">Instagram Handle</Label>
-                  <Input 
+                  <Label
+                    htmlFor="instagram_handle"
+                    className="text-sm font-medium"
+                  >
+                    Instagram Handle
+                  </Label>
+                  <Input
                     id="instagram_handle"
-                    value={form.instagram_handle} 
-                    onChange={(e) => onChange('instagram_handle', e.target.value)}
+                    value={form.instagram_handle}
+                    onChange={(e) =>
+                      onChange("instagram_handle", e.target.value)
+                    }
                     placeholder="@yourevent"
                     className="h-11"
                   />
@@ -685,7 +826,9 @@ export default function AddEvent() {
             <CardContent className="pt-6 space-y-4">
               <div className="space-y-2">
                 <h2 className="text-xl font-semibold">Images & Media</h2>
-                <p className="text-sm text-muted-foreground">Upload event images or banners</p>
+                <p className="text-sm text-muted-foreground">
+                  Upload event images or banners
+                </p>
               </div>
 
               <div>
@@ -694,7 +837,10 @@ export default function AddEvent() {
                   maxSizeMB={10}
                   onFilesChange={(files) => {
                     // Map hook files to the shape expected by eventService
-                    const mapped = files.map((f: any) => ({ file: f.file as File, name: f.file.name }));
+                    const mapped = files.map((f: any) => ({
+                      file: f.file as File,
+                      name: f.file.name,
+                    }));
                     setUploadedFiles(mapped);
                   }}
                 />
@@ -704,21 +850,21 @@ export default function AddEvent() {
 
           {/* Submit Button */}
           <div className="flex gap-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               className="flex-1"
               onClick={() => window.history.back()}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               type="button"
-              disabled={loading} 
+              disabled={loading}
               className="flex-1 h-12 text-base"
               onClick={handleSubmit}
             >
-              {loading ? 'Creating Event...' : 'Create Event'}
+              {loading ? "Creating Event..." : "Create Event"}
             </Button>
           </div>
         </div>

@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function getSignedUrl(
   filePath: string,
-  bucket: string = "events",
+  bucket: string = "event-images",
   expiresIn: number = 3600
 ): Promise<string> {
   try {

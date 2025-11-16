@@ -1253,7 +1253,19 @@ export default function Community() {
           <div className="border-b border-border p-4">
             <div className="flex gap-4">
               <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                <Users className="w-6 h-6 text-accent" />
+                {getAvatarUrl(currentUserProfile?.avatar_url) ? (
+                  <img
+                    src={getAvatarUrl(currentUserProfile?.avatar_url)!}
+                    alt={currentUserProfile?.full_name || "You"}
+                    className="w-12 h-12 rounded-full flex-shrink-0 object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold">
+                    {currentUserProfile?.full_name?.[0] ||
+                      user?.email?.[0].toUpperCase() ||
+                      "U"}
+                  </div>
+                )}
               </div>
               <div className="flex-1">
                 <div className="relative">
@@ -1742,19 +1754,17 @@ export default function Community() {
                 className="group border-b border-border p-4 hover:bg-muted/30 transition"
               >
                 <div className="flex gap-4">
-                  {getAvatarUrl(post.user_profile?.avatar_url) ? (
+                  {getAvatarUrl(currentUserProfile?.avatar_url) ? (
                     <img
-                      src={getAvatarUrl(post.user_profile?.avatar_url)!}
-                      alt={post.user_profile?.full_name || "User"}
-                      className="w-12 h-12 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
-                      onClick={() => navigate(`/profile/${post.user_id}`)}
+                      src={getAvatarUrl(currentUserProfile?.avatar_url)!}
+                      alt={currentUserProfile?.full_name || "You"}
+                      className="w-12 h-12 rounded-full flex-shrink-0 object-cover"
                     />
                   ) : (
-                    <div
-                      className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition"
-                      onClick={() => navigate(`/profile/${post.user_id}`)}
-                    >
-                      {post.user_profile?.full_name?.[0] || "U"}
+                    <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold">
+                      {currentUserProfile?.full_name?.[0] ||
+                        user?.email?.[0].toUpperCase() ||
+                        "U"}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">

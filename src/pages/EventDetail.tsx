@@ -27,7 +27,6 @@ import {
   Instagram,
 } from "lucide-react";
 import { getEventImage } from "@/lib/eventImages";
-import { getSignedUrl } from '@/lib/storageService';
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import AddToCalendar from "@/components/AddToCalendar";
@@ -60,14 +59,14 @@ export default function EventDetail() {
 
   const countdown = useCountdown(event?.start_at || "");
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'details';
+  const activeTab = searchParams.get("tab") || "details";
 
   const setTab = (tab: string) => {
     const p = new URLSearchParams(searchParams);
-    if (tab === 'details') {
-      p.delete('tab');
+    if (tab === "details") {
+      p.delete("tab");
     } else {
-      p.set('tab', tab);
+      p.set("tab", tab);
     }
     setSearchParams(p);
   };
@@ -77,7 +76,10 @@ export default function EventDetail() {
   }, []);
 
   // Resolve image for private storage paths when needed
-  const [heroImageSrc, setHeroImageSrc] = useState<string | undefined>(undefined);
+  const [heroImageSrc, setHeroImageSrc] = useState<string | undefined>(
+    event?.image_url ? getEventImage(event.image_url) : undefined
+  );
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -95,7 +97,7 @@ export default function EventDetail() {
       // If image_url isn't an absolute URL, try to get a signed URL for private bucket
       if (!/^https?:\/\//i.test(event.image_url)) {
         try {
-          const signed = await getSignedUrl(event.image_url, 'events');
+          const signed = await getSignedUrl(event.image_url, "events");
           if (mounted) setHeroImageSrc(signed);
           return;
         } catch (e) {
@@ -109,7 +111,9 @@ export default function EventDetail() {
       if (mounted) setHeroImageSrc(event.image_url);
     })();
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [event?.image_url]);
 
   const copyLink = () => {
@@ -124,25 +128,33 @@ export default function EventDetail() {
 
   // Fetch schedules and teams when needed
   const { data: schedules = [] } = useQuery({
-    queryKey: ['event_schedules', event?.id],
+    queryKey: ["event_schedules", event?.id],
     queryFn: async () => {
       if (!event?.id) return [];
-      const { data, error } = await supabase.from('event_schedules').select('*').eq('event_id', event.id).order('start_at', { ascending: true });
+      const { data, error } = await supabase
+        .from("event_schedules")
+        .select("*")
+        .eq("event_id", event.id)
+        .order("start_at", { ascending: true });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!event?.id && activeTab === 'schedule'
+    enabled: !!event?.id && activeTab === "schedule",
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['event_teams', event?.id],
+    queryKey: ["event_teams", event?.id],
     queryFn: async () => {
       if (!event?.id) return [];
-      const { data, error } = await supabase.from('event_teams').select('*').eq('event_id', event.id).order('created_at', { ascending: true });
+      const { data, error } = await supabase
+        .from("event_teams")
+        .select("*")
+        .eq("event_id", event.id)
+        .order("created_at", { ascending: true });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!event?.id && activeTab === 'teams'
+    enabled: !!event?.id && activeTab === "teams",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -160,20 +172,29 @@ export default function EventDetail() {
           email: formData.email,
           phone: formData.phone,
           message: formData.message,
-          status: 'registered'
+          status: "registered",
         };
 
-        const { error } = await supabase.from('event_registrations').insert(payload);
+        const { error } = await supabase
+          .from("event_registrations")
+          .insert(payload);
         if (error) throw error;
 
         toast({
-          title: 'Registration submitted!',
-          description: 'You are registered for this event. Check your email for confirmation.'
+          title: "Registration submitted!",
+          description:
+            "You are registered for this event. Check your email for confirmation.",
         });
-        setFormData({ name: '', email: '', phone: '', message: '' });
+        setFormData({ name: "", email: "", phone: "", message: "" });
       } catch (err: unknown) {
-        const msg = typeof err === 'object' && err !== null && 'message' in err && typeof (err as Record<string, unknown>).message === 'string' ? ((err as Record<string, unknown>).message as string) : String(err);
-        toast({ title: 'Registration failed', description: msg });
+        const msg =
+          typeof err === "object" &&
+          err !== null &&
+          "message" in err &&
+          typeof (err as Record<string, unknown>).message === "string"
+            ? ((err as Record<string, unknown>).message as string)
+            : String(err);
+        toast({ title: "Registration failed", description: msg });
       }
     })();
   };
@@ -244,7 +265,9 @@ export default function EventDetail() {
       {/* Hero */}
       <section className="relative h-[60vh] overflow-hidden">
         <img
-          src={heroImageSrc ?? getEventImage(event?.image_url) ?? event?.image_url}
+          src={
+            heroImageSrc ?? getEventImage(event?.image_url) ?? event?.image_url
+          }
           alt={event?.title}
           className="w-full h-full object-cover"
         />
@@ -294,310 +317,380 @@ export default function EventDetail() {
           {/* Tabs */}
           <div className="mb-6 px-6">
             <div className="flex items-center gap-3 border-b border-border">
-              <button onClick={() => setTab('details')} className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab==='details' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              <button
+                onClick={() => setTab("details")}
+                className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                  activeTab === "details"
+                    ? "border-accent text-accent"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
                 Details
               </button>
-              <button onClick={() => setTab('schedule')} className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab==='schedule' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              <button
+                onClick={() => setTab("schedule")}
+                className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                  activeTab === "schedule"
+                    ? "border-accent text-accent"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
                 Local Event Schedule
               </button>
-              <button onClick={() => setTab('teams')} className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab==='teams' ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+              <button
+                onClick={() => setTab("teams")}
+                className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                  activeTab === "teams"
+                    ? "border-accent text-accent"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
                 Teams
               </button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 px-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            
-
-            {activeTab === 'schedule' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Local Event Schedule</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {schedules.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No schedule available for this event.</p>
-                  ) : (
-                    <ul className="space-y-4">
-                      {schedules.map((s: { id: string; start_at: string; title: string; description?: string }) => (
-                        <li key={s.id} className="border rounded p-3">
-                          <div className="text-sm text-muted-foreground">
-                            {s.start_at ? new Date(s.start_at).toLocaleString() : ''}
-                          </div>
-                          <div className="font-medium">{s.title}</div>
-                          {s.description && <div className="text-sm text-muted-foreground">{s.description}</div>}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === 'teams' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Teams</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {teams.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No teams listed for this event.</p>
-                  ) : (
-                    <div className="space-y-4">
-                      {teams.map((t: { id: string; name: string; description?: string; contact_email?: string }) => (
-                        <div key={t.id} className="border rounded p-3">
-                          <div className="font-medium">{t.name}</div>
-                          {t.description && <div className="text-sm text-muted-foreground">{t.description}</div>}
-                          {t.contact_email && <div className="text-sm text-muted-foreground">Contact: {t.contact_email}</div>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {activeTab === 'details' && (
-              <>
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-8">
+              {activeTab === "schedule" && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Overview</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-muted-foreground leading-relaxed">
-                      {event.overview ||
-                        event.long_description ||
-                        event.short_blurb}
-                    </p>
-
-                    {event.tags && event.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {event.tags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="outline"
-                            className="border-accent/30"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* FAQs */}
-                {event.faqs &&
-                  Array.isArray(event.faqs) &&
-                  event.faqs.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>FAQs</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Accordion type="single" collapsible>
-                          {(event.faqs as unknown as Array<{question: string; answer: string}>).map((faq, index) => (
-                            <AccordionItem key={index} value={`faq-${index}`}>
-                              <AccordionTrigger>{faq.question}</AccordionTrigger>
-                              <AccordionContent>{faq.answer}</AccordionContent>
-                            </AccordionItem>
-                          ))}
-                        </Accordion>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                {/* Registration Form */}
-                <Card id="register">
-                  <CardHeader>
-                    <CardTitle>Register Now</CardTitle>
+                    <CardTitle>Local Event Schedule</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div>
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, name: e.target.value })
-                          }
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) =>
-                            setFormData({ ...formData, email: e.target.value })
-                          }
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="phone">Phone</Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) =>
-                            setFormData({ ...formData, phone: e.target.value })
-                          }
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="message">Why do you want to attend?</Label>
-                        <Textarea
-                          id="message"
-                          value={formData.message}
-                          onChange={(e) =>
-                            setFormData({ ...formData, message: e.target.value })
-                          }
-                          rows={4}
-                        />
-                      </div>
-                      <Button type="submit" className="w-full">
-                        Submit Registration
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Event Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Event Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Calendar className="h-5 w-5 text-accent mt-0.5" />
-                  <div>
-                    <p className="font-medium">Date & Time</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(event.start_at).toLocaleDateString("en-IN", {
-                        weekday: "long",
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(event.start_at).toLocaleTimeString("en-IN", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-accent mt-0.5" />
-                  <div>
-                    <p className="font-medium">Location</p>
-                    <p className="text-sm text-muted-foreground">
-                      {event.location}
-                    </p>
-                    <Badge variant="outline" className="mt-1 text-xs">
-                      {event.format}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t space-y-2">
-
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                    onClick={copyLink}
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-4 w-4" />
-                        Copied!
-                      </>
+                    {schedules.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No schedule available for this event.
+                      </p>
                     ) : (
-                      <>
-                        <Copy className="h-4 w-4" />
-                        Copy Link
-                      </>
+                      <ul className="space-y-4">
+                        {schedules.map(
+                          (s: {
+                            id: string;
+                            start_at: string;
+                            title: string;
+                            description?: string;
+                          }) => (
+                            <li key={s.id} className="border rounded p-3">
+                              <div className="text-sm text-muted-foreground">
+                                {s.start_at
+                                  ? new Date(s.start_at).toLocaleString()
+                                  : ""}
+                              </div>
+                              <div className="font-medium">{s.title}</div>
+                              {s.description && (
+                                <div className="text-sm text-muted-foreground">
+                                  {s.description}
+                                </div>
+                              )}
+                            </li>
+                          )
+                        )}
+                      </ul>
                     )}
-                  </Button>
-
-                  <AddToCalendar event={event} />
-
-                  {event.discord_invite && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2"
-                      asChild
-                    >
-                      <a
-                        href={event.discord_invite}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Users className="h-4 w-4" />
-                        Join Discord
-                      </a>
-                    </Button>
-                  )}
-
-                  {event.instagram_handle && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2"
-                      asChild
-                    >
-                      <a
-                        href={`https://instagram.com/${event.instagram_handle.replace(
-                          "@",
-                          ""
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Instagram className="h-4 w-4" />
-                        Follow on Instagram
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Prizes */}
-            {event.prizes &&
-              Array.isArray(event.prizes) &&
-              event.prizes.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Prizes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {event.prizes.map((prize: string, index: number) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <span className="text-accent">•</span>
-                          <span className="text-sm">{prize}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </CardContent>
                 </Card>
               )}
+
+              {activeTab === "teams" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Teams</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {teams.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No teams listed for this event.
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {teams.map(
+                          (t: {
+                            id: string;
+                            name: string;
+                            description?: string;
+                            contact_email?: string;
+                          }) => (
+                            <div key={t.id} className="border rounded p-3">
+                              <div className="font-medium">{t.name}</div>
+                              {t.description && (
+                                <div className="text-sm text-muted-foreground">
+                                  {t.description}
+                                </div>
+                              )}
+                              {t.contact_email && (
+                                <div className="text-sm text-muted-foreground">
+                                  Contact: {t.contact_email}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {activeTab === "details" && (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-muted-foreground leading-relaxed">
+                        {event.overview ||
+                          event.long_description ||
+                          event.short_blurb}
+                      </p>
+
+                      {event.tags && event.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {event.tags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className="border-accent/30"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* FAQs */}
+                  {event.faqs &&
+                    Array.isArray(event.faqs) &&
+                    event.faqs.length > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>FAQs</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <Accordion type="single" collapsible>
+                            {(
+                              event.faqs as unknown as Array<{
+                                question: string;
+                                answer: string;
+                              }>
+                            ).map((faq, index) => (
+                              <AccordionItem key={index} value={`faq-${index}`}>
+                                <AccordionTrigger>
+                                  {faq.question}
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  {faq.answer}
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                  {/* Registration Form */}
+                  <Card id="register">
+                    <CardHeader>
+                      <CardTitle>Register Now</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                          <Label htmlFor="name">Name</Label>
+                          <Input
+                            id="name"
+                            value={formData.name}
+                            onChange={(e) =>
+                              setFormData({ ...formData, name: e.target.value })
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                email: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="phone">Phone</Label>
+                          <Input
+                            id="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                phone: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="message">
+                            Why do you want to attend?
+                          </Label>
+                          <Textarea
+                            id="message"
+                            value={formData.message}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                message: e.target.value,
+                              })
+                            }
+                            rows={4}
+                          />
+                        </div>
+                        <Button type="submit" className="w-full">
+                          Submit Registration
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Event Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Event Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="h-5 w-5 text-accent mt-0.5" />
+                    <div>
+                      <p className="font-medium">Date & Time</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(event.start_at).toLocaleDateString("en-IN", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(event.start_at).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-accent mt-0.5" />
+                    <div>
+                      <p className="font-medium">Location</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.location}
+                      </p>
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {event.format}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t space-y-2">
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-2"
+                      onClick={copyLink}
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="h-4 w-4" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-4 w-4" />
+                          Copy Link
+                        </>
+                      )}
+                    </Button>
+
+                    <AddToCalendar event={event} />
+
+                    {event.discord_invite && (
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start gap-2"
+                        asChild
+                      >
+                        <a
+                          href={event.discord_invite}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Users className="h-4 w-4" />
+                          Join Discord
+                        </a>
+                      </Button>
+                    )}
+
+                    {event.instagram_handle && (
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start gap-2"
+                        asChild
+                      >
+                        <a
+                          href={`https://instagram.com/${event.instagram_handle.replace(
+                            "@",
+                            ""
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Instagram className="h-4 w-4" />
+                          Follow on Instagram
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Prizes */}
+              {event.prizes &&
+                Array.isArray(event.prizes) &&
+                event.prizes.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Prizes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {event.prizes.map((prize: string, index: number) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <span className="text-accent">•</span>
+                            <span className="text-sm">{prize}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                )}
+            </div>
           </div>
-        </div>
         </div>
       </section>
 
