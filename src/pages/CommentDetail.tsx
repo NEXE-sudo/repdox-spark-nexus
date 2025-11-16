@@ -42,7 +42,7 @@ interface UserProfile {
   website: string | null;
   company: string | null;
   job_title: string | null;
-  date_of_birth?: string | null;
+  "Date of Birth"?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -120,36 +120,68 @@ export default function CommentDetail() {
     initializeDetail();
   }, [postId, navigate]);
 
+  const getAvatarUrl = (
+    avatarPath: string | null | undefined
+  ): string | null => {
+    if (!avatarPath) return null;
+
+    // If it's already a full URL, return it
+    if (avatarPath.startsWith("http")) {
+      return avatarPath;
+    }
+
+    // Clean the path - remove 'avatars/' prefix if present
+    let cleanPath = avatarPath;
+    if (cleanPath.startsWith("avatars/")) {
+      cleanPath = cleanPath.replace("avatars/", "");
+    }
+    if (cleanPath.startsWith("/")) {
+      cleanPath = cleanPath.substring(1);
+    }
+
+    // Get the public URL from storage
+    const { data } = supabase.storage.from("avatars").getPublicUrl(cleanPath);
+
+    return data.publicUrl;
+  };
+
   const loadPost = async (id: string) => {
     try {
-      const { data: post, error } = await (supabase
+      const { data: post, error } = await supabase
         .from("community_posts")
         .select(
           `
-          *,
-          user_profile:user_id (
-            id,
-            user_id,
-            full_name,
-            handle,
-            bio,
-            avatar_url,
-            job_title,
-            location,
-            phone,
-            website,
-            company,
-            "Date of Birth",
-            created_at,
-            updated_at
-          )
-        `
+        *,
+        user_profiles!community_posts_user_id_fkey (
+          id,
+          user_id,
+          full_name,
+          handle,
+          bio,
+          avatar_url,
+          job_title,
+          location,
+          phone,
+          website,
+          company,
+          "Date of Birth",
+          created_at,
+          updated_at
+        )
+      `
         )
         .eq("id", id)
-        .single() as any);
+        .single();
 
       if (error) throw error;
-      setPost(post as FeedPost);
+
+      // Transform to match your interface
+      const transformedPost = {
+        ...post,
+        user_profile: post.user_profiles,
+      };
+
+      setPost(transformedPost as FeedPost);
     } catch (err) {
       console.error("Error loading post:", err);
       setError("Failed to load post");
@@ -160,30 +192,37 @@ export default function CommentDetail() {
 
   const loadComments = async (postId: string) => {
     try {
-      const { data: comments, error } = await (supabase
+      const { data: comments, error } = await supabase
         .from("posts_comments")
         .select(
           `
-          *,
-          user_profile:user_id (
-            id,
-            user_id,
-            full_name,
-            handle,
-            bio,
-            avatar_url,
-            job_title,
-            location,
-            created_at,
-            updated_at
-          )
-        `
+        *,
+        user_profiles!posts_comments_user_id_fkey (
+          id,
+          user_id,
+          full_name,
+          handle,
+          bio,
+          avatar_url,
+          job_title,
+          location,
+          created_at,
+          updated_at
+        )
+      `
         )
         .eq("post_id", postId)
-        .order("created_at", { ascending: true }) as any);
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setComments(comments || []);
+
+      // Transform to match your interface
+      const transformedComments = (comments || []).map((comment) => ({
+        ...comment,
+        user_profile: comment.user_profiles,
+      }));
+
+      setComments(transformedComments);
     } catch (err) {
       console.error("Error loading comments:", err);
     }
@@ -580,7 +619,7 @@ export default function CommentDetail() {
           {/* Original Post */}
           <div className="border-b border-border p-6 flex-shrink-0">
             <div className="flex gap-4">
-              {post.user_profile?.avatar_url ? (
+              {getAvatarUrl(post.user_profile?.avatar_url) ? (
                 <img
                   src={post.user_profile.avatar_url}
                   alt={post.user_profile.full_name || "User"}
@@ -813,7 +852,7 @@ export default function CommentDetail() {
                         >
                           {p.avatar_url ? (
                             <img
-                              src={p.avatar_url}
+                              src={getAvatarUrl(p.avatar_url)}
                               alt={p.full_name || "User"}
                               className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                             />

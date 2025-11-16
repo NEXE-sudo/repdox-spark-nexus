@@ -61,7 +61,7 @@ interface UserProfile {
   website: string | null;
   company: string | null;
   job_title: string | null;
-  date_of_birth?: string | null;
+  "Date of Birth"?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -114,6 +114,8 @@ export default function Community() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] =
+    useState<UserProfile | null>(null); // Add this
   const [activeTab, setActiveTab] = useState<"feed" | "people" | "friends">(
     "feed"
   );
@@ -124,6 +126,9 @@ export default function Community() {
   const [feedPosts, setFeedPosts] = useState<FeedPost[]>([]);
   const [newPost, setNewPost] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(
+    new Set()
+  );
   const [selectedGif, setSelectedGif] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -155,6 +160,34 @@ export default function Community() {
   const [mentionSuggestions, setMentionSuggestions] = useState<UserProfile[]>(
     []
   );
+
+  const testBucketAccess = async () => {
+    console.log("[testBucketAccess] Testing storage buckets...");
+
+    try {
+      // Test community-posts bucket
+      const { data: files, error } = await supabase.storage
+        .from("community-posts")
+        .list("", { limit: 1 });
+
+      if (error) {
+        console.error("[testBucketAccess] community-posts error:", error);
+        console.error(
+          "[testBucketAccess] Error details:",
+          JSON.stringify(error, null, 2)
+        );
+      } else {
+        console.log("[testBucketAccess] community-posts bucket accessible!");
+        console.log("[testBucketAccess] Files found:", files?.length || 0);
+      }
+    } catch (err) {
+      console.error("[testBucketAccess] Unexpected error:", err);
+    }
+  };
+
+  useEffect(() => {
+    testBucketAccess();
+  }, []);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -194,6 +227,18 @@ export default function Community() {
       }
 
       setUser(currentUser);
+
+      // Load current user's profile
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .single();
+
+      if (profile) {
+        setCurrentUserProfile(profile as UserProfile);
+      }
+
       await Promise.all([
         loadFeedPosts(),
         loadFriends(),
@@ -210,6 +255,31 @@ export default function Community() {
 
     return () => clearInterval(trendingInterval);
   }, [navigate]);
+
+  const getAvatarUrl = (
+    avatarPath: string | null | undefined
+  ): string | null => {
+    if (!avatarPath) return null;
+
+    // If it's already a full URL, return it
+    if (avatarPath.startsWith("http")) {
+      return avatarPath;
+    }
+
+    // Clean the path - remove 'avatars/' prefix if present
+    let cleanPath = avatarPath;
+    if (cleanPath.startsWith("avatars/")) {
+      cleanPath = cleanPath.replace("avatars/", "");
+    }
+    if (cleanPath.startsWith("/")) {
+      cleanPath = cleanPath.substring(1);
+    }
+
+    // Get the public URL from storage
+    const { data } = supabase.storage.from("avatars").getPublicUrl(cleanPath);
+
+    return data.publicUrl;
+  };
 
   const loadUserLikes = async (userId: string) => {
     try {
@@ -281,7 +351,46 @@ export default function Community() {
       return;
     }
 
+    setIsLoading(true);
     try {
+      // Get the post with image URLs before deleting
+      const post = feedPosts.find((p) => p.id === postId);
+
+      // Delete images from storage first
+      if (post?.images_urls && post.images_urls.length > 0) {
+        for (const imageUrl of post.images_urls) {
+          try {
+            // Extract the file path from the URL
+            // URL format: https://[project].supabase.co/storage/v1/object/public/community-posts/[user-id]/[filename]
+            const urlParts = imageUrl.split("/community-posts/");
+            if (urlParts.length === 2) {
+              const filePath = urlParts[1];
+
+              const { error: deleteError } = await supabase.storage
+                .from("community-posts")
+                .remove([filePath]);
+
+              if (deleteError) {
+                console.error(
+                  "[handleDeletePost] Error deleting image:",
+                  deleteError
+                );
+                // Continue anyway - don't block post deletion
+              } else {
+                console.log("[handleDeletePost] Image deleted:", filePath);
+              }
+            }
+          } catch (err) {
+            console.error(
+              "[handleDeletePost] Error processing image URL:",
+              err
+            );
+            // Continue anyway
+          }
+        }
+      }
+
+      // Delete the post from database
       const { error } = await supabase
         .from("community_posts")
         .delete()
@@ -290,10 +399,54 @@ export default function Community() {
       if (error) throw error;
 
       setFeedPosts(feedPosts.filter((post) => post.id !== postId));
-      setSuccess("Post deleted successfully!");
+      setSuccess("Post and images deleted successfully!");
+      setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
       console.error("Error deleting post:", err);
       setError("Failed to delete post");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteAllUserImages = async (userId: string) => {
+    try {
+      console.log(
+        "[deleteAllUserImages] Deleting all images for user:",
+        userId
+      );
+
+      // List all files in user's folder
+      const { data: files, error: listError } = await supabase.storage
+        .from("community-posts")
+        .list(userId);
+
+      if (listError) {
+        console.error("[deleteAllUserImages] List error:", listError);
+        return;
+      }
+
+      if (!files || files.length === 0) {
+        console.log("[deleteAllUserImages] No images to delete");
+        return;
+      }
+
+      // Delete all files
+      const filePaths = files.map((file) => `${userId}/${file.name}`);
+
+      console.log("[deleteAllUserImages] Deleting", filePaths.length, "images");
+
+      const { error: deleteError } = await supabase.storage
+        .from("community-posts")
+        .remove(filePaths);
+
+      if (deleteError) {
+        console.error("[deleteAllUserImages] Delete error:", deleteError);
+      } else {
+        console.log("[deleteAllUserImages] All images deleted successfully");
+      }
+    } catch (err) {
+      console.error("[deleteAllUserImages] Unexpected error:", err);
     }
   };
 
@@ -345,87 +498,81 @@ export default function Community() {
   const loadFeedPosts = async () => {
     try {
       const now = new Date().toISOString();
-      const { data: posts, error } = await (supabase
+
+      // First, get posts with user profiles
+      const { data: posts, error: postsError } = await supabase
         .from("community_posts")
         .select(
           `
-          *,
-          user_profile:user_id (
-            id,
-            user_id,
-            full_name,
-            handle,
-            bio,
-            avatar_url,
-            job_title,
-            location,
-            phone,
-            website,
-            company,
-            "Date of Birth",
-            created_at,
-            updated_at
-          ),
-          poll:poll_id (
-            id,
-            post_id,
-            question,
-            options,
-            created_at,
-            expires_at,
-            duration_days,
-            duration_hours,
-            duration_minutes
-          )
-        `
+        *,
+        user_profiles!community_posts_user_id_fkey (
+          id,
+          user_id,
+          full_name,
+          handle,
+          bio,
+          avatar_url,
+          job_title,
+          location,
+          phone,
+          website,
+          company,
+          "Date of Birth",
+          created_at,
+          updated_at
+        )
+      `
         )
         .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
         .order("created_at", { ascending: false })
-        .limit(50) as any);
+        .limit(50);
 
-      if (error) {
-        console.error("Feed query error:", error);
-        throw error;
+      if (postsError) {
+        console.error("Feed query error:", postsError);
+        throw postsError;
       }
-      setFeedPosts((posts || []) as FeedPost[]);
+
+      if (!posts || posts.length === 0) {
+        setFeedPosts([]);
+        return;
+      }
+
+      // Get poll IDs from posts
+      const pollIds = posts
+        .map((post) => post.poll_id)
+        .filter((id) => id !== null);
+
+      // Fetch polls separately if any exist
+      let pollsMap = new Map();
+      if (pollIds.length > 0) {
+        const { data: polls, error: pollsError } = await supabase
+          .from("polls")
+          .select("*")
+          .in("id", pollIds);
+
+        if (pollsError) {
+          console.error("Error loading polls:", pollsError);
+        } else if (polls) {
+          polls.forEach((poll) => pollsMap.set(poll.id, poll));
+        }
+      }
+
+      // Transform data to match your interface
+      const transformedPosts = posts.map((post) => ({
+        ...post,
+        user_profile: post.user_profiles,
+        poll: post.poll_id ? pollsMap.get(post.poll_id) || null : null,
+      }));
+
+      console.log("[Community] Loaded posts:", transformedPosts.length);
+      console.log(
+        "[Community] Posts with polls:",
+        transformedPosts.filter((p) => p.poll).length
+      );
+      setFeedPosts(transformedPosts as FeedPost[]);
     } catch (err) {
       console.error("Error loading feed:", err);
-      // Fallback: try to load posts without poll join
-      try {
-        const now = new Date().toISOString();
-        const { data: postsWithoutPoll, error: fallbackError } = await (supabase
-          .from("community_posts")
-          .select(
-            `
-              *,
-              user_profile:user_id (
-                id,
-                user_id,
-                full_name,
-                handle,
-                bio,
-                avatar_url,
-                job_title,
-                location,
-                phone,
-                website,
-                company,
-                "Date of Birth",
-                created_at,
-                updated_at
-              )
-            `
-          )
-          .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
-          .order("created_at", { ascending: false })
-          .limit(50) as any);
-
-        if (fallbackError) throw fallbackError;
-        setFeedPosts((postsWithoutPoll || []) as FeedPost[]);
-      } catch (fallbackErr) {
-        console.error("Fallback feed load failed:", fallbackErr);
-        setError("Failed to load posts");
-      }
+      setError("Failed to load posts");
     }
   };
 
@@ -678,13 +825,11 @@ export default function Community() {
 
           if (existingErr && existingErr.code !== "PGRST116") throw existingErr;
 
-          // If profile exists but no handle, require it
           if (existing && !existing.handle) {
             setError("Please set a @handle in your profile before posting.");
             return false;
           }
 
-          // If no profile exists, create one but still require handle
           if (!existing) {
             setError(
               "Please complete your profile and set a @handle before posting."
@@ -704,32 +849,18 @@ export default function Community() {
         setIsLoading(false);
         return;
       }
-      // Create the post with all features
-      const { data: postData, error: postError } = await (supabase
-        .from("community_posts")
-        .insert({
-          user_id: user.id,
-          title: "Community Post",
-          content: newPost,
-          images_urls: selectedImages.length > 0 ? selectedImages : null,
-          gif_url: selectedGif,
-          location: userLocation,
-          is_scheduled: !!scheduledTime,
-          scheduled_at: scheduledTime
-            ? new Date(scheduledTime).toISOString()
-            : null,
-          likes_count: 0,
-          comments_count: 0,
-        })
-        .select() as any);
 
-      if (postError) throw postError;
+      let pollId = null;
 
-      // If poll exists, create it
-      if (pollOptions.some((opt) => opt.trim())) {
+      // Create poll FIRST if it exists
+      if (
+        showPollCreator &&
+        pollOptions.some((opt) => opt.trim()) &&
+        pollQuestion.trim()
+      ) {
         const validOptions = pollOptions.filter((opt) => opt.trim());
 
-        // Check for duplicate options (case-insensitive)
+        // Check for duplicate options
         const normalizedOptions = validOptions.map((opt) =>
           opt.trim().toLowerCase()
         );
@@ -743,13 +874,8 @@ export default function Community() {
           return;
         }
 
-        if (
-          validOptions.length >= 2 &&
-          postData &&
-          postData[0] &&
-          pollQuestion.trim()
-        ) {
-          // Calculate poll expiry time based on duration
+        if (validOptions.length >= 2) {
+          // Calculate poll expiry time
           const now = new Date();
           const expiryTime = new Date(
             now.getTime() +
@@ -758,16 +884,73 @@ export default function Community() {
               pollDuration.minutes * 60 * 1000
           );
 
-          await (supabase.from("polls").insert({
-            post_id: postData[0].id,
-            question: pollQuestion,
-            options: validOptions,
-            expires_at: expiryTime.toISOString(),
-            created_by_id: user.id,
-            duration_days: pollDuration.days,
-            duration_hours: pollDuration.hours,
-            duration_minutes: pollDuration.minutes,
-          }) as any);
+          console.log("[Community] Creating poll...");
+
+          // Create poll without post_id first (we'll update it later)
+          const { data: pollData, error: pollError } = await supabase
+            .from("polls")
+            .insert({
+              post_id: null, // Temporary null
+              question: pollQuestion,
+              options: validOptions,
+              expires_at: expiryTime.toISOString(),
+              created_by_id: user.id,
+              duration_days: pollDuration.days,
+              duration_hours: pollDuration.hours,
+              duration_minutes: pollDuration.minutes,
+            })
+            .select()
+            .single();
+
+          if (pollError) {
+            console.error("[Community] Poll creation error:", pollError);
+            throw pollError;
+          }
+
+          pollId = pollData.id;
+          console.log("[Community] Poll created:", pollId);
+        }
+      }
+
+      // Create the post with poll_id
+      console.log("[Community] Creating post with poll_id:", pollId);
+
+      const { data: postData, error: postError } = await supabase
+        .from("community_posts")
+        .insert({
+          user_id: user.id,
+          title: "Community Post",
+          content: newPost,
+          images_urls: selectedImages.length > 0 ? selectedImages : null,
+          gif_url: selectedGif,
+          location: userLocation,
+          poll_id: pollId,
+          is_scheduled: !!scheduledTime,
+          scheduled_at: scheduledTime
+            ? new Date(scheduledTime).toISOString()
+            : null,
+          likes_count: 0,
+          comments_count: 0,
+        })
+        .select()
+        .single();
+
+      if (postError) {
+        console.error("[Community] Post creation error:", postError);
+        throw postError;
+      }
+
+      console.log("[Community] Post created:", postData);
+
+      // Update poll with post_id
+      if (pollId) {
+        const { error: updateError } = await supabase
+          .from("polls")
+          .update({ post_id: postData.id })
+          .eq("id", pollId);
+
+        if (updateError) {
+          console.error("[Community] Poll update error:", updateError);
         }
       }
 
@@ -781,6 +964,7 @@ export default function Community() {
       setPollDuration({ days: 1, hours: 0, minutes: 0 });
       setShowPollCreator(false);
       setScheduledTime("");
+
       await Promise.all([loadFeedPosts(), loadTrendingHashtags()]);
       setTimeout(() => setSuccess(null), 2000);
     } catch (err) {
@@ -903,32 +1087,112 @@ export default function Community() {
     const files = e.currentTarget.files;
     if (!files || !user) return;
 
+    console.log(
+      "[handleImageUpload] Starting upload for",
+      files.length,
+      "files"
+    );
+    console.log("[handleImageUpload] User ID:", user.id);
+
+    setIsLoading(true);
+
     try {
       const uploadedUrls: string[] = [];
+
       for (let i = 0; i < Math.min(files.length, 4); i++) {
         const file = files[i];
+
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+          console.warn(
+            `[handleImageUpload] Skipping non-image file: ${file.name}`
+          );
+          continue;
+        }
+
+        // Validate file size (max 50MB)
+        if (file.size > 52428800) {
+          setError(`File ${file.name} is too large (max 50MB)`);
+          continue;
+        }
+
         const fileExt = file.name.split(".").pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random()}.${fileExt}`;
+        const fileName = `${user.id}/${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(7)}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("community-posts")
-          .upload(fileName, file);
+        console.log("[handleImageUpload] Uploading to bucket: community-posts");
+        console.log("[handleImageUpload] File path:", fileName);
+        console.log("[handleImageUpload] File size:", file.size, "bytes");
+        console.log("[handleImageUpload] File type:", file.type);
 
-        if (uploadError) throw uploadError;
+        // CRITICAL: Make sure bucket name is EXACTLY 'community-posts'
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("community-posts") // ✅ Exact bucket name
+          .upload(fileName, file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
 
-        const { data } = supabase.storage
+        if (uploadError) {
+          console.error("[handleImageUpload] Upload error:", uploadError);
+          console.error(
+            "[handleImageUpload] Error details:",
+            JSON.stringify(uploadError, null, 2)
+          );
+
+          // Check if it's a bucket not found error
+          if (uploadError.message?.includes("Bucket not found")) {
+            setError("Storage bucket not configured. Please contact support.");
+            console.error(
+              "[handleImageUpload] BUCKET NOT FOUND! Check Supabase dashboard."
+            );
+          } else {
+            setError(`Upload failed: ${uploadError.message}`);
+          }
+          continue;
+        }
+
+        console.log("[handleImageUpload] Upload successful:", uploadData);
+
+        // Get the public URL
+        const { data: urlData } = supabase.storage
           .from("community-posts")
           .getPublicUrl(fileName);
 
-        uploadedUrls.push(data.publicUrl);
+        console.log(
+          "[handleImageUpload] Public URL generated:",
+          urlData.publicUrl
+        );
+
+        uploadedUrls.push(urlData.publicUrl);
       }
 
-      setSelectedImages([...selectedImages, ...uploadedUrls]);
-      setSuccess("Images uploaded!");
+      if (uploadedUrls.length > 0) {
+        setSelectedImages([...selectedImages, ...uploadedUrls]);
+        setSuccess(`${uploadedUrls.length} image(s) uploaded!`);
+        setTimeout(() => setSuccess(null), 2000);
+      } else {
+        setError("No valid images were uploaded");
+      }
     } catch (err) {
-      console.error("Error uploading images:", err);
-      setError("Failed to upload images");
+      console.error("[handleImageUpload] Unexpected error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to upload images";
+      setError(errorMessage);
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setIsLoading(false);
+      // Reset file input
+      if (e.target) {
+        e.target.value = "";
+      }
     }
+  };
+
+  const handleImageError = (imageSrc: string) => {
+    console.error("[Community] Image failed to load:", imageSrc);
+    setImageLoadErrors((prev) => new Set([...prev, imageSrc]));
   };
 
   const isFriend = (userId: string) => {
@@ -1062,7 +1326,7 @@ export default function Community() {
                           >
                             {p.avatar_url ? (
                               <img
-                                src={p.avatar_url}
+                                src={getAvatarUrl(p.avatar_url)}
                                 alt={p.full_name || "User"}
                                 className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                               />
@@ -1478,10 +1742,10 @@ export default function Community() {
                 className="group border-b border-border p-4 hover:bg-muted/30 transition"
               >
                 <div className="flex gap-4">
-                  {post.user_profile?.avatar_url ? (
+                  {getAvatarUrl(post.user_profile?.avatar_url) ? (
                     <img
-                      src={post.user_profile.avatar_url}
-                      alt={post.user_profile.full_name || "User"}
+                      src={getAvatarUrl(post.user_profile?.avatar_url)!}
+                      alt={post.user_profile?.full_name || "User"}
                       className="w-12 h-12 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
                       onClick={() => navigate(`/profile/${post.user_id}`)}
                     />
@@ -1599,14 +1863,43 @@ export default function Community() {
                             : "grid-cols-2"
                         }`}
                       >
-                        {post.images_urls.slice(0, 4).map((img, idx) => (
-                          <img
-                            key={idx}
-                            src={img}
-                            alt={`post-img-${idx}`}
-                            className="w-full h-auto max-h-72 object-contain bg-black/5 cursor-pointer hover:opacity-80 transition"
-                          />
-                        ))}
+                        {post.images_urls.slice(0, 4).map((img, idx) => {
+                          // Check if this image failed to load
+                          const hasFailed = imageLoadErrors.has(img);
+
+                          if (hasFailed) {
+                            return (
+                              <div
+                                key={idx}
+                                className="w-full h-auto min-h-[200px] flex items-center justify-center bg-muted rounded-lg border border-border"
+                              >
+                                <div className="text-center p-4">
+                                  <ImageIcon className="w-12 h-12 mx-auto mb-2 text-muted-foreground opacity-50" />
+                                  <p className="text-xs text-muted-foreground">
+                                    Image unavailable
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <img
+                              key={idx}
+                              src={img}
+                              alt={`post-img-${idx}`}
+                              className={`w-full rounded-lg cursor-pointer hover:opacity-90 transition ${
+                                post.images_urls.length === 1
+                                  ? "max-h-[500px] object-cover" // Single image: cover mode, taller
+                                  : "h-[250px] object-cover" // Multiple images: fixed height grid
+                              }`}
+                              onError={() => handleImageError(img)}
+                              onLoad={() =>
+                                console.log("[Community] Image loaded:", img)
+                              }
+                            />
+                          );
+                        })}
                       </div>
                     )}
 

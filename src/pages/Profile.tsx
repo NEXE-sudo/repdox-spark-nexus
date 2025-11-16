@@ -32,7 +32,7 @@ interface UserProfile {
   website: string | null;
   company: string | null;
   job_title: string | null;
-  date_of_birth?: string | null;
+  "Date of Birth"?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -77,10 +77,23 @@ export default function Profile() {
     loadUserProfile();
   }, []);
 
-  // Load avatar URL when profile changes
+  // Also update the useEffect that loads the avatar URL:
   useEffect(() => {
     if (profile?.avatar_url) {
-      loadAvatarUrl(profile.avatar_url);
+      console.log("[Profile] Loading avatar from path:", profile.avatar_url);
+
+      // The getAvatarSignedUrl function will clean the path
+      getAvatarSignedUrl(profile.avatar_url)
+        .then((url) => {
+          console.log("[Profile] Avatar URL loaded:", url);
+          setAvatarUrl(url);
+        })
+        .catch((err) => {
+          console.error("[Profile] Error loading avatar:", err);
+          setAvatarUrl(null);
+        });
+    } else {
+      setAvatarUrl(null);
     }
   }, [profile?.avatar_url]);
 
@@ -197,8 +210,20 @@ export default function Profile() {
 
       // Upload avatar if a new one is selected
       if (avatarFile) {
+        console.log("[Profile] Uploading new avatar...");
+
+        // uploadAvatar returns the path WITHOUT bucket name
+        // e.g., "user-id/avatar-123.jpg" NOT "avatars/user-id/avatar-123.jpg"
         avatarPath = await uploadAvatarService(user.id, avatarFile);
+
+        console.log("[Profile] Avatar uploaded, path:", avatarPath);
+
+        // IMPORTANT: Do NOT add 'avatars/' prefix here!
+        // The path should be: user-id/avatar-123.jpg
+        // NOT: avatars/user-id/avatar-123.jpg
       }
+
+      console.log("[Profile] Saving profile with avatar path:", avatarPath);
 
       // Upsert profile data
       const { error: upsertError } = await supabase
@@ -215,7 +240,7 @@ export default function Profile() {
             phone: phone || null,
             location: locationInput || null,
             "Date of Birth": dateOfBirth || null,
-            avatar_url: avatarPath,
+            avatar_url: avatarPath, // This should be: user-id/avatar-123.jpg
             updated_at: new Date().toISOString(),
           },
           {
