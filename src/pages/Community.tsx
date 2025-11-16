@@ -728,6 +728,17 @@ export default function Community() {
       // If poll exists, create it
       if (pollOptions.some((opt) => opt.trim())) {
         const validOptions = pollOptions.filter((opt) => opt.trim());
+        
+        // Check for duplicate options (case-insensitive)
+        const normalizedOptions = validOptions.map((opt) => opt.trim().toLowerCase());
+        const uniqueOptions = new Set(normalizedOptions);
+        
+        if (uniqueOptions.size !== normalizedOptions.length) {
+          setError("Poll options cannot be duplicates. Please use unique options.");
+          setIsLoading(false);
+          return;
+        }
+        
         if (
           validOptions.length >= 2 &&
           postData &&
@@ -748,6 +759,10 @@ export default function Community() {
             question: pollQuestion,
             options: validOptions,
             expires_at: expiryTime.toISOString(),
+            created_by_id: user.id,
+            duration_days: pollDuration.days,
+            duration_hours: pollDuration.hours,
+            duration_minutes: pollDuration.minutes,
           }) as any);
         }
       }
@@ -1151,56 +1166,77 @@ export default function Community() {
                         Choices
                       </label>
                       <div className="space-y-2">
-                        {pollOptions.map((option, idx) => (
-                          <div
-                            key={idx}
-                            draggable
-                            onDragStart={() => setDraggedPollOption(idx)}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              if (
-                                draggedPollOption !== null &&
-                                draggedPollOption !== idx
-                              ) {
-                                const newOptions = [...pollOptions];
-                                const [removed] = newOptions.splice(
-                                  draggedPollOption,
-                                  1
-                                );
-                                newOptions.splice(idx, 0, removed);
-                                setPollOptions(newOptions);
-                                setDraggedPollOption(idx);
-                              }
-                            }}
-                            onDragEnd={() => setDraggedPollOption(null)}
-                            className="flex items-center gap-2"
-                          >
-                            <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
-                            <input
-                              type="text"
-                              value={option}
-                              onChange={(e) => {
-                                const newOptions = [...pollOptions];
-                                newOptions[idx] = e.target.value;
-                                setPollOptions(newOptions);
-                              }}
-                              placeholder={`Choice ${idx + 1}`}
-                              className="flex-1 bg-transparent border border-border rounded p-2 text-foreground placeholder:text-muted-foreground outline-none focus:border-accent"
-                            />
-                            {pollOptions.length > 2 && (
-                              <button
-                                onClick={() => {
-                                  setPollOptions(
-                                    pollOptions.filter((_, i) => i !== idx)
+                        {pollOptions.map((option, idx) => {
+                          // Check if this option is a duplicate
+                          const optionTrimmed = option.trim().toLowerCase();
+                          const isDuplicate =
+                            optionTrimmed &&
+                            pollOptions.findIndex(
+                              (opt) => opt.trim().toLowerCase() === optionTrimmed
+                            ) !== idx;
+
+                          return (
+                            <div
+                              key={idx}
+                              draggable
+                              onDragStart={() => setDraggedPollOption(idx)}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                if (
+                                  draggedPollOption !== null &&
+                                  draggedPollOption !== idx
+                                ) {
+                                  const newOptions = [...pollOptions];
+                                  const [removed] = newOptions.splice(
+                                    draggedPollOption,
+                                    1
                                   );
-                                }}
-                                className="p-1 text-red-500 hover:bg-red-500/10 rounded transition"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                                  newOptions.splice(idx, 0, removed);
+                                  setPollOptions(newOptions);
+                                  setDraggedPollOption(idx);
+                                }
+                              }}
+                              onDragEnd={() => setDraggedPollOption(null)}
+                              className="flex flex-col gap-1"
+                            >
+                              <div className="flex items-center gap-2">
+                                <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+                                <input
+                                  type="text"
+                                  value={option}
+                                  onChange={(e) => {
+                                    const newOptions = [...pollOptions];
+                                    newOptions[idx] = e.target.value;
+                                    setPollOptions(newOptions);
+                                  }}
+                                  placeholder={`Choice ${idx + 1}`}
+                                  className={`flex-1 bg-transparent border rounded p-2 text-foreground placeholder:text-muted-foreground outline-none focus:border-accent transition ${
+                                    isDuplicate
+                                      ? "border-red-500 focus:border-red-500"
+                                      : "border-border"
+                                  }`}
+                                />
+                                {pollOptions.length > 2 && (
+                                  <button
+                                    onClick={() => {
+                                      setPollOptions(
+                                        pollOptions.filter((_, i) => i !== idx)
+                                      );
+                                    }}
+                                    className="p-1 text-red-500 hover:bg-red-500/10 rounded transition"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                              {isDuplicate && (
+                                <div className="text-xs text-red-500 ml-6">
+                                  This option is already used
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1395,7 +1431,21 @@ export default function Community() {
                     )}
                     <Button
                       onClick={handleCreatePost}
-                      disabled={isLoading || !newPost.trim()}
+                      disabled={
+                        isLoading ||
+                        !newPost.trim() ||
+                        (showPollCreator &&
+                          pollOptions.some((opt) => opt.trim()) &&
+                          (() => {
+                            const normalizedOptions = pollOptions
+                              .filter((opt) => opt.trim())
+                              .map((opt) => opt.trim().toLowerCase());
+                            return (
+                              new Set(normalizedOptions).size !==
+                              normalizedOptions.length
+                            );
+                          })())
+                      }
                       className="rounded-full px-8 font-bold"
                     >
                       {isLoading ? "Posting..." : "Post"}
