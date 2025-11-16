@@ -1,7 +1,9 @@
 -- Create enum for event types
+DROP TYPE IF EXISTS public.event_type CASCADE;
 CREATE TYPE public.event_type AS ENUM ('Hackathon', 'Workshop', 'MUN', 'Gaming');
 
 -- Create enum for event format
+DROP TYPE IF EXISTS public.event_format CASCADE;
 CREATE TYPE public.event_format AS ENUM ('Online', 'Offline', 'Hybrid');
 
 -- Create events table
