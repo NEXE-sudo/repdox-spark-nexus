@@ -906,21 +906,6 @@ ALTER TABLE polls ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 0;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE polls ADD COLUMN IF NOT EXISTS created_by_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
 
--- Create function to calculate poll expiration
-CREATE OR REPLACE FUNCTION calculate_poll_expiration(
-  created_timestamp TIMESTAMP WITH TIME ZONE,
-  days INTEGER,
-  hours INTEGER,
-  minutes INTEGER
-) RETURNS TIMESTAMP WITH TIME ZONE AS $$
-BEGIN
-  RETURN created_timestamp + 
-    INTERVAL '1 day' * COALESCE(days, 0) +
-    INTERVAL '1 hour' * COALESCE(hours, 0) +
-    INTERVAL '1 minute' * COALESCE(minutes, 0);
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
-
 -- Update existing polls with expiration times (default to 1 day)
 UPDATE polls
 SET 
@@ -933,28 +918,8 @@ WHERE expires_at IS NULL;
 
 -- ============================================================================
 -- PART 3: Enhanced poll votes tracking with vote counts per option
+-- (Skipped - poll_option_votes_count not used in application code)
 -- ============================================================================
-
--- Add helper table for tracking poll option vote counts (for optimization)
-CREATE TABLE IF NOT EXISTS poll_option_votes_count (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  poll_id UUID NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
-  option_index INT NOT NULL,
-  vote_count INT DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(poll_id, option_index)
-);
-
--- Create indexes for poll vote counts
-CREATE INDEX IF NOT EXISTS idx_poll_option_votes_poll_id ON poll_option_votes_count(poll_id);
-
--- Enable RLS for poll_option_votes_count
-ALTER TABLE poll_option_votes_count ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for poll_option_votes_count
-CREATE POLICY "Poll option votes are viewable by everyone" ON poll_option_votes_count
-  FOR SELECT USING (true);
 
 -- ============================================================================
 -- PART 4: Storage bucket configuration for media files
@@ -1011,101 +976,13 @@ CREATE POLICY "Users can update their own polls" ON polls
   FOR UPDATE USING (created_by_id = auth.uid());
 
 -- ============================================================================
--- PART 7: Create view for active polls (not expired)
+-- PART 7: RLS policies for polls with expiration support
 -- ============================================================================
 
-CREATE OR REPLACE VIEW active_polls AS
-SELECT 
-  p.*,
-  EXTRACT(EPOCH FROM (p.expires_at - NOW())) / 60 AS minutes_remaining,
-  NOW() < p.expires_at AS is_active
-FROM polls p
-WHERE p.expires_at IS NOT NULL;
+
 
 -- ============================================================================
--- PART 8: Create function to get poll vote counts by option
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION get_poll_vote_counts(poll_id_param UUID)
-RETURNS TABLE (
-  option_index INT,
-  vote_count BIGINT
-) AS $$
-BEGIN
-  RETURN QUERY
-  SELECT 
-    upv.option_index,
-    COUNT(*) as vote_count
-  FROM user_poll_votes upv
-  WHERE upv.poll_id = poll_id_param
-  GROUP BY upv.option_index
-  ORDER BY upv.option_index;
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================================
--- PART 9: Create function to check if user has voted on a poll
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION user_voted_on_poll(poll_id_param UUID, user_id_param UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN EXISTS(
-    SELECT 1 FROM user_poll_votes 
-    WHERE poll_id = poll_id_param AND user_id = user_id_param
-  );
-END;
-$$ LANGUAGE plpgsql;
-
--- ============================================================================
--- PART 10: Create triggers to update vote counts
--- ============================================================================
-
--- Create trigger function for updating poll_option_votes_count
-CREATE OR REPLACE FUNCTION update_poll_option_vote_count()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Insert or update vote count
-  INSERT INTO poll_option_votes_count (poll_id, option_index, vote_count)
-  VALUES (NEW.poll_id, NEW.option_index, 1)
-  ON CONFLICT (poll_id, option_index) 
-  DO UPDATE SET 
-    vote_count = vote_count + 1,
-    updated_at = CURRENT_TIMESTAMP;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger for vote insertion
-CREATE TRIGGER trg_poll_votes_insert 
-AFTER INSERT ON user_poll_votes
-FOR EACH ROW
-EXECUTE FUNCTION update_poll_option_vote_count();
-
--- Create trigger function for vote deletion
-CREATE OR REPLACE FUNCTION update_poll_option_vote_count_delete()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Decrement vote count
-  UPDATE poll_option_votes_count
-  SET 
-    vote_count = GREATEST(0, vote_count - 1),
-    updated_at = CURRENT_TIMESTAMP
-  WHERE poll_id = OLD.poll_id AND option_index = OLD.option_index;
-  
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger for vote deletion
-CREATE TRIGGER trg_poll_votes_delete 
-AFTER DELETE ON user_poll_votes
-FOR EACH ROW
-EXECUTE FUNCTION update_poll_option_vote_count_delete();
-
--- ============================================================================
--- PART 11: Add validation and constraints
+-- PART 9-10: Validation and constraints
 -- ============================================================================
 
 -- Ensure images_urls array contains valid URLs
@@ -1205,16 +1082,12 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- ============================================================================
 -- 1. Added media fields (images_urls, gif_url, location) to posts_comments
 -- 2. Enhanced polls table with duration tracking and expiration
--- 3. Created poll_option_votes_count table for optimized vote counting
--- 4. Added storage bucket configuration info
--- 5. Updated RLS policies for all media operations
--- 6. Created active_polls view for filtering non-expired polls
--- 7. Added helper functions for poll vote counting and user vote checking
--- 8. Created triggers for automatic vote count updates
--- 9. Added validation constraints for media and poll data
--- 10. Created media_audit_log table for tracking uploads
--- 11. Created post_metadata view for summary information
--- 12. Added location formatting helper function
+-- 3. Added storage bucket configuration info
+-- 4. Updated RLS policies for all media operations
+-- 5. Added validation constraints for media and poll data
+-- 6. Created media_audit_log table for tracking uploads
+-- 7. Created post_metadata view for summary information
+-- 8. Added location formatting helper function
 
 
 -- ============================================================================
@@ -1231,25 +1104,7 @@ FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE SET NULL;
 -- Create index for poll_id lookups (if not exists)
 CREATE INDEX IF NOT EXISTS idx_community_posts_poll_id ON community_posts(poll_id);
 
--- ============================================================================
--- MIGRATION: 20251116_cleanup_unused_tables.sql
--- ============================================================================
--- Migration: Clean up unused tables and helpers
--- Removes tables and functions that aren't being used in the application
 
--- Drop unused poll option votes count table (not used in code)
-DROP TABLE IF EXISTS poll_option_votes_count CASCADE;
-
--- Drop the helper function for poll expiration if it's not being used
-DROP FUNCTION IF EXISTS calculate_poll_expiration(TIMESTAMP WITH TIME ZONE, INTEGER, INTEGER, INTEGER) CASCADE;
-
--- Drop the active_polls view if it exists
-DROP VIEW IF EXISTS active_polls CASCADE;
-
--- Drop unused get_poll_vote_counts function if it exists
-DROP FUNCTION IF EXISTS get_poll_vote_counts(UUID) CASCADE;
-
--- ============================================================================
 -- MIGRATION: 20251116_remove_handle_new_user_trigger.sql
 -- ============================================================================
 -- Drop the trigger first (triggers depend on functions)
