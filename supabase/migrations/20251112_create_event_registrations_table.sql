@@ -1,6 +1,6 @@
 -- Create the event_registrations table to store attendees/registrations for events
 create table if not exists public.event_registrations (
-  id uuid not null default uuid_generate_v4(),
+  id uuid not null default gen_random_uuid(),
   created_at timestamp with time zone default now(),
   event_id uuid not null,
   user_id uuid,

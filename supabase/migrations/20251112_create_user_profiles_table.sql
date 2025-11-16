@@ -1,6 +1,6 @@
 -- Create user_profiles table linked to auth.users
 create table "public"."user_profiles" (
-    "id" uuid not null default uuid_generate_v4(),
+    "id" uuid not null default gen_random_uuid(),
     "user_id" uuid not null,
     "full_name" text,
     "bio" text,

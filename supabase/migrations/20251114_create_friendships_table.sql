@@ -1,6 +1,6 @@
 -- Create friendships table for friend requests, friendships, and blocks
 CREATE TABLE IF NOT EXISTS friendships (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   friend_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'blocked')),

@@ -1,6 +1,6 @@
 -- Create the event_schedules table to store schedule items for events
 create table if not exists public.event_schedules (
-  id uuid not null default uuid_generate_v4(),
+  id uuid not null default gen_random_uuid(),
   created_at timestamp with time zone default now(),
   event_id uuid not null,
   start_at timestamp with time zone,

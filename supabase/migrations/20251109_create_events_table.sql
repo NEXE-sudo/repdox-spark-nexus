@@ -1,6 +1,9 @@
+-- Enable pgcrypto extension for UUID functions
+create extension if not exists "pgcrypto";
+
 -- Create the events table
 create table "public"."events" (
-    "id" uuid not null default uuid_generate_v4(),
+    "id" uuid not null default gen_random_uuid(),
     "created_at" timestamp with time zone default now(),
     "title" text not null,
     "slug" text not null,

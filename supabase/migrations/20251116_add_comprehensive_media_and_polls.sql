@@ -55,7 +55,7 @@ WHERE expires_at IS NULL;
 
 -- Add helper table for tracking poll option vote counts (for optimization)
 CREATE TABLE IF NOT EXISTS poll_option_votes_count (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   poll_id UUID NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
   option_index INT NOT NULL,
   vote_count INT DEFAULT 0,
@@ -248,7 +248,7 @@ ALTER TABLE polls
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS media_audit_log (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   content_type TEXT NOT NULL, -- 'post', 'comment', 'profile'
   content_id UUID NOT NULL,

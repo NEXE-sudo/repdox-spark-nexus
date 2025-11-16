@@ -1,6 +1,6 @@
 -- Create the event_teams table to store team listings for events
 create table if not exists public.event_teams (
-  id uuid not null default uuid_generate_v4(),
+  id uuid not null default gen_random_uuid(),
   created_at timestamp with time zone default now(),
   event_id uuid not null,
   name text not null,

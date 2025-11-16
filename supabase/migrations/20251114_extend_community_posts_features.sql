@@ -8,7 +8,7 @@ ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS is_scheduled BOOLEAN DEFAUL
 
 -- Create posts_comments table for comments
 CREATE TABLE IF NOT EXISTS posts_comments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS posts_comments (
 
 -- Create polls table
 CREATE TABLE IF NOT EXISTS polls (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
   question TEXT NOT NULL,
   options TEXT[] NOT NULL,
