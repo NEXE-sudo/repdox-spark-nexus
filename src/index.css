@@ -39,12 +39,28 @@ All colors MUST be HSL.
     --radius: 0.75rem;
 
     /* Brand gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 88% 31%), hsl(256 83% 58%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 15% 98%));
-    --gradient-hero: linear-gradient(135deg, hsl(210 88% 25%), hsl(256 83% 50%));
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(210 88% 31%),
+      hsl(256 83% 58%)
+    );
+    --gradient-subtle: linear-gradient(
+      180deg,
+      hsl(0 0% 100%),
+      hsl(210 15% 98%)
+    );
+    --gradient-hero: linear-gradient(
+      135deg,
+      hsl(210 88% 25%),
+      hsl(256 83% 50%)
+    );
 
     /* Backgrounds */
-    --gradient-section: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 15% 98%));
+    --gradient-section: linear-gradient(
+      180deg,
+      hsl(0 0% 100%),
+      hsl(210 15% 98%)
+    );
 
     /* Shadows */
     --shadow-card: 0 2px 8px -2px hsl(210 88% 31% / 0.08);
@@ -88,18 +104,29 @@ All colors MUST be HSL.
     --shadow-card-hover: 0 8px 24px -4px hsl(256 83% 58% / 0.2);
 
     /* Dark mode gradients */
-    --gradient-subtle: linear-gradient(180deg, hsl(210 88% 8%), hsl(210 50% 12%));
-    --gradient-section: linear-gradient(180deg, hsl(210 88% 8%), hsl(210 50% 12%));
+    --gradient-subtle: linear-gradient(
+      180deg,
+      hsl(210 88% 8%),
+      hsl(210 50% 12%)
+    );
+    --gradient-section: linear-gradient(
+      180deg,
+      hsl(210 88% 8%),
+      hsl(210 50% 12%)
+    );
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    font-feature-settings: "kern" 1;
+    -webkit-font-smoothing: antialiased;
   }
 
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -109,8 +136,26 @@ All colors MUST be HSL.
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Twitter-like smooth transitions */
+  .transition-twitter {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Twitter-like hover scale */
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  .active-scale:active {
+    transform: scale(0.95);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }

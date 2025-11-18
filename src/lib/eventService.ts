@@ -309,4 +309,205 @@ function generateSuffix(len = 4) {
   return out;
 }
 
-export default { createEvent };
+/**
+ * Update an existing event
+ */
+export async function updateEvent(
+  eventId: string,
+  payload: CreateEventPayload
+) {
+  const {
+    form,
+    tags,
+    scheduleText,
+    teamsText,
+    prizeText,
+    faqs,
+    uploadedFiles,
+  } = payload;
+
+  // Verify user owns this event
+  const userRes = await supabase.auth.getUser();
+  const user = userRes?.data?.user ?? null;
+  if (!user) throw new Error("Authentication required");
+
+  const { data: existingEvent } = await supabase
+    .from("events")
+    .select("created_by")
+    .eq("id", eventId)
+    .single();
+
+  if (existingEvent?.created_by !== user.id) {
+    throw new Error("You don't have permission to edit this event");
+  }
+
+  const startAt = new Date(`${form.start_date}T${form.start_time}`);
+  const endAt =
+    form.end_date && form.end_time
+      ? new Date(`${form.end_date}T${form.end_time}`)
+      : new Date(startAt.getTime() + 8 * 60 * 60 * 1000);
+  const registrationDeadline =
+    form.registration_deadline_date && form.registration_deadline_time
+      ? new Date(
+          `${form.registration_deadline_date}T${form.registration_deadline_time}`
+        )
+      : new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
+
+  const updateData: Record<string, unknown> = {
+    title: form.title,
+    type: form.type || null,
+    format: form.format || null,
+    start_at: startAt.toISOString(),
+    end_at: endAt.toISOString(),
+    registration_deadline: registrationDeadline.toISOString(),
+    location: form.location,
+    short_blurb: form.short_blurb ?? "",
+    long_description: form.long_description ?? null,
+    overview: form.overview ?? null,
+    rules: form.rules ?? null,
+    prizes: prizeText
+      ? prizeText
+          .split("\n")
+          .map((p) => p.trim())
+          .filter(Boolean)
+      : null,
+    faqs:
+      faqs && faqs.length
+        ? faqs.map((f) => ({ question: f.question, answer: f.answer }))
+        : null,
+    registration_link: form.registration_link ?? null,
+    discord_invite: form.discord_invite ?? null,
+    instagram_handle: form.instagram_handle ?? null,
+    tags: tags && tags.length ? tags : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Handle new image upload
+  if (uploadedFiles && uploadedFiles.length > 0) {
+    try {
+      const file = uploadedFiles[0].file;
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Only image files are allowed");
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("File size must be less than 10MB");
+      }
+
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const base = slugify(form.title || "event");
+      const fileName = `${base}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("event-images")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        updateData.image_url = fileName;
+      }
+    } catch (err) {
+      console.warn("Failed to upload event image", err);
+    }
+  }
+
+  // Update slug if provided
+  if (form.slug && form.slug.trim() !== "") {
+    updateData.slug = form.slug.trim();
+  }
+
+  const { data, error } = await supabase
+    .from("events")
+    .update(updateData)
+    .eq("id", eventId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+
+  // Update schedules - delete old and insert new
+  await supabase.from("event_schedules").delete().eq("event_id", eventId);
+  if (scheduleText && scheduleText.trim()) {
+    const lines = scheduleText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const scheduleInserts = lines.map((line) => {
+      const parts = line.split("|").map((p) => p.trim());
+      return {
+        event_id: eventId,
+        start_at: parts[0] ? new Date(parts[0]).toISOString() : null,
+        title: parts[1] || "Schedule Item",
+        description: parts[2] || null,
+      };
+    });
+    await supabase.from("event_schedules").insert(scheduleInserts);
+  }
+
+  // Update teams - delete old and insert new
+  await supabase.from("event_teams").delete().eq("event_id", eventId);
+  if (teamsText && teamsText.trim()) {
+    const lines = teamsText
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const teamInserts = lines.map((line) => {
+      const parts = line.split("|").map((p) => p.trim());
+      return {
+        event_id: eventId,
+        name: parts[0] || "Team",
+        description: parts[1] || null,
+        contact_email: parts[2] || null,
+      };
+    });
+    await supabase.from("event_teams").insert(teamInserts);
+  }
+
+  return data;
+}
+
+/**
+ * Delete an event (soft delete by setting is_active to false)
+ */
+export async function deleteEvent(eventId: string) {
+  const userRes = await supabase.auth.getUser();
+  const user = userRes?.data?.user ?? null;
+  if (!user) throw new Error("Authentication required");
+
+  const { data: existingEvent } = await supabase
+    .from("events")
+    .select("created_by")
+    .eq("id", eventId)
+    .single();
+
+  if (existingEvent?.created_by !== user.id) {
+    throw new Error("You don't have permission to delete this event");
+  }
+
+  // Hard delete - permanently removes from database
+  const { error } = await supabase.from("events").delete().eq("id", eventId);
+
+  if (error) throw error;
+  return true;
+}
+
+/**
+ * Get events created by current user
+ */
+export async function getMyEvents() {
+  const userRes = await supabase.auth.getUser();
+  const user = userRes?.data?.user ?? null;
+  if (!user) throw new Error("Authentication required");
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("created_by", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export default { createEvent, updateEvent, deleteEvent, getMyEvents };

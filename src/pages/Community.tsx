@@ -11,12 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getRelativeTime } from "@/lib/timeUtils";
 import {
   Search,
   Users,
   Heart,
   MessageCircle,
   MoreVertical,
+  ArrowLeft,
   UserPlus,
   UserCheck,
   Ban,
@@ -42,12 +44,26 @@ import {
   Edit,
   GripVertical,
   Plus,
+  Repeat2,
+  Upload,
 } from "lucide-react";
 import {
   reverseGeocodeLocation,
   getPreferredMapUrl,
   type LocationData,
 } from "@/lib/geolocationUtils";
+
+// Add this after the imports and before the component
+const heartPopVariants = {
+  initial: { scale: 1 },
+  liked: {
+    scale: [1, 1.25, 1],
+    transition: {
+      duration: 0.3,
+      times: [0, 0.5, 1],
+    },
+  },
+};
 
 interface UserProfile {
   id: string;
@@ -74,6 +90,8 @@ interface FeedPost {
   created_at: string;
   likes_count: number;
   comments_count: number;
+  repost_count?: number;
+  views_count?: number;
   images_urls?: string[];
   gif_url?: string;
   location?: { latitude: number; longitude: number; address?: string } | null;
@@ -160,6 +178,8 @@ export default function Community() {
   const [mentionSuggestions, setMentionSuggestions] = useState<UserProfile[]>(
     []
   );
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<string[]>([]);
+  const [repostedPosts, setRepostedPosts] = useState<string[]>([]);
 
   const testBucketAccess = async () => {
     console.log("[testBucketAccess] Testing storage buckets...");
@@ -245,6 +265,8 @@ export default function Community() {
         loadBlockedUsers(),
         loadTrendingHashtags(),
         loadUserLikes(currentUser.id),
+        loadUserBookmarks(currentUser.id),
+        loadUserReposts(currentUser.id),
       ]);
     };
 
@@ -281,6 +303,36 @@ export default function Community() {
     return data.publicUrl;
   };
 
+  const incrementPostViews = async (postId: string) => {
+    try {
+      // Get current views
+      const { data: post } = await supabase
+        .from("community_posts")
+        .select("views_count")
+        .eq("id", postId)
+        .single();
+
+      if (post) {
+        const newViewCount = (post.views_count || 0) + 1;
+
+        // Update views
+        await supabase
+          .from("community_posts")
+          .update({ views_count: newViewCount })
+          .eq("id", postId);
+
+        // Update local state
+        setFeedPosts(
+          feedPosts.map((p) =>
+            p.id === postId ? { ...p, views_count: newViewCount } : p
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error incrementing views:", err);
+    }
+  };
+
   const loadUserLikes = async (userId: string) => {
     try {
       const { data, error } = await supabase
@@ -292,6 +344,34 @@ export default function Community() {
       setLikedPosts((data || []).map((like) => like.post_id));
     } catch (err) {
       console.error("Error loading likes:", err);
+    }
+  };
+
+  const loadUserBookmarks = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("user_post_bookmarks")
+        .select("post_id")
+        .eq("user_id", userId);
+
+      if (error && error.code !== "PGRST116") throw error;
+      setBookmarkedPosts((data || []).map((bookmark) => bookmark.post_id));
+    } catch (err) {
+      console.error("Error loading bookmarks:", err);
+    }
+  };
+
+  const loadUserReposts = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("user_post_reposts")
+        .select("post_id")
+        .eq("user_id", userId);
+
+      if (error && error.code !== "PGRST116") throw error;
+      setRepostedPosts((data || []).map((repost) => repost.post_id));
+    } catch (err) {
+      console.error("Error loading reposts:", err);
     }
   };
 
@@ -472,6 +552,101 @@ export default function Community() {
     } catch (err) {
       console.error("Error reporting post:", err);
       setError("Failed to report post");
+    }
+  };
+
+  const handleBookmarkPost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      if (bookmarkedPosts.includes(postId)) {
+        // Remove bookmark
+        const { error } = await supabase
+          .from("user_post_bookmarks")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", user.id);
+
+        if (error) throw error;
+        setBookmarkedPosts(bookmarkedPosts.filter((id) => id !== postId));
+      } else {
+        // Add bookmark
+        const { error } = await supabase
+          .from("user_post_bookmarks")
+          .insert({ post_id: postId, user_id: user.id });
+
+        if (error) throw error;
+        setBookmarkedPosts([...bookmarkedPosts, postId]);
+        setSuccess("Post bookmarked!");
+        setTimeout(() => setSuccess(null), 2000);
+      }
+    } catch (err) {
+      console.error("Error bookmarking post:", err);
+      setError("Failed to bookmark post");
+    }
+  };
+
+  const handleRepostPost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      if (repostedPosts.includes(postId)) {
+        // Remove repost
+        const { error: deleteError } = await supabase
+          .from("user_post_reposts")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", user.id);
+
+        if (deleteError) throw deleteError;
+        setRepostedPosts(repostedPosts.filter((id) => id !== postId));
+
+        // Update repost count
+        const post = feedPosts.find((p) => p.id === postId);
+        if (post) {
+          const newCount = Math.max(0, (post.repost_count || 0) - 1);
+          await supabase
+            .from("community_posts")
+            .update({ repost_count: newCount })
+            .eq("id", postId);
+
+          setFeedPosts(
+            feedPosts.map((p) =>
+              p.id === postId ? { ...p, repost_count: newCount } : p
+            )
+          );
+        }
+      } else {
+        // Add repost
+        const { error: insertError } = await supabase
+          .from("user_post_reposts")
+          .insert({ post_id: postId, user_id: user.id });
+
+        if (insertError) throw insertError;
+        setRepostedPosts([...repostedPosts, postId]);
+
+        // Update repost count
+        const post = feedPosts.find((p) => p.id === postId);
+        if (post) {
+          const newCount = (post.repost_count || 0) + 1;
+          await supabase
+            .from("community_posts")
+            .update({ repost_count: newCount })
+            .eq("id", postId);
+
+          setFeedPosts(
+            feedPosts.map((p) =>
+              p.id === postId ? { ...p, repost_count: newCount } : p
+            )
+          );
+        }
+
+        setSuccess("Reposted!");
+        setTimeout(() => setSuccess(null), 2000);
+      }
+    } catch (err) {
+      console.error("Error reposting:", err);
+      setError("Failed to repost");
     }
   };
 
@@ -1210,57 +1385,79 @@ export default function Community() {
       <div className="flex h-screen w-full max-w-[1323px]">
         {/* Left Sidebar - Navigation */}
         <aside className="w-64 border-r border-border p-4 hidden lg:flex flex-col sticky top-0 h-full overflow-y-auto">
-          <nav className="space-y-4 flex-1">
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-muted transition cursor-pointer">
-              <Home className="w-6 h-6" />
-              <span className="text-xl font-bold">Home</span>
+          <nav className="space-y-2 flex-1">
+            <div className="flex items-center gap-4 p-3 rounded-full bg-accent/20 transition cursor-pointer">
+              <Home className="w-6 h-6 text-accent" />
+              <span
+                onClick={() => navigate("/community")}
+                className="text-xl font-bold"
+              >
+                Home
+              </span>
             </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-muted transition cursor-pointer">
+            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
               <Compass className="w-6 h-6" />
-              <span className="text-xl font-bold">Explore</span>
+              <span
+                onClick={() => {
+                  navigate("/explore");
+                }}
+                className="text-xl"
+              >
+                Explore
+              </span>
             </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-muted transition cursor-pointer">
+            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
               <Bell className="w-6 h-6" />
-              <span className="text-xl font-bold">Notifications</span>
+              <span className="text-xl">Notifications</span>
             </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-muted transition cursor-pointer">
+            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
               <Mail className="w-6 h-6" />
-              <span className="text-xl font-bold">Messages</span>
+              <span
+                onClick={() => {
+                  navigate("/messages");
+                }}
+                className="text-xl"
+              >
+                Messages
+              </span>
             </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-muted transition cursor-pointer">
+            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
               <Bookmark className="w-6 h-6" />
-              <span className="text-xl font-bold">Bookmarks</span>
+              <span onClick={() => navigate("/bookmarks")} className="text-xl">
+                Bookmarks
+              </span>
             </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-muted transition cursor-pointer">
+            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
               <Users className="w-6 h-6" />
-              <span className="text-xl font-bold">Communities</span>
+              <span
+                onClick={() => {
+                  navigate("/community");
+                }}
+                className="text-xl"
+              >
+                Communities
+              </span>
             </div>
           </nav>
 
-          <Button className="w-full py-6 text-lg font-bold rounded-full">
+          <Button className="w-full py-6 text-lg font-bold rounded-full bg-accent hover:bg-accent/90 active:scale-95 transition-transform">
             Post
           </Button>
         </aside>
-
         {/* Center Content */}
-        <div className="w-full max-w-[600px] border-r border-border overflow-y-auto h-full">
-          {/* Feed Header */}
-          <div className="sticky top-0 backdrop-blur bg-background/80 border-b border-border p-4 z-10">
-            <h2 className="text-xl font-bold">For you</h2>
-          </div>
-
+        <div className="w-full max-w-[600px] border-r border-border overflow-y-auto h-full flex flex-col">
           {/* Post Composition */}
           <div className="border-b border-border p-4">
             <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
                 {getAvatarUrl(currentUserProfile?.avatar_url) ? (
                   <img
                     src={getAvatarUrl(currentUserProfile?.avatar_url)!}
                     alt={currentUserProfile?.full_name || "You"}
-                    className="w-12 h-12 rounded-full flex-shrink-0 object-cover"
+                    className="w-10 h-10 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition-opacity"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold">
+                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition-opacity">
                     {currentUserProfile?.full_name?.[0] ||
                       user?.email?.[0].toUpperCase() ||
                       "U"}
@@ -1278,8 +1475,12 @@ export default function Community() {
                       updateMentionSuggestions(v);
                     }}
                     placeholder="What's happening?!"
-                    className="w-full bg-transparent text-xl text-foreground placeholder:text-muted-foreground outline-none resize-none"
+                    className="w-full bg-transparent text-xl text-foreground placeholder:text-muted-foreground outline-none resize-none font-normal"
                     rows={3}
+                    style={{
+                      fontFamily:
+                        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                    }}
                   />
                   {/* Hashtag Suggestions */}
                   {showHashtagSuggestions && newPost.includes("#") && (
@@ -1639,7 +1840,7 @@ export default function Community() {
                     />
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-2 hover:bg-accent/10 rounded-full transition"
+                      className="p-2 hover:bg-accent/10 rounded-full transition-all active:scale-90"
                       title="Add images"
                     >
                       <ImageIcon className="w-5 h-5 text-accent" />
@@ -1740,7 +1941,7 @@ export default function Community() {
           {/* Posts Feed */}
           {feedPosts.length === 0 ? (
             <div className="text-center py-12 p-4">
-              <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <MessageCircle className="w-10 h-10 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="text-muted-foreground">
                 No posts yet. Be the first to share!
               </p>
@@ -1751,42 +1952,45 @@ export default function Community() {
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group border-b border-border p-4 hover:bg-muted/30 transition"
+                className="border-b border-border px-4 py-3 hover:bg-muted/30 transition cursor-pointer"
+                onClick={() => {
+                  incrementPostViews(post.id);
+                  navigate(`/community/${post.id}`);
+                }}
               >
-                <div className="flex gap-4">
+                <div className="flex gap-3">
                   {getAvatarUrl(currentUserProfile?.avatar_url) ? (
                     <img
                       src={getAvatarUrl(currentUserProfile?.avatar_url)!}
                       alt={currentUserProfile?.full_name || "You"}
-                      className="w-12 h-12 rounded-full flex-shrink-0 object-cover"
+                      className="w-10 h-10 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition-opacity"
                     />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold">
+                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition-opacity">
                       {currentUserProfile?.full_name?.[0] ||
                         user?.email?.[0].toUpperCase() ||
                         "U"}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between cursor-pointer group">
+                    <div className="flex items-center justify-between">
                       <div
-                        className="flex items-center gap-2 flex-1"
+                        className="flex items-center gap-1 flex-1 cursor-pointer"
                         onClick={() => navigate(`/profile/${post.user_id}`)}
                       >
-                        <h3 className="font-bold text-foreground group-hover:underline">
+                        <span className="font-bold text-foreground hover:underline text-[15px]">
                           {post.user_profile?.full_name || "Anonymous"}
-                        </h3>
-                        <span className="text-muted-foreground">
+                        </span>
+                        <span className="text-muted-foreground text-[15px]">
                           @
                           {post.user_profile?.handle ||
                             post.user_profile?.full_name
                               ?.toLowerCase()
-                              .replace(" ", "") ||
+                              .replace(/\s+/g, "") ||
                             "user"}
                         </span>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="text-muted-foreground text-sm">
-                          {new Date(post.created_at).toLocaleDateString()}
+                        <span className="text-muted-foreground text-[15px]">
+                          · {getRelativeTime(post.created_at)}
                         </span>
                       </div>
                       <DropdownMenu>
@@ -1856,14 +2060,14 @@ export default function Community() {
                     </div>
 
                     {/* Post Content */}
-                    <p className="text-foreground mt-2 break-words cursor-pointer hover:text-muted-foreground">
+                    <p className="text-foreground text-[15px] leading-5 mt-1 break-words cursor-pointer">
                       {renderContentWithMentions(post.content)}
                     </p>
 
                     {/* Images Display */}
                     {post.images_urls && post.images_urls.length > 0 && (
                       <div
-                        className={`grid gap-2 mt-3 mb-3 rounded-lg overflow-hidden ${
+                        className={`grid gap-0.5 mt-3 rounded-2xl overflow-hidden border border-border ${
                           post.images_urls.length === 1
                             ? "grid-cols-1"
                             : post.images_urls.length === 2
@@ -1884,7 +2088,7 @@ export default function Community() {
                                 className="w-full h-auto min-h-[200px] flex items-center justify-center bg-muted rounded-lg border border-border"
                               >
                                 <div className="text-center p-4">
-                                  <ImageIcon className="w-12 h-12 mx-auto mb-2 text-muted-foreground opacity-50" />
+                                  <ImageIcon className="w-10 h-10 mx-auto mb-2 text-muted-foreground opacity-50" />
                                   <p className="text-xs text-muted-foreground">
                                     Image unavailable
                                   </p>
@@ -1992,17 +2196,52 @@ export default function Community() {
                     )}
 
                     {/* Engagement Buttons */}
-                    <div className="flex items-center justify-between mt-4 text-muted-foreground text-sm">
-                      <div className="flex gap-4 items-center">
+                    <div className="flex items-center justify-between mt-3 text-muted-foreground text-sm">
+                      <div className="flex items-center w-full max-w-[425px] justify-between">
                         {/* Comment Button */}
                         <button
                           onClick={() => navigate(`/community/${post.id}`)}
-                          className="flex items-center gap-2 text-muted-foreground hover:text-blue-500 transition"
+                          className="flex items-center gap-1 -ml-2 text-muted-foreground hover:text-blue-500 transition-colors"
                         >
-                          <div className="p-2 rounded-full hover:bg-blue-500/20 transition active:scale-95">
-                            <MessageCircle className="w-4 h-4" />
+                          <div className="p-2 rounded-full transition-colors hover:bg-blue-500/10">
+                            <MessageCircle className="w-[18px] h-[18px]" />
                           </div>
-                          <span className="text-xs">{post.comments_count}</span>
+                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                            {post.comments_count >= 0
+                              ? post.comments_count >= 1000
+                                ? `${(post.comments_count / 1000).toFixed(1)}K`
+                                : post.comments_count
+                              : ""}
+                          </span>
+                        </button>
+
+                        {/* Repost Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRepostPost(post.id);
+                          }}
+                          className="flex items-center gap-1 text-muted-foreground hover:text-green-500 transition-colors"
+                        >
+                          <motion.div
+                            whileTap={{ scale: 0.9 }}
+                            className={`p-2 rounded-full transition-colors ${
+                              repostedPosts.includes(post.id)
+                                ? "bg-green-500/10 text-green-500"
+                                : "hover:bg-green-500/10"
+                            }`}
+                          >
+                            <Repeat2 className="w-[18px] h-[18px]" />
+                          </motion.div>
+                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                            {(post.repost_count || 0) >= 0
+                              ? (post.repost_count || 0) >= 1000
+                                ? `${((post.repost_count || 0) / 1000).toFixed(
+                                    1
+                                  )}K`
+                                : post.repost_count
+                              : ""}
+                          </span>
                         </button>
 
                         {/* Like Button */}
@@ -2011,74 +2250,114 @@ export default function Community() {
                             e.stopPropagation();
                             handleLikePost(post.id);
                           }}
-                          className={`flex items-center gap-2 transition ${
-                            likedPosts.includes(post.id)
-                              ? "text-red-500"
-                              : "text-muted-foreground hover:text-red-500"
-                          }`}
+                          className="flex items-center gap-1 text-muted-foreground hover:text-pink-500 transition-colors"
                         >
-                          <div
-                            className={`p-2 rounded-full transition active:scale-95 ${
+                          <motion.div
+                            whileTap={{ scale: 0.9 }}
+                            className={`p-2 rounded-full transition-colors ${
                               likedPosts.includes(post.id)
-                                ? "bg-red-500/20"
-                                : "hover:bg-red-500/20"
+                                ? "bg-pink-500/10 text-pink-500"
+                                : "hover:bg-pink-500/10"
                             }`}
                           >
                             <Heart
-                              className="w-4 h-4"
+                              className="w-[18px] h-[18px]"
                               fill={
                                 likedPosts.includes(post.id)
                                   ? "currentColor"
                                   : "none"
                               }
                             />
+                          </motion.div>
+                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                            {post.likes_count >= 0
+                              ? post.likes_count >= 1000
+                                ? `${(post.likes_count / 1000).toFixed(1)}K`
+                                : post.likes_count
+                              : ""}
+                          </span>
+                        </button>
+
+                        {/* Views Count */}
+                        <button className="flex items-center gap-1 cursor-default text-muted-foreground hover:text-blue-500 transition-colors">
+                          <div className="p-2 rounded-full transition-colors hover:bg-blue-500/10">
+                            <BarChart3 className="w-[18px] h-[18px]" />
                           </div>
-                          <span className="text-xs">{post.likes_count}</span>
+                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                            {(post.views_count || 0) >= 1000
+                              ? `${((post.views_count || 0) / 1000).toFixed(
+                                  1
+                                )}K`
+                              : post.views_count || 0}
+                          </span>
                         </button>
                       </div>
 
-                      {/* Share Dropdown - Rightmost */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
-                            className="p-2 text-muted-foreground rounded-full hover:bg-green-500/20 hover:text-green-500 transition active:scale-95"
+                      {/* Right side actions */}
+                      <div className="flex items-center -mr-2">
+                        {/* Bookmark Button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBookmarkPost(post.id);
+                          }}
+                        >
+                          <motion.div
+                            whileTap={{ scale: 0.9 }}
+                            className={`p-2 rounded-full transition-colors ${
+                              bookmarkedPosts.includes(post.id)
+                                ? "fill-blue-500 text-blue-500"
+                                : "text-muted-foreground hover:bg-blue-500/10 hover:text-blue-500"
+                            }`}
                           >
-                            <Share className="w-4 h-4" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const postUrl = `${window.location.origin}/community/${post.id}`;
-                              navigator.clipboard.writeText(postUrl);
-                              setSuccess("Link copied to clipboard!");
-                              setTimeout(() => setSuccess(null), 2000);
-                            }}
-                          >
-                            <Copy className="w-4 h-4 mr-2" />
-                            Copy link
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const postUrl = `${window.location.origin}/community/${post.id}`;
-                              window.open(
-                                `mailto:?subject=Check out this post&body=${encodeURIComponent(
-                                  postUrl
-                                )}`,
-                                "_blank"
-                              );
-                            }}
-                          >
-                            <MailIcon className="w-4 h-4 mr-2" />
-                            Share via Email
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            <Bookmark className="w-[18px] h-[18px]" />
+                          </motion.div>
+                        </button>
+
+                        {/* Share Dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <div className="p-2 rounded-full text-muted-foreground hover:bg-blue-500/10 hover:text-blue-500 transition-colors">
+                                <Upload className="w-[18px] h-[18px]" />
+                              </div>
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const postUrl = `${window.location.origin}/community/${post.id}`;
+                                navigator.clipboard.writeText(postUrl);
+                                setSuccess("Link copied to clipboard!");
+                                setTimeout(() => setSuccess(null), 2000);
+                              }}
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const postUrl = `${window.location.origin}/community/${post.id}`;
+                                window.open(
+                                  `mailto:?subject=Check out this post&body=${encodeURIComponent(
+                                    postUrl
+                                  )}`,
+                                  "_blank"
+                                );
+                              }}
+                            >
+                              <MailIcon className="w-4 h-4 mr-2" />
+                              Share via Email
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2086,7 +2365,6 @@ export default function Community() {
             ))
           )}
         </div>
-
         {/* Right Sidebar - Search & Trending */}
         <div className="w-[400px] flex-shrink-0 border-l border-border p-4 hidden xl:flex flex-col sticky top-0 h-full overflow-y-auto">
           {/* Search */}
@@ -2094,116 +2372,23 @@ export default function Community() {
             <Search className="absolute left-4 top-3 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              placeholder="Search users..."
+              placeholder="Search"
               className="w-full pl-12 pr-4 py-3 rounded-full bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
-          {/* Trending Hashtags - Only show if they exist */}
-          {searchResults.length === 0 && (
-            <div className="bg-muted rounded-2xl p-4">
-              <h2 className="text-xl font-bold mb-4">What's happening</h2>
-              <div className="space-y-3">
-                {isLoadingTrending ? (
-                  <div className="text-center py-4">
-                    <p className="text-xs text-muted-foreground">
-                      Loading trends...
-                    </p>
-                  </div>
-                ) : trendingHashtags.length > 0 ? (
-                  <>
-                    {trendingHashtags.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="hover:bg-muted/80 p-3 rounded transition cursor-pointer flex items-start justify-between group"
-                      >
-                        <div className="flex-1">
-                          <div className="text-xs text-muted-foreground">
-                            {item.category} · Trending
-                          </div>
-                          <div className="font-bold text-foreground">
-                            {item.hashtag}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.count} {item.count === 1 ? "post" : "posts"}
-                          </div>
-                        </div>
-                        <button className="text-muted-foreground hover:text-accent opacity-0 group-hover:opacity-100 transition">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                    <button className="text-accent hover:text-blue-400 text-sm font-medium mt-2 w-full text-left">
-                      Show more
-                    </button>
-                  </>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-xs text-muted-foreground">
-                      No trending hashtags yet
-                    </p>
-                  </div>
-                )}
+
+          {/* What's happening */}
+          <div className="bg-muted rounded-2xl p-4">
+            <h2 className="text-xl font-bold mb-4">What's happening</h2>
+            <div className="space-y-3">
+              {/* Add trending content here */}
+              <div className="text-center py-4">
+                <p className="text-xs text-muted-foreground">
+                  No trending topics yet
+                </p>
               </div>
             </div>
-          )}
-          {/* Suggested Users */}
-          {searchResults.length > 0 && (
-            <div className="bg-muted rounded-2xl p-4">
-              <h2 className="text-xl font-bold mb-4">Search Results</h2>
-              <div className="space-y-3">
-                {searchResults.slice(0, 5).map((profile) => (
-                  <div
-                    key={profile.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div
-                      className="flex items-center gap-2 flex-1 cursor-pointer hover:opacity-80"
-                      onClick={() => navigate(`/profile/${profile.user_id}`)}
-                    >
-                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold">
-                        {profile.full_name?.[0] || "?"}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-sm text-foreground">
-                          {profile.full_name || "Anonymous"}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          @
-                          {profile.full_name?.toLowerCase().replace(" ", "") ||
-                            "user"}
-                        </p>
-                      </div>
-                    </div>
-                    {isFriend(profile.user_id) ? (
-                      <button
-                        onClick={() => handleBlockUser(profile.user_id)}
-                        className="ml-2 px-4 py-1.5 bg-red-500/20 text-red-500 rounded-full font-bold text-sm hover:bg-red-500/30"
-                      >
-                        Block
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleAddFriend(profile.user_id)}
-                        disabled={loadingFollowId === profile.user_id}
-                        className="ml-2 px-4 py-1.5 bg-accent text-white rounded-full font-bold text-sm hover:bg-accent/90 disabled:opacity-70 disabled:cursor-not-allowed transition flex items-center gap-2"
-                      >
-                        {loadingFollowId === profile.user_id ? (
-                          <>
-                            <Loader className="w-4 h-4 animate-spin" />
-                            Following...
-                          </>
-                        ) : (
-                          "Follow"
-                        )}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 

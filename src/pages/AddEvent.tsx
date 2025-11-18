@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -47,7 +49,14 @@ interface FAQ {
 }
 
 export default function AddEvent() {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const isEditMode = !!slug;
+
   const [loading, setLoading] = useState(false);
+  const [loadingEvent, setLoadingEvent] = useState(isEditMode);
+  const [eventId, setEventId] = useState<string | null>(null);
+
   const [form, setForm] = useState({
     title: "",
     slug: "",
@@ -86,6 +95,122 @@ export default function AddEvent() {
   const [uploadedFiles, setUploadedFiles] = useState<
     Array<{ file: File; name: string }>
   >([]);
+
+  // Load event data if in edit mode
+  useEffect(() => {
+    if (!isEditMode || !slug) return;
+
+    const loadEvent = async () => {
+      try {
+        const { data: event, error } = await supabase
+          .from("events")
+          .select("*")
+          .eq("slug", slug)
+          .single();
+
+        if (error) throw error;
+
+        // Check if user owns this event
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (event.created_by !== user?.id) {
+          alert("You don't have permission to edit this event");
+          navigate("/events");
+          return;
+        }
+
+        setEventId(event.id);
+
+        // Parse dates
+        const startDate = new Date(event.start_at);
+        const endDate = new Date(event.end_at);
+        const regDeadline = new Date(event.registration_deadline);
+
+        // Populate form
+        setForm({
+          title: event.title || "",
+          slug: event.slug || "",
+          type: event.type || "Hackathon",
+          format: event.format || "Offline",
+          start_date: startDate.toISOString().split("T")[0],
+          start_time: startDate.toTimeString().slice(0, 5),
+          end_date: endDate.toISOString().split("T")[0],
+          end_time: endDate.toTimeString().slice(0, 5),
+          registration_deadline_date: regDeadline.toISOString().split("T")[0],
+          registration_deadline_time: regDeadline.toTimeString().slice(0, 5),
+          location: event.location || "",
+          short_blurb: event.short_blurb || "",
+          long_description: event.long_description || "",
+          overview: event.overview || "",
+          rules: event.rules || "",
+          registration_link: event.registration_link || "",
+          discord_invite: event.discord_invite || "",
+          instagram_handle: event.instagram_handle || "",
+        });
+
+        // Set tags
+        if (event.tags) setTags(event.tags);
+
+        // Set prizes
+        if (event.prizes && Array.isArray(event.prizes)) {
+          setPrizeText(event.prizes.join("\n"));
+        }
+
+        // Set FAQs
+        if (event.faqs && Array.isArray(event.faqs)) {
+          const loadedFaqs = event.faqs.map((f: any, idx: number) => ({
+            id: `faq-${idx}`,
+            question: f.question || "",
+            answer: f.answer || "",
+          }));
+          if (loadedFaqs.length > 0) {
+            setFaqs(loadedFaqs);
+            setShowFaqs(true);
+          }
+        }
+
+        // Load schedules
+        const { data: schedules } = await supabase
+          .from("event_schedules")
+          .select("*")
+          .eq("event_id", event.id)
+          .order("start_at", { ascending: true });
+
+        if (schedules && schedules.length > 0) {
+          const scheduleLines = schedules.map((s) => {
+            const start = s.start_at
+              ? new Date(s.start_at).toISOString().slice(0, 16)
+              : "";
+            return `${start} | ${s.title} | ${s.description || ""}`;
+          });
+          setScheduleText(scheduleLines.join("\n"));
+        }
+
+        // Load teams
+        const { data: teams } = await supabase
+          .from("event_teams")
+          .select("*")
+          .eq("event_id", event.id);
+
+        if (teams && teams.length > 0) {
+          const teamLines = teams.map(
+            (t) =>
+              `${t.name} | ${t.description || ""} | ${t.contact_email || ""}`
+          );
+          setTeamsText(teamLines.join("\n"));
+        }
+      } catch (err: any) {
+        console.error("Failed to load event:", err);
+        alert("Failed to load event: " + err.message);
+        navigate("/events");
+      } finally {
+        setLoadingEvent(false);
+      }
+    };
+
+    loadEvent();
+  }, [isEditMode, slug, navigate]);
 
   const onChange = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }));
 
@@ -179,20 +304,9 @@ export default function AddEvent() {
       return;
     }
 
-    console.log("[AddEvent] uploadedFiles:", uploadedFiles);
-    console.log("[AddEvent] uploadedFiles length:", uploadedFiles.length);
-    if (uploadedFiles.length > 0) {
-      console.log(
-        "[AddEvent] First file:",
-        uploadedFiles[0].file.name,
-        uploadedFiles[0].file.type,
-        uploadedFiles[0].file.size
-      );
-    }
-
     setLoading(true);
     try {
-      const created = await eventService.createEvent({
+      const payload = {
         form,
         tags,
         scheduleText,
@@ -200,25 +314,35 @@ export default function AddEvent() {
         prizeText,
         faqs: faqs.map((f) => ({ question: f.question, answer: f.answer })),
         uploadedFiles,
-      });
+      };
 
-      console.log("[AddEvent] Created event:", created);
-      console.log("[AddEvent] Created event slug:", created?.slug);
-
-      alert("Event created successfully!");
-      // Navigate to the event page if slug exists
-      if (created?.slug) {
-        window.location.href = `/events/${created.slug}`;
+      if (isEditMode && eventId) {
+        // Update existing event
+        const updated = await eventService.updateEvent(eventId, payload);
+        alert("Event updated successfully!");
+        if (updated?.slug) {
+          navigate(`/events/${updated.slug}`);
+        } else {
+          navigate("/my-events");
+        }
       } else {
-        window.history.back();
+        // Create new event
+        const created = await eventService.createEvent(payload);
+        alert("Event created successfully!");
+        if (created?.slug) {
+          navigate(`/events/${created.slug}`);
+        } else {
+          navigate("/my-events");
+        }
       }
     } catch (err: any) {
-      // Normalize error to a readable message
-      console.error("Create event failed", err);
+      console.error(
+        isEditMode ? "Update event failed" : "Create event failed",
+        err
+      );
       let message = "Unknown error";
       try {
         if (err instanceof Error) {
-          // If the service stringified details into the Error message, try parsing
           try {
             const parsed = JSON.parse(err.message);
             message = parsed?.message || err.message;
@@ -233,11 +357,22 @@ export default function AddEvent() {
       } catch (e) {
         message = String(err);
       }
-      alert("Failed to create event: " + message);
+      alert(`Failed to ${isEditMode ? "update" : "create"} event: ` + message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (loadingEvent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse space-y-4 w-full max-w-4xl px-6">
+          <div className="h-8 bg-muted rounded w-1/3" />
+          <div className="h-64 bg-muted rounded" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
@@ -245,10 +380,12 @@ export default function AddEvent() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight mb-2">
-            Create Event
+            {isEditMode ? "Edit Event" : "Create Event"}
           </h1>
           <p className="text-muted-foreground">
-            Fill in the details to create your event
+            {isEditMode
+              ? "Update your event details"
+              : "Fill in the details to create your event"}
           </p>
         </div>
 
@@ -860,11 +997,17 @@ export default function AddEvent() {
             </Button>
             <Button
               type="button"
-              disabled={loading}
+              disabled={loading || loadingEvent}
               className="flex-1 h-12 text-base"
               onClick={handleSubmit}
             >
-              {loading ? "Creating Event..." : "Create Event"}
+              {loading
+                ? isEditMode
+                  ? "Updating Event..."
+                  : "Creating Event..."
+                : isEditMode
+                ? "Update Event"
+                : "Create Event"}
             </Button>
           </div>
         </div>

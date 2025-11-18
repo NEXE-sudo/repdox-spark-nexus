@@ -5,7 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   uploadAvatar as uploadAvatarService,
   getAvatarSignedUrl,
+  deleteUserAccount,
 } from "@/lib/profileService";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +52,7 @@ const sections = [
   { id: "personal", label: "Personal Info", icon: UserIcon },
   { id: "professional", label: "Professional", icon: Briefcase },
   { id: "contact", label: "Contact", icon: Phone },
+  { id: "security", label: "Security", icon: UserIcon }, // Add this line
 ];
 
 export default function Profile() {
@@ -61,6 +73,8 @@ export default function Profile() {
   const [phone, setPhone] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Avatar states
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -288,6 +302,20 @@ export default function Profile() {
       </div>
     );
   }
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await deleteUserAccount();
+      navigate("/");
+    } catch (err: any) {
+      console.error("Error deleting account:", err);
+      setError(err.message || "Failed to delete account");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteDialogOpen(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -612,6 +640,46 @@ export default function Profile() {
                   </div>
                 )}
 
+                {activeSection === "security" && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Security & Privacy
+                    </h2>
+
+                    {/* Danger Zone */}
+                    <div className="border border-destructive/30 rounded-lg p-6 bg-destructive/5">
+                      <h3 className="text-lg font-semibold text-destructive mb-2">
+                        Danger Zone
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Once you delete your account, there is no going back.
+                        Please be certain.
+                      </p>
+
+                      <div className="space-y-3">
+                        <div className="text-sm text-muted-foreground">
+                          <p className="mb-2">This will permanently delete:</p>
+                          <ul className="list-disc list-inside space-y-1 ml-2">
+                            <li>Your profile and personal information</li>
+                            <li>All events you've created</li>
+                            <li>Your event registrations</li>
+                            <li>Your avatar and uploaded files</li>
+                            <li>All associated data</li>
+                          </ul>
+                        </div>
+
+                        <Button
+                          variant="destructive"
+                          onClick={() => setDeleteDialogOpen(true)}
+                          className="w-full sm:w-auto"
+                        >
+                          Delete My Account
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Save Button */}
                 <div className="mt-8 pt-6 border-t border-border">
                   <Button
@@ -628,6 +696,32 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              account, all your events, registrations, and remove all your data
+              from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteLoading}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deleteLoading}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteLoading ? "Deleting..." : "Yes, Delete My Account"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

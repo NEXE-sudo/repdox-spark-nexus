@@ -247,6 +247,68 @@ export async function uploadEventImage(
 }
 
 /**
+ * Complete account deletion - calls Edge Function to delete auth user and all data
+ */
+export async function deleteUserAccount() {
+  const userRes = await supabase.auth.getUser();
+  const user = userRes?.data?.user ?? null;
+  if (!user) throw new Error("Authentication required");
+
+  // Get the session to access the JWT token
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error("No active session");
+
+  const userId = user.id;
+
+  try {
+    console.log(
+      "[deleteUserAccount] Starting complete account deletion for user:",
+      userId
+    );
+
+    // Call the Edge Function with proper authorization header
+    const { data, error } = await supabase.functions.invoke(
+      "delete-user-account",
+      {
+        body: { userId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      }
+    );
+
+    // Log the full response for debugging
+    console.log("[deleteUserAccount] Response data:", data);
+    console.log("[deleteUserAccount] Response error:", error);
+
+    if (error) {
+      console.error("[deleteUserAccount] Edge function error:", error);
+      console.error(
+        "[deleteUserAccount] Error details:",
+        JSON.stringify(error, null, 2)
+      );
+      throw new Error(error.message || "Failed to delete account");
+    }
+
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+
+    console.log("[deleteUserAccount] Account deletion successful:", data);
+
+    // Sign out
+    await supabase.auth.signOut();
+
+    return true;
+  } catch (err) {
+    console.error("[deleteUserAccount] Error:", err);
+    throw err;
+  }
+}
+
+/**
  * Helper: Get URL for any storage file in private bucket
  * Works because Supabase client includes auth token
  */

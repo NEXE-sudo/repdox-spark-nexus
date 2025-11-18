@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { getRelativeTime } from "@/lib/timeUtils";
 import {
   Search,
   Users,
@@ -72,6 +73,8 @@ interface Comment {
   created_at: string;
   likes_count: number;
   user_profile?: UserProfile;
+  parent_comment_id?: string | null;
+  depth?: number;
 }
 
 export default function CommentDetail() {
@@ -196,36 +199,83 @@ export default function CommentDetail() {
         .from("posts_comments")
         .select(
           `
-        *,
-        user_profiles!posts_comments_user_id_fkey (
-          id,
-          user_id,
-          full_name,
-          handle,
-          bio,
-          avatar_url,
-          job_title,
-          location,
-          created_at,
-          updated_at
-        )
-      `
+      *,
+      user_profiles!posts_comments_user_id_fkey (
+        id,
+        user_id,
+        full_name,
+        handle,
+        bio,
+        avatar_url,
+        job_title,
+        location,
+        created_at,
+        updated_at
+      )
+    `
         )
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      // Transform to match your interface
+      // Transform and build thread hierarchy
       const transformedComments = (comments || []).map((comment) => ({
         ...comment,
         user_profile: comment.user_profiles,
+        depth: 0,
       }));
 
-      setComments(transformedComments);
+      // Build threaded structure
+      const threaded = buildCommentThread(transformedComments);
+      setComments(threaded);
     } catch (err) {
       console.error("Error loading comments:", err);
     }
+  };
+
+  // Helper function to build comment threads
+  const buildCommentThread = (comments: Comment[]): Comment[] => {
+    const commentMap = new Map<string, Comment & { replies: Comment[] }>();
+    const rootComments: (Comment & { replies: Comment[] })[] = [];
+
+    // Create map of all comments
+    comments.forEach((comment) => {
+      commentMap.set(comment.id, { ...comment, replies: [] });
+    });
+
+    // Build thread hierarchy
+    comments.forEach((comment) => {
+      const commentWithReplies = commentMap.get(comment.id)!;
+
+      if (comment.parent_comment_id) {
+        const parent = commentMap.get(comment.parent_comment_id);
+        if (parent) {
+          commentWithReplies.depth = (parent.depth || 0) + 1;
+          parent.replies.push(commentWithReplies);
+        } else {
+          rootComments.push(commentWithReplies);
+        }
+      } else {
+        rootComments.push(commentWithReplies);
+      }
+    });
+
+    // Flatten for display (maintain hierarchy via depth)
+    const flattenThread = (
+      comments: (Comment & { replies: Comment[] })[],
+      result: Comment[] = []
+    ): Comment[] => {
+      comments.forEach((comment) => {
+        result.push(comment);
+        if (comment.replies.length > 0) {
+          flattenThread(comment.replies, result);
+        }
+      });
+      return result;
+    };
+
+    return flattenThread(rootComments);
   };
 
   const loadUserLikes = async (userId: string) => {
@@ -621,13 +671,13 @@ export default function CommentDetail() {
             <div className="flex gap-4">
               {getAvatarUrl(post.user_profile?.avatar_url) ? (
                 <img
-                  src={post.user_profile.avatar_url}
+                  src={getAvatarUrl(post.user_profile.avatar_url)!}
                   alt={post.user_profile.full_name || "User"}
-                  className="w-12 h-12 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
+                  className="w-10 h-10 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
                   onClick={() => navigate(`/profile/${post.user_id}`)}
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition">
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition">
                   {post.user_profile?.full_name?.[0] || "U"}
                 </div>
               )}
@@ -814,9 +864,9 @@ export default function CommentDetail() {
           </div>
 
           {/* Comment Composer */}
-          <div className="border-b border-border p-4 flex-shrink-0">
-            <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold">
+          <div className="border-b border-border px-4 py-3 flex-shrink-0">
+            <div className="flex gap-3">
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold">
                 {user?.email?.[0]?.toUpperCase() || "U"}
               </div>
               <div className="flex-1">
@@ -892,7 +942,7 @@ export default function CommentDetail() {
                   <Button
                     onClick={handleCreateComment}
                     disabled={isLoading || !newComment.trim()}
-                    className="rounded-full px-8 font-bold"
+                    className="rounded-full px-8 font-bold bg-accent hover:bg-accent/90 active:scale-95 transition-transform"
                   >
                     Reply
                   </Button>
@@ -904,148 +954,187 @@ export default function CommentDetail() {
           {/* Comments List */}
           {comments.length === 0 ? (
             <div className="text-center py-12 p-4 flex-1 flex flex-col items-center justify-center">
-              <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <MessageCircle className="w-10 h-10 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="text-muted-foreground">
                 No comments yet. Be the first to reply!
               </p>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
-              {comments.map((comment) => (
-                <motion.div
-                  key={comment.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="border-b border-border p-4 hover:bg-muted/30 transition"
-                >
-                  <div className="flex gap-4">
-                    {comment.user_profile?.avatar_url ? (
-                      <img
-                        src={comment.user_profile.avatar_url}
-                        alt={comment.user_profile.full_name || "User"}
-                        className="w-12 h-12 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
-                        onClick={() => navigate(`/profile/${comment.user_id}`)}
-                      />
-                    ) : (
-                      <div
-                        className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition"
-                        onClick={() => navigate(`/profile/${comment.user_id}`)}
-                      >
-                        {comment.user_profile?.full_name?.[0] || "U"}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between cursor-pointer group">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="font-bold hover:underline"
-                            onClick={() =>
-                              navigate(`/profile/${comment.user_id}`)
-                            }
-                          >
-                            {comment.user_profile?.full_name || "User"}
-                          </span>
-                          <span className="text-muted-foreground">
-                            @
-                            {comment.user_profile?.handle ||
-                              comment.user_id.slice(0, 8)}
-                          </span>
-                          <span className="text-muted-foreground text-sm">
-                            {new Date(comment.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="p-2 text-muted-foreground rounded-full hover:bg-accent/20 hover:text-accent transition active:scale-95">
-                              <MoreVertical className="w-5 h-5" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {user?.id === comment.user_id && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // In a real app, this would open an edit modal
-                                    setSuccess("Edit feature coming soon!");
-                                    setTimeout(() => setSuccess(null), 2000);
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4 mr-2" />
-                                  Edit reply
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteComment(
-                                      comment.id,
-                                      comment.user_id
-                                    );
-                                  }}
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2 text-red-500" />
-                                  <span className="text-red-500">
-                                    Delete reply
-                                  </span>
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReportComment(comment.id);
-                              }}
-                            >
-                              <Flag className="w-4 h-4 mr-2" />
-                              Report reply
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMuteAuthor(comment.user_id);
-                              }}
-                            >
-                              <VolumeX className="w-4 h-4 mr-2" />
-                              Mute @
-                              {comment.user_profile?.handle ||
-                                comment.user_profile?.full_name?.replace(
-                                  /\s+/g,
-                                  ""
-                                ) ||
-                                comment.user_id.slice(0, 8)}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <p className="text-foreground mt-2 break-words whitespace-pre-wrap">
-                        {renderContentWithMentions(comment.content)}
-                      </p>
+              {comments.map((comment, index) => {
+                const depth = comment.depth || 0;
+                const maxDepth = 8;
+                const effectiveDepth = Math.min(depth, maxDepth);
+                const marginLeft = effectiveDepth * 12;
 
-                      {/* Comment Engagement */}
-                      <div className="flex items-center justify-between mt-4 text-muted-foreground text-sm">
-                        <button
-                          onClick={() => handleLikeComment(comment.id)}
-                          className={`flex items-center gap-2 p-2 rounded-full transition active:scale-95 ${
-                            likedComments.includes(comment.id)
-                              ? "text-red-500"
-                              : "hover:text-red-500 hover:bg-red-500/20"
-                          }`}
+                return (
+                  <motion.div
+                    key={comment.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="border-b border-border hover:bg-muted/30 transition relative"
+                    style={{ paddingLeft: `${marginLeft}px` }}
+                  >
+                    {/* Thread line indicator */}
+                    {depth > 0 && (
+                      <div
+                        className="absolute left-0 top-0 bottom-0 w-[2px] bg-border"
+                        style={{ left: `${(effectiveDepth - 1) * 12 + 24}px` }}
+                      />
+                    )}
+
+                    <div className="flex gap-3 p-4">
+                      {getAvatarUrl(comment.user_profile?.avatar_url) ? (
+                        <img
+                          src={getAvatarUrl(comment.user_profile.avatar_url)!}
+                          alt={comment.user_profile.full_name || "User"}
+                          className="w-10 h-10 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition"
+                          onClick={() =>
+                            navigate(`/profile/${comment.user_id}`)
+                          }
+                        />
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition"
+                          onClick={() =>
+                            navigate(`/profile/${comment.user_id}`)
+                          }
                         >
-                          <Heart
-                            className="w-4 h-4"
-                            fill={
-                              likedComments.includes(comment.id)
-                                ? "currentColor"
-                                : "none"
-                            }
-                          />
-                          <span className="text-xs">{comment.likes_count}</span>
-                        </button>
+                          {comment.user_profile?.full_name?.[0] || "U"}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between cursor-pointer">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="font-bold hover:underline"
+                              onClick={() =>
+                                navigate(`/profile/${comment.user_id}`)
+                              }
+                            >
+                              {comment.user_profile?.full_name || "User"}
+                            </span>
+                            <span className="text-muted-foreground">
+                              @
+                              {comment.user_profile?.handle ||
+                                comment.user_id.slice(0, 8)}
+                            </span>
+                            <span className="text-muted-foreground text-sm">
+                              · {getRelativeTime(comment.created_at)}
+                            </span>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="p-2 text-muted-foreground rounded-full hover:bg-accent/20 hover:text-accent transition active:scale-95">
+                                <MoreVertical className="w-5 h-5" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {user?.id === comment.user_id && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // In a real app, this would open an edit modal
+                                      setSuccess("Edit feature coming soon!");
+                                      setTimeout(() => setSuccess(null), 2000);
+                                    }}
+                                  >
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit reply
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteComment(
+                                        comment.id,
+                                        comment.user_id
+                                      );
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2 text-red-500" />
+                                    <span className="text-red-500">
+                                      Delete reply
+                                    </span>
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReportComment(comment.id);
+                                }}
+                              >
+                                <Flag className="w-4 h-4 mr-2" />
+                                Report reply
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMuteAuthor(comment.user_id);
+                                }}
+                              >
+                                <VolumeX className="w-4 h-4 mr-2" />
+                                Mute @
+                                {comment.user_profile?.handle ||
+                                  comment.user_profile?.full_name?.replace(
+                                    /\s+/g,
+                                    ""
+                                  ) ||
+                                  comment.user_id.slice(0, 8)}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <p className="text-foreground mt-2 break-words whitespace-pre-wrap">
+                          {renderContentWithMentions(comment.content)}
+                        </p>
+
+                        {/* Comment Engagement */}
+                        <div className="flex items-center gap-1 mt-4 text-muted-foreground text-sm -ml-2">
+                          <button
+                            onClick={() => handleLikeComment(comment.id)}
+                            className="flex items-center gap-1"
+                          >
+                            <motion.div
+                              whileTap={{ scale: 0.9 }}
+                              className={`p-2 rounded-full transition-colors ${
+                                likedComments.includes(comment.id)
+                                  ? "bg-pink-500/10"
+                                  : "group-hover:bg-pink-500/10"
+                              }`}
+                            >
+                              <Heart
+                                className={`w-[18px] h-[18px] transition-colors ${
+                                  likedComments.includes(comment.id)
+                                    ? "text-pink-500"
+                                    : "text-muted-foreground group-hover:text-pink-500"
+                                }`}
+                                fill={
+                                  likedComments.includes(comment.id)
+                                    ? "currentColor"
+                                    : "none"
+                                }
+                              />
+                            </motion.div>
+                            <span
+                              className={`text-[13px] transition-colors min-w-[20px] ${
+                                likedComments.includes(comment.id)
+                                  ? "text-pink-500"
+                                  : "text-muted-foreground group-hover:text-pink-500"
+                              }`}
+                            >
+                              {comment.likes_count > 0
+                                ? comment.likes_count
+                                : ""}
+                            </span>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>

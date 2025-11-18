@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import {
+  useParams,
+  Link,
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,14 +29,27 @@ import {
   ArrowLeft,
   Copy,
   Check,
-  Instagram,
+  Trash2,
+  Edit,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import eventService from "@/lib/eventService";
 import { getEventImage } from "@/lib/eventImages";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import AddToCalendar from "@/components/AddToCalendar";
 
 export default function EventDetail() {
+  const navigate = useNavigate();
   const { slug } = useParams();
   const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,14 +62,25 @@ export default function EventDetail() {
   const { data: event, isLoading } = useQuery({
     queryKey: ["event", slug],
     queryFn: async () => {
+      // First try to get the event (active or not)
       const { data, error } = await supabase
         .from("events")
         .select("*")
         .eq("slug", slug)
-        .eq("is_active", true)
         .single();
 
       if (error) throw error;
+
+      // If event is inactive, check if user is the owner
+      if (!data.is_active) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user || data.created_by !== user.id) {
+          throw new Error("Event not found");
+        }
+      }
+
       return data;
     },
     enabled: !!slug,
@@ -59,6 +88,47 @@ export default function EventDetail() {
 
   const countdown = useCountdown(event?.start_at || "");
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [user, setUser] = useState<any>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Check if current user owns this event
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+  }, []);
+
+  const isOwner = user && event?.created_by === user.id;
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!event?.id) return;
+
+    try {
+      await eventService.deleteEvent(event.id);
+      toast({
+        title: "Event deleted",
+        description: "Your event has been deleted successfully",
+      });
+      navigate("/my-events");
+    } catch (err: any) {
+      toast({
+        title: "Delete failed",
+        description: err.message || "Failed to delete event",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+    }
+  };
   const activeTab = searchParams.get("tab") || "details";
 
   const setTab = (tab: string) => {
@@ -275,12 +345,33 @@ export default function EventDetail() {
 
         <div className="absolute inset-0 flex items-end">
           <div className="max-w-7xl mx-auto w-full px-6 pb-12">
-            <Link to="/events">
-              <Button variant="ghost" size="sm" className="mb-6">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Events
-              </Button>
-            </Link>
+            <div className="flex items-center justify-between mb-6">
+              <Link to="/events">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Events
+                </Button>
+              </Link>
+
+              {isOwner && (
+                <div className="flex gap-2">
+                  <Link to={`/events/${event.slug}/edit`}>
+                    <Button variant="default" size="sm">
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Event
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteClick}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <div className="mb-6">
               <Badge className="bg-accent text-accent-foreground border-0 px-3 py-1 text-sm font-semibold">
@@ -693,6 +784,28 @@ export default function EventDetail() {
           </div>
         </div>
       </section>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will deactivate your event. It will no longer be visible to
+              other users. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Event
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Footer />
     </div>
