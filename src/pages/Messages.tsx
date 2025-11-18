@@ -252,11 +252,11 @@ export default function Messages() {
               <span className="text-xl">Bookmarks</span>
             </div>
             <div
-              onClick={() => navigate("/communities")}
+              onClick={() => navigate("/groups")}
               className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
             >
               <Users className="w-6 h-6" />
-              <span className="text-xl">Communities</span>
+              <span className="text-xl">Groups</span>
             </div>
           </nav>
         </aside>

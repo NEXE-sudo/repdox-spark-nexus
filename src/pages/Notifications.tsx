@@ -19,6 +19,8 @@ import {
   Trash2,
   Check,
   X,
+  Settings,
+  Search,
 } from "lucide-react";
 import { getRelativeTime } from "@/lib/timeUtils";
 
@@ -47,7 +49,9 @@ export default function Notifications() {
   const [user, setUser] = useState<User | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [friendRequests, setFriendRequests] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"all" | "mentions">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "verified" | "mentions">(
+    "all"
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -298,11 +302,11 @@ export default function Notifications() {
               <span className="text-xl">Bookmarks</span>
             </div>
             <div
-              onClick={() => navigate("/communities")}
+              onClick={() => navigate("/groups")}
               className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
             >
               <Users className="w-6 h-6" />
-              <span className="text-xl">Communities</span>
+              <span className="text-xl">Groups</span>
             </div>
           </nav>
         </aside>
@@ -321,19 +325,25 @@ export default function Notifications() {
                 </button>
                 <div>
                   <h1 className="text-xl font-bold">Notifications</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {notifications.length} new notifications
-                  </p>
                 </div>
               </div>
-              {notifications.length > 0 && (
+              <div className="flex items-center gap-3">
+                {notifications.length > 0 && (
+                  <button
+                    onClick={handleClearAll}
+                    className="text-sm text-accent hover:underline"
+                  >
+                    Clear all
+                  </button>
+                )}
+
                 <button
-                  onClick={handleClearAll}
-                  className="text-sm text-accent hover:underline"
+                  className="p-2 hover:bg-accent/10 rounded-full transition"
+                  title="Direct messages settings"
                 >
-                  Clear all
+                  <Settings className="w-5 h-5" />
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Tabs */}
@@ -348,6 +358,18 @@ export default function Notifications() {
               >
                 All
               </button>
+
+              <button
+                onClick={() => setActiveTab("verified")}
+                className={`flex-1 py-4 text-center font-semibold transition ${
+                  activeTab === "verified"
+                    ? "text-foreground border-b-2 border-accent"
+                    : "text-muted-foreground hover:bg-accent/10"
+                }`}
+              >
+                Verified
+              </button>
+
               <button
                 onClick={() => setActiveTab("mentions")}
                 className={`flex-1 py-4 text-center font-semibold transition ${
@@ -466,7 +488,7 @@ export default function Notifications() {
                       navigate(`/profile/${notification.from_user.user_id}`);
                     }
                   }}
-                  className={`border-b border-border p-4 hover:bg-accent/5 transition cursor-pointer ${
+                  className={`border-b border-border px-4 py-3 hover:bg-accent/5 transition cursor-pointer ${
                     !notification.read ? "bg-accent/5" : ""
                   }`}
                 >
@@ -517,22 +539,27 @@ export default function Notifications() {
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-[400px] flex-shrink-0 p-4 hidden xl:block">
+        {/* Right Sidebar - Search & Trending */}
+        <div className="w-[400px] flex-shrink-0 border-l border-border p-4 hidden xl:flex flex-col sticky top-0 h-full overflow-y-auto">
+          {/* Search */}
+          <div className="relative mb-4">
+            <Search className="absolute left-4 top-3 w-5 h-5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search"
+              className="w-full pl-12 pr-4 py-3 rounded-full bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+          </div>
+
+          {/* What's happening */}
           <div className="bg-muted rounded-2xl p-4">
-            <h2 className="text-xl font-bold mb-4">Notification Settings</h2>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between p-2 hover:bg-accent/10 rounded cursor-pointer">
-                <span>Push notifications</span>
-                <div className="w-10 h-5 bg-accent rounded-full"></div>
-              </div>
-              <div className="flex items-center justify-between p-2 hover:bg-accent/10 rounded cursor-pointer">
-                <span>Email notifications</span>
-                <div className="w-10 h-5 bg-muted-foreground/30 rounded-full"></div>
-              </div>
-              <div className="flex items-center justify-between p-2 hover:bg-accent/10 rounded cursor-pointer">
-                <span>SMS notifications</span>
-                <div className="w-10 h-5 bg-muted-foreground/30 rounded-full"></div>
+            <h2 className="text-xl font-bold mb-4">What's happening</h2>
+            <div className="space-y-3">
+              {/* Add trending content here */}
+              <div className="text-center py-4">
+                <p className="text-xs text-muted-foreground">
+                  No trending topics yet
+                </p>
               </div>
             </div>
           </div>

@@ -1435,7 +1435,7 @@ export default function Community() {
                 }}
                 className="text-xl"
               >
-                Communities
+                Groups
               </span>
             </div>
           </nav>

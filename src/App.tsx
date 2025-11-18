@@ -21,7 +21,7 @@ import Explore from "./pages/Explore";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import Bookmarks from "./pages/Bookmarks";
-// import Communities from "./pages/Communities";
+import Groups from "./pages/Groups";
 
 const queryClient = new QueryClient();
 
@@ -52,7 +52,7 @@ const App = () => {
                 <Route path="/notifications" element={<Notifications />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route path="/bookmarks" element={<Bookmarks />} />
-                {/* // <Route path="/communities" element={<Communities />} /> */}
+                <Route path="/groups" element={<Groups />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
