@@ -12,9 +12,9 @@ export default function Hero() {
         <img
           src={heroBg}
           alt="Event atmosphere"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover filter grayscale contrast-100 brightness-95"
         />
-        <div className="absolute inset-0 bg-gradient-hero opacity-90" />
+        <div className="absolute inset-0 bg-gradient-hero opacity-80" />
       </div>
 
       {/* Animated Background Shapes */}
@@ -29,7 +29,7 @@ export default function Hero() {
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute top-20 right-20 w-64 h-64 rounded-full bg-accent blur-3xl"
+          className="absolute top-20 right-20 w-64 h-64 rounded-full bg-foreground blur-3xl"
         />
         <motion.div
           animate={{
@@ -41,7 +41,7 @@ export default function Hero() {
             repeat: Infinity,
             ease: "linear",
           }}
-          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-primary blur-3xl"
+          className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-foreground blur-3xl"
         />
       </div>
 

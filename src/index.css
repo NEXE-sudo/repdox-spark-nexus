@@ -8,112 +8,90 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 210 88% 20%;
+    /* Global monochrome theme: black background, white foreground */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 98%;
-    --card-foreground: 210 88% 20%;
+    /* Cards / surfaces: slightly lighter than pure black */
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 210 88% 20%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 210 88% 31%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary / accent use neutral greys so UI remains B&W */
+    --primary: 0 0% 88%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 210 15% 95%;
-    --secondary-foreground: 210 88% 31%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 15% 96%;
-    --muted-foreground: 210 20% 50%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 256 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 60%;
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 0% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 90%;
-    --input: 210 15% 90%;
-    --ring: 210 88% 31%;
+    --border: 0 0% 14%;
+    --input: 0 0% 12%;
+    --ring: 0 0% 70%;
 
     --radius: 0.75rem;
 
-    /* Brand gradients */
-    --gradient-primary: linear-gradient(
-      135deg,
-      hsl(210 88% 31%),
-      hsl(256 83% 58%)
-    );
-    --gradient-subtle: linear-gradient(
-      180deg,
-      hsl(0 0% 100%),
-      hsl(210 15% 98%)
-    );
-    --gradient-hero: linear-gradient(
-      135deg,
-      hsl(210 88% 25%),
-      hsl(256 83% 50%)
-    );
+    /* Grayscale gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 14%), hsl(0 0% 28%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 6%), hsl(0 0% 12%));
+    --gradient-hero: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 22%));
 
     /* Backgrounds */
-    --gradient-section: linear-gradient(
-      180deg,
-      hsl(0 0% 100%),
-      hsl(210 15% 98%)
-    );
+    --gradient-section: linear-gradient(180deg, hsl(0 0% 0%), hsl(0 0% 8%));
 
-    /* Shadows */
-    --shadow-card: 0 2px 8px -2px hsl(210 88% 31% / 0.08);
-    --shadow-card-hover: 0 8px 24px -4px hsl(210 88% 31% / 0.15);
-    --shadow-glow: 0 0 40px hsl(256 83% 58% / 0.25);
+    /* Shadows (darker to match dark surfaces) */
+    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.6);
+    --shadow-card-hover: 0 8px 24px -4px hsl(0 0% 0% / 0.7);
+    --shadow-glow: 0 0 40px hsl(0 0% 100% / 0.05);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
-    --background: 210 88% 8%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
 
-    --card: 210 50% 12%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 210 50% 12%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 256 83% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 88%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 210 30% 18%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 30% 18%;
-    --muted-foreground: 210 15% 65%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 256 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 60%;
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 0% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 30% 20%;
-    --input: 210 30% 20%;
-    --ring: 256 83% 58%;
+    --border: 0 0% 14%;
+    --input: 0 0% 12%;
+    --ring: 0 0% 70%;
 
-    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
-    --shadow-card-hover: 0 8px 24px -4px hsl(256 83% 58% / 0.2);
+    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.6);
+    --shadow-card-hover: 0 8px 24px -4px hsl(0 0% 0% / 0.7);
 
-    /* Dark mode gradients */
-    --gradient-subtle: linear-gradient(
-      180deg,
-      hsl(210 88% 8%),
-      hsl(210 50% 12%)
-    );
-    --gradient-section: linear-gradient(
-      180deg,
-      hsl(210 88% 8%),
-      hsl(210 50% 12%)
-    );
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 6%), hsl(0 0% 12%));
+    --gradient-section: linear-gradient(180deg, hsl(0 0% 0%), hsl(0 0% 8%));
   }
 }
 
@@ -127,6 +105,46 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Enforce B&W site appearance (black background, white text). This is intentionally high-specificity to ensure global consistency. */
+  html, body, #root, #__next {
+    background-color: hsl(0 0% 0%) !important;
+    color: hsl(0 0% 100%) !important;
+  }
+
+  /* Make almost all UI elements use white text and transparent backgrounds.
+     Media assets (images/svg/video) are converted to grayscale by default.
+     Use the `.preserve-color` class to opt-out for any element. */
+  body *:not(img):not(svg):not(picture):not(canvas):not(video) {
+    color: hsl(0 0% 100%) !important;
+    background-color: transparent !important;
+    fill: currentColor !important;
+    stroke: currentColor !important;
+  }
+
+  /* Convert raster and vector media to grayscale to maintain B&W aesthetic */
+  img, svg, picture, canvas, video {
+    filter: grayscale(100%) contrast(100%) brightness(95%) !important;
+  }
+
+  /* Subtle neutral borders */
+  * {
+    border-color: hsl(0 0% 18%) !important;
+  }
+
+  /* Form controls and interactive elements should inherit the neutral monochrome style unless explicitly styled. */
+  button, a, input, textarea, select {
+    color: inherit !important;
+    background-color: transparent !important;
+    border-color: hsl(0 0% 18%) !important;
+  }
+
+  /* Helper class to opt elements back into color if needed */
+  .preserve-color, .preserve-color * {
+    filter: none !important;
+    color: initial !important;
+    background-color: initial !important;
   }
 }
 
