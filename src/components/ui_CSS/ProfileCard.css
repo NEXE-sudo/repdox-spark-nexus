@@ -645,6 +645,7 @@ opacity: 0.25;
   transition: all 0.2s;
   text-decoration: none;
   cursor: pointer;
+  padding: none;
 }
 
 .social-icon:hover {

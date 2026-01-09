@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import './ui_CSS/ProfileCard.css';
-import { Fingerprint, Activity, Lock, Linkedin, Github, Twitter, Globe, QrCode, CheckCircle, Clock } from 'lucide-react';
+import { Fingerprint, Activity, Lock, Linkedin, Github, Twitter, Instagram, Globe, QrCode, CheckCircle, Clock } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
 const DEFAULT_INNER_GRADIENT = 'linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)';
@@ -378,7 +378,6 @@ const qrData = useMemo(() => {
 
 const renderEventCard = () => (
   <div className="pc-content reflective-content">
-    {!showQR ? (
       <>
         <div className="card-header">
           <div className="security-badge" style={{ borderColor: roleTheme.border }}>
@@ -423,38 +422,13 @@ const renderEventCard = () => (
             <span className="label" style={{ marginTop: '8px' }}>REG ID</span>
             <span className="value">{eventRegistration?.registration_id}</span>
           </div>
-          <button 
-            className="qr-button"
-            onClick={() => setShowQR(true)}
-            style={{ pointerEvents: 'auto' }}
-          >
-            <QrCode size={32} />
-          </button>
         </div>
       </>
-    ) : (
-      <div className="qr-view">
-        <button 
-          className="back-button"
-          onClick={() => setShowQR(false)}
-          style={{ pointerEvents: 'auto' }}
-        >
-          ← Back
-        </button>
-        <div className="qr-container">
-          <div style={{ background: '#fff', padding: 10, borderRadius: 12 }}><QRCode value={qrData} size={220} /></div>
-          <p className="qr-label">Scan for Check-in</p>
-          <p className="qr-id">{eventRegistration?.registration_id}</p>
-        </div>
-      </div>
-    )}
   </div>
 );
 
 const renderPersonalCard = () => (
   <div className="pc-content reflective-content">
-    {!showQR ? (
-      <>
         <div className="card-header">
           <div className="security-badge">
             <Fingerprint size={14} className="security-icon" />
@@ -505,6 +479,11 @@ const renderPersonalCard = () => (
                 <Globe size={20} />
               </a>
             )}
+            {userData.socials?.instagram_url && (
+              <a href={userData.socials.instagram_url} className="social-icon" style={{ pointerEvents: 'auto' }}>
+                <Instagram size={20} />
+              </a>
+            )}
           </div>
         </div>
 
@@ -515,31 +494,7 @@ const renderPersonalCard = () => (
     <span className="label">USER ID</span>
     <span className="value">{userData.user_id || 'N/A'}</span>
   </div>
-  <button 
-    className="qr-button"
-    onClick={() => setShowQR(true)}
-    style={{ pointerEvents: 'auto' }}
-  >
-    <QrCode size={28} />
-  </button>
 </div>
-      </>
-    ) : (
-      <div className="qr-view">
-        <button 
-          className="back-button"
-          onClick={() => setShowQR(false)}
-          style={{ pointerEvents: 'auto' }}
-        >
-          ← Back
-        </button>
-        <div className="qr-container">
-          <div style={{ background: '#fff', padding: 10, borderRadius: 12 }}><QRCode value={qrData} size={220} /></div>
-          <p className="qr-label">Connect with me</p>
-          <p className="qr-sublabel">Scan to view profile</p>
-        </div>
-      </div>
-    )}
   </div>
 );
 

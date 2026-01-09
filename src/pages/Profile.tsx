@@ -54,7 +54,6 @@ const sections = [
   { id: "personal", label: "Personal Info", icon: UserIcon },
   { id: "professional", label: "Professional", icon: Briefcase },
   { id: "contact", label: "Contact", icon: Phone },
-  { id: "social", label: "Social Links", icon: Globe },
   { id: "card", label: "Digital Card", icon: QrCode },
   { id: "security", label: "Security", icon: UserIcon },
 ];
@@ -607,6 +606,103 @@ setPortfolioUrl(profileData.portfolio_url || "");
                         />
                       </div>
                     </div>
+
+<div className="mt-8 pt-6 border-t border-border">
+                      <h3 className="text-lg font-semibold text-foreground mb-4">
+                        Social Links
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Add your social profiles to display on your digital card
+                      </p>
+
+                      <div className="space-y-4">
+                        {/* LinkedIn */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            LinkedIn
+                          </label>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <input
+                              type="url"
+                              value={linkedinUrl}
+                              onChange={(e) => setLinkedinUrl(e.target.value)}
+                              placeholder="https://linkedin.com/in/yourprofile"
+                              className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                            />
+                          </div>
+                        </div>
+
+                        {/* GitHub */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            GitHub
+                          </label>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <input
+                              type="url"
+                              value={githubUrl}
+                              onChange={(e) => setGithubUrl(e.target.value)}
+                              placeholder="https://github.com/yourusername"
+                              className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Twitter */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Twitter / X
+                          </label>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <input
+                              type="url"
+                              value={twitterUrl}
+                              onChange={(e) => setTwitterUrl(e.target.value)}
+                              placeholder="https://twitter.com/yourusername"
+                              className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Instagram */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Instagram
+                          </label>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <input
+                              type="url"
+                              value={instagramUrl}
+                              onChange={(e) => setInstagramUrl(e.target.value)}
+                              placeholder="https://instagram.com/yourusername"
+                              className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Portfolio */}
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-2">
+                            Portfolio / Website
+                          </label>
+                          <div className="relative">
+                            <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <input
+                              type="url"
+                              value={portfolioUrl}
+                              onChange={(e) => setPortfolioUrl(e.target.value)}
+                              placeholder="https://yourportfolio.com"
+                              className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 )}
 
@@ -663,103 +759,6 @@ setPortfolioUrl(profileData.portfolio_url || "");
                   </div>
                 )}
 
-{activeSection === "social" && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-foreground mb-6">
-                      Social Links
-                    </h2>
-
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Add your social media profiles to share on your digital card
-                    </p>
-
-                    {/* LinkedIn */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        LinkedIn
-                      </label>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <input
-                          type="url"
-                          value={linkedinUrl}
-                          onChange={(e) => setLinkedinUrl(e.target.value)}
-                          placeholder="https://linkedin.com/in/yourprofile"
-                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
-                        />
-                      </div>
-                    </div>
-
-                    {/* GitHub */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        GitHub
-                      </label>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <input
-                          type="url"
-                          value={githubUrl}
-                          onChange={(e) => setGithubUrl(e.target.value)}
-                          placeholder="https://github.com/yourusername"
-                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Twitter */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Twitter / X
-                      </label>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <input
-                          type="url"
-                          value={twitterUrl}
-                          onChange={(e) => setTwitterUrl(e.target.value)}
-                          placeholder="https://twitter.com/yourusername"
-                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Instagram */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Instagram
-                      </label>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <input
-                          type="url"
-                          value={instagramUrl}
-                          onChange={(e) => setInstagramUrl(e.target.value)}
-                          placeholder="https://instagram.com/yourusername"
-                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Portfolio */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Portfolio / Website
-                      </label>
-                      <div className="relative">
-                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <input
-                          type="url"
-                          value={portfolioUrl}
-                          onChange={(e) => setPortfolioUrl(e.target.value)}
-                          placeholder="https://yourportfolio.com"
-                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {activeSection === "card" && (
   <div className="space-y-6">
     <h2 className="text-2xl font-bold text-foreground mb-6">
@@ -767,12 +766,14 @@ setPortfolioUrl(profileData.portfolio_url || "");
     </h2>
     
     <p className="text-sm text-muted-foreground mb-6">
-      Your QR code works for both networking and event check-ins. 
-      Toggle the mode to preview how your card appears in different contexts.
+      Your personal digital card displays your profile information and social links. 
+      Use the QR code for networking or event check-ins.
     </p>
 
-    {/* Mode Toggle */}
-    <div className="flex gap-2 mb-6">
+    {/* Mode Toggle - Only show if user has events */}
+    {userEvents.length > 0 && (
+      <>
+        <div className="flex gap-2 mb-6">
       <button 
         onClick={() => setCardMode('personal')}
         className={`px-4 py-2 rounded-lg transition ${
@@ -820,6 +821,8 @@ setPortfolioUrl(profileData.portfolio_url || "");
         )}
       </div>
     )}
+      </>
+    )}
     
     {/* Profile Card Display */}
     <div className="flex justify-center items-center min-h-[600px] bg-gradient-to-br from-background to-muted/30 rounded-xl p-8">
@@ -851,7 +854,6 @@ setPortfolioUrl(profileData.portfolio_url || "");
       />
     </div>
 
-    {/* Info Cards */}
     <div className="grid md:grid-cols-2 gap-4 mt-8">
       <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
@@ -859,11 +861,12 @@ setPortfolioUrl(profileData.portfolio_url || "");
           Networking
         </h4>
         <p className="text-sm text-muted-foreground">
-          Anyone can scan your QR code to view your public profile and connect with you.
+          Anyone can scan your QR code to view your public profile and connect with you via social links.
         </p>
       </div>
       
-      <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
+      {userEvents.length > 0 && (
+        <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
           <QrCode className="w-4 h-4" />
           Event Check-in
@@ -872,6 +875,7 @@ setPortfolioUrl(profileData.portfolio_url || "");
           Event volunteers use the same QR to check you in. Your card shows your role automatically.
         </p>
       </div>
+      )}
     </div>
   </div>
 )}
