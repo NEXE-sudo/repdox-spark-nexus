@@ -104,7 +104,8 @@ const qrData = useMemo(() => {
       timestamp: new Date().toISOString()
     });
   } else {
-    return userData.socials?.linkedin_url || `https://yourapp.com/profile/${userData.handle}`;
+    // For networking, use the public profile URL
+    return `${window.location.origin}/profile/${userData.user_id}`;
   }
 }, [mode, userData, eventRegistration, eventData]);
 

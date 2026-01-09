@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, CheckCircle, XCircle, User, Calendar, MapPin, Clock, Search, UserCheck } from 'lucide-react';
+import { Camera, CheckCircle, XCircle, User, Clock, Search, UserCheck } from 'lucide-react';
+import jsQR from 'jsqr';
 
-// This component is for event staff to scan QR codes and check in attendees
-const AdminEventScanner = ({ 
+const EnhancedAdminScanner = ({ 
   eventId, 
   onCheckIn,
-  supabaseClient // Pass your Supabase client
+  supabaseClient
 }) => {
   const [scanning, setScanning] = useState(false);
   const [manualSearch, setManualSearch] = useState('');
@@ -20,14 +20,36 @@ const AdminEventScanner = ({
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const scanningIntervalRef = useRef(null);
 
-  // Load event statistics
   useEffect(() => {
     loadStats();
     loadRecentCheckIns();
+    
+    // Refresh stats every 10 seconds
+    const interval = setInterval(() => {
+      loadStats();
+      loadRecentCheckIns();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, [eventId]);
 
+  useEffect(() => {
+    if (scanning) {
+      startQRScanning();
+    } else {
+      stopQRScanning();
+    }
+    return () => stopQRScanning();
+  }, [scanning]);
+
   const loadStats = async () => {
+    if (!supabaseClient) {
+      setStats({ total: 150, checkedIn: 87, pending: 63 });
+      return;
+    }
+    
     try {
       const { data, error } = await supabaseClient
         .from('event_registrations')
@@ -47,10 +69,29 @@ const AdminEventScanner = ({
   };
 
   const loadRecentCheckIns = async () => {
+    if (!supabaseClient) {
+      setRecentCheckIns([
+        {
+          id: 1,
+          full_name: 'Sarah Johnson',
+          role: 'participant',
+          checked_in_at: new Date().toISOString()
+        }
+      ]);
+      return;
+    }
+
     try {
       const { data, error } = await supabaseClient
-        .from('event_registrations_complete')
-        .select('*')
+        .from('event_registrations')
+        .select(`
+          *,
+          user_profiles (
+            full_name,
+            avatar_url,
+            handle
+          )
+        `)
         .eq('event_id', eventId)
         .eq('check_in_status', 'checked_in')
         .order('checked_in_at', { ascending: false })
@@ -63,17 +104,167 @@ const AdminEventScanner = ({
     }
   };
 
+  const startQRScanning = () => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    
+    if (!canvas || !video) return;
+
+    const ctx = canvas.getContext('2d');
+    
+    scanningIntervalRef.current = setInterval(() => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code) {
+          handleQRCodeDetected(code.data);
+        }
+      }
+    }, 300);
+  };
+
+  const stopQRScanning = () => {
+    if (scanningIntervalRef.current) {
+      clearInterval(scanningIntervalRef.current);
+      scanningIntervalRef.current = null;
+    }
+  };
+
+  const handleQRCodeDetected = async (qrData) => {
+    try {
+      // Extract user_id from profile URL
+      // Format: https://yourapp.com/profile/{user_id}
+      const url = new URL(qrData);
+      const pathParts = url.pathname.split('/');
+      const userId = pathParts[pathParts.length - 1];
+      
+      if (!userId) {
+        throw new Error('Invalid QR code format');
+      }
+      
+      // Stop scanning temporarily
+      stopScanning();
+      
+      // Look up user registration for this event
+      await handleUserLookup(userId);
+      
+    } catch (error) {
+      console.error('Invalid QR code format:', error);
+      setScanResult({
+        success: false,
+        message: 'Invalid QR code. Please scan a valid profile QR code.'
+      });
+    }
+  };
+
+  const handleUserLookup = async (userId) => {
+    setLoading(true);
+    
+    if (!supabaseClient) {
+      // Mock response for demo
+      setScanResult({
+        success: true,
+        registration: {
+          registration_id: 'REG-12345',
+          user_id: userId,
+          full_name: 'Jane Doe',
+          email: 'jane@example.com',
+          role: 'participant',
+          check_in_status: 'pending',
+          user_profiles: {
+            full_name: 'Jane Doe',
+            avatar_url: null
+          }
+        }
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('event_registrations')
+        .select(`
+          *,
+          user_profiles (
+            full_name,
+            avatar_url,
+            handle,
+            job_title,
+            company
+          )
+        `)
+        .eq('event_id', eventId)
+        .eq('user_id', userId)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setScanResult({
+          success: true,
+          registration: data
+        });
+      } else {
+        setScanResult({
+          success: false,
+          message: 'User not registered for this event'
+        });
+      }
+    } catch (error) {
+      setScanResult({
+        success: false,
+        message: error.message === 'PGRST116' || error.code === 'PGRST116'
+          ? 'User not registered for this event'
+          : 'Registration not found'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleManualSearch = async () => {
     if (!manualSearch.trim()) return;
-
+    
     setLoading(true);
+    
+    if (!supabaseClient) {
+      setScanResult({
+        success: true,
+        registration: {
+          registration_id: manualSearch,
+          full_name: 'John Doe',
+          email: 'john@example.com',
+          role: 'participant',
+          check_in_status: 'pending'
+        }
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Search by registration ID, name, or email
+      // Search by registration ID, name, email, or handle
       const { data, error } = await supabaseClient
-        .from('event_registrations_complete')
-        .select('*')
+        .from('event_registrations')
+        .select(`
+          *,
+          user_profiles (
+            full_name,
+            avatar_url,
+            handle,
+            job_title,
+            company
+          )
+        `)
         .eq('event_id', eventId)
-        .or(`registration_id.ilike.%${manualSearch}%,full_name.ilike.%${manualSearch}%,email.ilike.%${manualSearch}%`)
+        .or(`registration_id.ilike.%${manualSearch}%,name.ilike.%${manualSearch}%,email.ilike.%${manualSearch}%`)
+        .limit(1)
         .single();
 
       if (error) throw error;
@@ -92,7 +283,7 @@ const AdminEventScanner = ({
     } catch (error) {
       setScanResult({
         success: false,
-        message: error.message || 'Registration not found'
+        message: 'Registration not found. Try searching by name, email, or registration ID.'
       });
     } finally {
       setLoading(false);
@@ -101,8 +292,29 @@ const AdminEventScanner = ({
 
   const handleCheckIn = async (registrationId) => {
     setLoading(true);
+    
+    if (!supabaseClient) {
+      // Mock success
+      setScanResult({
+        success: true,
+        message: 'Check-in successful!',
+        registration: {
+          ...scanResult.registration,
+          check_in_status: 'checked_in',
+          checked_in_at: new Date().toISOString()
+        }
+      });
+      
+      setTimeout(() => {
+        setScanResult(null);
+        setManualSearch('');
+      }, 3000);
+      
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Call the Supabase function to check in
       const { data, error } = await supabaseClient.rpc('check_in_attendee', {
         p_registration_id: registrationId
       });
@@ -116,14 +328,10 @@ const AdminEventScanner = ({
           registration: data.registration
         });
         
-        // Reload stats and recent check-ins
         loadStats();
         loadRecentCheckIns();
-        
-        // Callback to parent component
         onCheckIn?.(data.registration);
         
-        // Clear after 3 seconds
         setTimeout(() => {
           setScanResult(null);
           setManualSearch('');
@@ -200,6 +408,10 @@ const AdminEventScanner = ({
       <div style={styles.scannerSection}>
         <h2 style={styles.sectionTitle}>Check-In Scanner</h2>
         
+        <div style={styles.instructions}>
+          <p>Scan the attendee's profile QR code to check them in.</p>
+        </div>
+        
         {!scanning ? (
           <div style={styles.scannerPlaceholder}>
             <button onClick={startScanning} style={styles.startScanButton}>
@@ -217,6 +429,10 @@ const AdminEventScanner = ({
               style={styles.video}
             />
             <canvas ref={canvasRef} style={{ display: 'none' }} />
+            <div style={styles.scanOverlay}>
+              <div style={styles.scanFrame}></div>
+              <p style={styles.scanText}>Position QR code within frame</p>
+            </div>
             <button onClick={stopScanning} style={styles.stopScanButton}>
               Stop Scanner
             </button>
@@ -227,7 +443,7 @@ const AdminEventScanner = ({
         <div style={styles.manualSearch}>
           <input
             type="text"
-            placeholder="Search by Registration ID, Name, or Email..."
+            placeholder="Search by Name, Email, or Registration ID..."
             value={manualSearch}
             onChange={(e) => setManualSearch(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
@@ -263,7 +479,7 @@ const AdminEventScanner = ({
             {scanResult.registration && (
               <div style={styles.registrationDetails}>
                 <div style={styles.detailRow}>
-                  <strong>Name:</strong> {scanResult.registration.full_name || scanResult.registration.name}
+                  <strong>Name:</strong> {scanResult.registration.user_profiles?.full_name || scanResult.registration.name}
                 </div>
                 <div style={styles.detailRow}>
                   <strong>Email:</strong> {scanResult.registration.email}
@@ -271,6 +487,11 @@ const AdminEventScanner = ({
                 <div style={styles.detailRow}>
                   <strong>Role:</strong> {scanResult.registration.role?.replace('_', ' ').toUpperCase()}
                 </div>
+                {scanResult.registration.committee && (
+                  <div style={styles.detailRow}>
+                    <strong>Committee:</strong> {scanResult.registration.committee}
+                  </div>
+                )}
                 <div style={styles.detailRow}>
                   <strong>Registration ID:</strong> {scanResult.registration.registration_id}
                 </div>
@@ -323,14 +544,14 @@ const AdminEventScanner = ({
             recentCheckIns.map((checkIn) => (
               <div key={checkIn.id} style={styles.recentItem}>
                 <div style={styles.recentAvatar}>
-                  {checkIn.avatar_url ? (
-                    <img src={checkIn.avatar_url} alt="" style={styles.avatarImage} />
+                  {checkIn.user_profiles?.avatar_url ? (
+                    <img src={checkIn.user_profiles.avatar_url} alt="" style={styles.avatarImage} />
                   ) : (
                     <User size={20} />
                   )}
                 </div>
                 <div style={styles.recentInfo}>
-                  <div style={styles.recentName}>{checkIn.full_name || checkIn.name}</div>
+                  <div style={styles.recentName}>{checkIn.user_profiles?.full_name || checkIn.name}</div>
                   <div style={styles.recentRole}>{checkIn.role?.replace('_', ' ')}</div>
                 </div>
                 <div style={styles.recentTime}>
@@ -350,7 +571,9 @@ const styles = {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: '20px',
-    fontFamily: 'system-ui, -apple-system, sans-serif'
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    backgroundColor: '#f5f5f5',
+    minHeight: '100vh'
   },
   statsContainer: {
     display: 'grid',
@@ -393,6 +616,14 @@ const styles = {
     marginBottom: '20px',
     color: '#1a1a1a'
   },
+  instructions: {
+    padding: '12px',
+    backgroundColor: '#e0f2fe',
+    borderRadius: '8px',
+    marginBottom: '20px',
+    fontSize: '14px',
+    color: '#0369a1'
+  },
   scannerPlaceholder: {
     textAlign: 'center',
     padding: '40px 20px'
@@ -426,6 +657,34 @@ const styles = {
     borderRadius: '8px',
     display: 'block',
     margin: '0 auto'
+  },
+  scanOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    width: '100%',
+    maxWidth: '600px',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none'
+  },
+  scanFrame: {
+    width: '250px',
+    height: '250px',
+    border: '3px solid #71C4FF',
+    borderRadius: '12px',
+    boxShadow: '0 0 0 99999px rgba(0, 0, 0, 0.5)'
+  },
+  scanText: {
+    marginTop: '20px',
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: '600',
+    textShadow: '0 2px 4px rgba(0,0,0,0.5)'
   },
   stopScanButton: {
     display: 'block',
@@ -571,4 +830,4 @@ const styles = {
   }
 };
 
-export default AdminEventScanner;
+export default EnhancedAdminScanner;

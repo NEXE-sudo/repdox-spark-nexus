@@ -84,6 +84,10 @@ const [instagramUrl, setInstagramUrl] = useState("");
 const [portfolioUrl, setPortfolioUrl] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [cardMode, setCardMode] = useState<'personal' | 'event'>('personal');
+const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+const [userEvents, setUserEvents] = useState<any[]>([]);
+const [selectedEventReg, setSelectedEventReg] = useState<any>(null);
 
   // Avatar states
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -94,6 +98,37 @@ const [portfolioUrl, setPortfolioUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+useEffect(() => {
+  if (user) {
+    loadUserEvents();
+  }
+}, [user]);
+
+const loadUserEvents = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('event_registrations')
+      .select('*, events(*)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    setUserEvents(data || []);
+  } catch (err) {
+    console.error('Error loading events:', err);
+  }
+};
+
+// When event is selected, load registration details
+useEffect(() => {
+  if (selectedEventId) {
+    const reg = userEvents.find(e => e.event_id === selectedEventId);
+    setSelectedEventReg(reg);
+  } else {
+    setSelectedEventReg(null);
+  }
+}, [selectedEventId, userEvents]);
 
   // Load user and profile on mount
   useEffect(() => {
@@ -726,49 +761,120 @@ setPortfolioUrl(profileData.portfolio_url || "");
                 )}
 
                 {activeSection === "card" && (
-                  <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-foreground mb-6">
-                      Your Digital Card
-                    </h2>
-                    
-                    <p className="text-sm text-muted-foreground mb-8">
-                      This is your personal digital business card. Share it with others by showing the QR code or sharing your profile link.
-                    </p>
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold text-foreground mb-6">
+      Your Digital Card
+    </h2>
+    
+    <p className="text-sm text-muted-foreground mb-6">
+      Your QR code works for both networking and event check-ins. 
+      Toggle the mode to preview how your card appears in different contexts.
+    </p>
 
-                    <div className="flex justify-center items-center min-h-[600px] bg-gradient-to-br from-background to-muted/30 rounded-xl p-8">
-                      <ProfileCard
-                        mode="personal"
-                        userData={{
-                          user_id: user.id,
-                          full_name: fullName || "Your Name",
-                          handle: handle || "yourhandle",
-                          bio: bio || "Your bio",
-                          avatar_url: avatarUrl,
-                          phone: phone,
-                          email: user.email || null,
-                          job_title: jobTitle,
-                          company: company,
-                          location: locationInput,
-                          socials: {
-  linkedin_url: linkedinUrl || null,
-  github_url: githubUrl || null,
-  twitter_url: twitterUrl || null,
-  instagram_url: instagramUrl || null,
-  portfolio_url: portfolioUrl || null,
-},
-                        }}
-                        enableTilt={true}
-                        behindGlowEnabled={true}
-                      />
-                    </div>
+    {/* Mode Toggle */}
+    <div className="flex gap-2 mb-6">
+      <button 
+        onClick={() => setCardMode('personal')}
+        className={`px-4 py-2 rounded-lg transition ${
+          cardMode === 'personal' 
+            ? 'bg-accent text-accent-foreground' 
+            : 'bg-muted hover:bg-muted/80'
+        }`}
+      >
+        Personal Mode
+      </button>
+      <button 
+        onClick={() => setCardMode('event')}
+        className={`px-4 py-2 rounded-lg transition ${
+          cardMode === 'event' 
+            ? 'bg-accent text-accent-foreground' 
+            : 'bg-muted hover:bg-muted/80'
+        }`}
+      >
+        Event Mode
+      </button>
+    </div>
 
-                    <div className="mt-8 p-4 bg-accent/5 border border-accent/20 rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        <strong className="text-foreground">💡 Tip:</strong> Keep your profile information up to date to ensure your digital card always shows the latest details.
-                      </p>
-                    </div>
-                  </div>
-                )}
+    {/* Event Selector (only in event mode) */}
+    {cardMode === 'event' && (
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Select Event
+        </label>
+        <select 
+          value={selectedEventId || ''}
+          onChange={(e) => setSelectedEventId(e.target.value || null)}
+          className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+        >
+          <option value="">Choose an event...</option>
+          {userEvents.map((evt) => (
+            <option key={evt.id} value={evt.event_id}>
+              {evt.events?.title} - {evt.role?.replace('_', ' ').toUpperCase()}
+            </option>
+          ))}
+        </select>
+        {userEvents.length === 0 && (
+          <p className="text-sm text-muted-foreground mt-2">
+            You haven't registered for any events yet.
+          </p>
+        )}
+      </div>
+    )}
+    
+    {/* Profile Card Display */}
+    <div className="flex justify-center items-center min-h-[600px] bg-gradient-to-br from-background to-muted/30 rounded-xl p-8">
+      <ProfileCard
+        mode={cardMode}
+        userData={{
+          user_id: user.id,
+          full_name: fullName || "Your Name",
+          handle: handle || "yourhandle",
+          bio: bio || "Your bio",
+          avatar_url: avatarUrl,
+          phone: phone,
+          email: user.email || null,
+          job_title: jobTitle,
+          company: company,
+          location: locationInput,
+          socials: {
+            linkedin_url: linkedinUrl || null,
+            github_url: githubUrl || null,
+            twitter_url: twitterUrl || null,
+            instagram_url: instagramUrl || null,
+            portfolio_url: portfolioUrl || null,
+          }
+        }}
+        eventData={cardMode === 'event' && selectedEventReg ? selectedEventReg.events : null}
+        eventRegistration={cardMode === 'event' ? selectedEventReg : null}
+        enableTilt={true}
+        behindGlowEnabled={true}
+      />
+    </div>
+
+    {/* Info Cards */}
+    <div className="grid md:grid-cols-2 gap-4 mt-8">
+      <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
+        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+          <Globe className="w-4 h-4" />
+          Networking
+        </h4>
+        <p className="text-sm text-muted-foreground">
+          Anyone can scan your QR code to view your public profile and connect with you.
+        </p>
+      </div>
+      
+      <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
+        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+          <QrCode className="w-4 h-4" />
+          Event Check-in
+        </h4>
+        <p className="text-sm text-muted-foreground">
+          Event volunteers use the same QR to check you in. Your card shows your role automatically.
+        </p>
+      </div>
+    </div>
+  </div>
+)}
 
                 {activeSection === "security" && (
                   <div className="space-y-6">
