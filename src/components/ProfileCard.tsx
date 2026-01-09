@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import './ui_CSS/ProfileCard.css';
-import { Fingerprint, Activity, Lock, Linkedin, Github, Twitter, Globe, QrCode, Mail, Phone, CheckCircle, Clock } from 'lucide-react';
+import { Fingerprint, Activity, Lock, Linkedin, Github, Twitter, Globe, QrCode, CheckCircle, Clock } from 'lucide-react';
+import QRCode from 'react-qr-code';
 
 const DEFAULT_INNER_GRADIENT = 'linear-gradient(145deg,#60496e8c 0%,#71C4FF44 100%)';
 
@@ -27,35 +28,7 @@ const clamp = (v, min = 0, max = 100) => Math.min(Math.max(v, min), max);
 const round = (v, precision = 3) => parseFloat(v.toFixed(precision));
 const adjust = (v, fMin, fMax, tMin, tMax) => round(tMin + ((tMax - tMin) * (v - fMin)) / (fMax - fMin));
 
-const QRCodeDisplay = ({ data, size = 200 }) => {
-  const canvasRef = useRef(null);
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    // Placeholder - replace with actual QR library in production
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#000000';
-    ctx.font = '10px monospace';
-    ctx.fillText('QR Code', 10, 20);
-    ctx.fillText(data.substring(0, 20), 10, 35);
-    
-    // Simple grid pattern
-    for (let i = 0; i < 10; i++) {
-      for (let j = 0; j < 10; j++) {
-        if (Math.random() > 0.5) {
-          ctx.fillRect(i * 20, j * 20 + 40, 18, 18);
-        }
-      }
-    }
-  }, [data, size]);
-
-  return <canvas ref={canvasRef} width={size} height={size} style={{ borderRadius: '8px' }} />;
-};
 
 const ProfileCardComponent = ({
   avatarUrl = '<Placeholder for avatar URL>',
@@ -420,6 +393,8 @@ const renderEventCard = () => (
           </div>
         </div>
 
+        <div className="inner-line" />
+
         <div className="card-body">
           <div className="user-info-event">
             <h2 className="user-name">{userData.full_name?.toUpperCase()}</h2>
@@ -437,6 +412,8 @@ const renderEventCard = () => (
             )}
           </div>
         </div>
+
+        <div className="inner-line" />
 
         <div className="card-footer">
           <div className="id-section">
@@ -464,7 +441,7 @@ const renderEventCard = () => (
           ← Back
         </button>
         <div className="qr-container">
-          <QRCodeDisplay data={qrData} size={220} />
+          <div style={{ background: '#fff', padding: 10, borderRadius: 12 }}><QRCode value={qrData} size={220} /></div>
           <p className="qr-label">Scan for Check-in</p>
           <p className="qr-id">{eventRegistration?.registration_id}</p>
         </div>
@@ -485,6 +462,8 @@ const renderPersonalCard = () => (
           <Activity className="status-icon" size={20} />
         </div>
 
+        <div className="inner-line" />
+
         <div className="card-body">
           {userData.avatar_url && (
             <img 
@@ -495,14 +474,14 @@ const renderPersonalCard = () => (
           )}
           <div className="user-info-personal">
             <h2 className="user-name">{userData.full_name}</h2>
-            <p className="user-handle">@{userData.handle}</p>
+            </div>
             {userData.job_title && (
-              <p className="user-title">{userData.job_title}</p>
+              <p className="user-role">{userData.job_title}</p>
             )}
-            {userData.company && (
+            {/* {userData.company && (
               <p className="user-company">{userData.company}</p>
-            )}
-          </div>
+            )} */}
+          
 
           <div className="social-links">
             {userData.socials?.linkedin_url && (
@@ -528,29 +507,21 @@ const renderPersonalCard = () => (
           </div>
         </div>
 
+        <div className="inner-line" />
+
         <div className="card-footer">
-          <div className="contact-info">
-            {userData.email && (
-              <div className="contact-item">
-                <Mail size={14} />
-                <span>{userData.email}</span>
-              </div>
-            )}
-            {userData.phone && (
-              <div className="contact-item">
-                <Phone size={14} />
-                <span>{userData.phone}</span>
-              </div>
-            )}
-          </div>
-          <button 
-            className="qr-button"
-            onClick={() => setShowQR(true)}
-            style={{ pointerEvents: 'auto' }}
-          >
-            <QrCode size={28} />
-          </button>
-        </div>
+  <div className="id-section">
+    <span className="label">USER ID</span>
+    <span className="value">{userData.user_id || 'N/A'}</span>
+  </div>
+  <button 
+    className="qr-button"
+    onClick={() => setShowQR(true)}
+    style={{ pointerEvents: 'auto' }}
+  >
+    <QrCode size={28} />
+  </button>
+</div>
       </>
     ) : (
       <div className="qr-view">
@@ -562,7 +533,7 @@ const renderPersonalCard = () => (
           ← Back
         </button>
         <div className="qr-container">
-          <QRCodeDisplay data={qrData} size={220} />
+          <div style={{ background: '#fff', padding: 10, borderRadius: 12 }}><QRCode value={qrData} size={220} /></div>
           <p className="qr-label">Connect with me</p>
           <p className="qr-sublabel">Scan to view profile</p>
         </div>

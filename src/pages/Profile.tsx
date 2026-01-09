@@ -54,6 +54,7 @@ const sections = [
   { id: "personal", label: "Personal Info", icon: UserIcon },
   { id: "professional", label: "Professional", icon: Briefcase },
   { id: "contact", label: "Contact", icon: Phone },
+  { id: "social", label: "Social Links", icon: Globe },
   { id: "card", label: "Digital Card", icon: QrCode },
   { id: "security", label: "Security", icon: UserIcon },
 ];
@@ -76,6 +77,11 @@ export default function Profile() {
   const [phone, setPhone] = useState("");
   const [locationInput, setLocationInput] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState<string>("");
+  const [linkedinUrl, setLinkedinUrl] = useState("");
+const [githubUrl, setGithubUrl] = useState("");
+const [twitterUrl, setTwitterUrl] = useState("");
+const [instagramUrl, setInstagramUrl] = useState("");
+const [portfolioUrl, setPortfolioUrl] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -167,6 +173,11 @@ export default function Profile() {
         setPhone(profileData.phone || "");
         setLocationInput(profileData.location || "");
         setDateOfBirth(profileData["Date of Birth"] || "");
+        setLinkedinUrl(profileData.linkedin_url || "");
+setGithubUrl(profileData.github_url || "");
+setTwitterUrl(profileData.twitter_url || "");
+setInstagramUrl(profileData.instagram_url || "");
+setPortfolioUrl(profileData.portfolio_url || "");
       }
     } catch (err) {
       console.error("Error loading profile:", err);
@@ -232,19 +243,24 @@ export default function Profile() {
         .from("user_profiles")
         .upsert(
           {
-            user_id: user.id,
-            full_name: fullName || null,
-            handle: handle || null,
-            bio: bio || null,
-            job_title: jobTitle || null,
-            company: company || null,
-            website: website || null,
-            phone: phone || null,
-            location: locationInput || null,
-            "Date of Birth": dateOfBirth || null,
-            avatar_url: avatarPath,
-            updated_at: new Date().toISOString(),
-          },
+  user_id: user.id,
+  full_name: fullName || null,
+  handle: handle || null,
+  bio: bio || null,
+  job_title: jobTitle || null,
+  company: company || null,
+  website: website || null,
+  phone: phone || null,
+  location: locationInput || null,
+  "Date of Birth": dateOfBirth || null,
+  avatar_url: avatarPath,
+  linkedin_url: linkedinUrl || null,
+  github_url: githubUrl || null,
+  twitter_url: twitterUrl || null,
+  instagram_url: instagramUrl || null,
+  portfolio_url: portfolioUrl || null,
+  updated_at: new Date().toISOString(),
+},
           {
             onConflict: "user_id",
           }
@@ -612,6 +628,103 @@ export default function Profile() {
                   </div>
                 )}
 
+{activeSection === "social" && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Social Links
+                    </h2>
+
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Add your social media profiles to share on your digital card
+                    </p>
+
+                    {/* LinkedIn */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        LinkedIn
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="url"
+                          value={linkedinUrl}
+                          onChange={(e) => setLinkedinUrl(e.target.value)}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                        />
+                      </div>
+                    </div>
+
+                    {/* GitHub */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        GitHub
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="url"
+                          value={githubUrl}
+                          onChange={(e) => setGithubUrl(e.target.value)}
+                          placeholder="https://github.com/yourusername"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Twitter */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Twitter / X
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="url"
+                          value={twitterUrl}
+                          onChange={(e) => setTwitterUrl(e.target.value)}
+                          placeholder="https://twitter.com/yourusername"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Instagram */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Instagram
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="url"
+                          value={instagramUrl}
+                          onChange={(e) => setInstagramUrl(e.target.value)}
+                          placeholder="https://instagram.com/yourusername"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Portfolio */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Portfolio / Website
+                      </label>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                        <input
+                          type="url"
+                          value={portfolioUrl}
+                          onChange={(e) => setPortfolioUrl(e.target.value)}
+                          placeholder="https://yourportfolio.com"
+                          className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {activeSection === "card" && (
                   <div className="space-y-6">
                     <h2 className="text-2xl font-bold text-foreground mb-6">
@@ -637,12 +750,12 @@ export default function Profile() {
                           company: company,
                           location: locationInput,
                           socials: {
-                            linkedin_url: null,
-                            github_url: null,
-                            twitter_url: null,
-                            instagram_url: null,
-                            portfolio_url: website,
-                          },
+  linkedin_url: linkedinUrl || null,
+  github_url: githubUrl || null,
+  twitter_url: twitterUrl || null,
+  instagram_url: instagramUrl || null,
+  portfolio_url: portfolioUrl || null,
+},
                         }}
                         enableTilt={true}
                         behindGlowEnabled={true}
