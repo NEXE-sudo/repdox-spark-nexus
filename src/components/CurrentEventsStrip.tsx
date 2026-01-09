@@ -1,18 +1,23 @@
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useRef, useState } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAutoScroll } from "@/hooks/useAutoScroll";
 import EventCard from "./EventCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useInView } from "react-intersection-observer";
 
 export default function CurrentEventsStrip() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [srAnnouncement, setSrAnnouncement] = useState<string>('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['current-events'],
@@ -29,62 +34,24 @@ export default function CurrentEventsStrip() {
     },
   });
 
-  const {
-    currentIndex,
-    isPaused,
-    pause,
-    resume,
-    goToNext,
-    goToPrev,
-    goToIndex,
-  } = useAutoScroll({
-    itemCount: events.length,
-    intervalMs: 7000,
-    pauseOnHover: true,
-    pauseOnFocus: true,
-  });
-
-  // local wrappers to announce pause/resume reasons for screen readers
-  const pauseWithAnnounce = (reason: string) => {
-    pause(reason);
-    setSrAnnouncement(`Carousel paused: ${reason}`);
-    // clear announcement shortly after to avoid repeated reads
-    setTimeout(() => setSrAnnouncement(''), 1200);
-  };
-
-  const resumeWithAnnounce = (reason: string) => {
-    resume(reason);
-    setSrAnnouncement('Carousel resumed');
-    setTimeout(() => setSrAnnouncement(''), 1200);
-  };
-
-  // Scroll to current index
-  useEffect(() => {
-    if (!scrollContainerRef.current || events.length === 0) return;
-    
+  const scroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
     const container = scrollContainerRef.current;
-    const cardWidth = 320 + 16; // card width + gap
-    const targetScroll = currentIndex * cardWidth;
+    const cardWidth = 380 + 24; // card width + gap
+    const scrollAmount = direction === 'left' ? -cardWidth : cardWidth;
     
-    container.scrollTo({
-      left: targetScroll,
-      behavior: 'smooth',
-    });
+    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    
+    const newIndex = direction === 'left' 
+      ? Math.max(0, currentIndex - 1)
+      : Math.min(events.length - 1, currentIndex + 1);
+    setCurrentIndex(newIndex);
+  };
 
-    // Announce visible event title for screen reader users
-    const visible = events[currentIndex];
-    if (visible) {
-      setSrAnnouncement(`Showing event: ${visible.title}`);
-      setTimeout(() => setSrAnnouncement(''), 1200);
-    }
-  }, [currentIndex, events]);
-
-  // Mouse drag handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartX(e.pageX - (scrollContainerRef.current?.offsetLeft || 0));
     setScrollLeft(scrollContainerRef.current?.scrollLeft || 0);
-    pauseWithAnnounce('drag');
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -97,25 +64,16 @@ export default function CurrentEventsStrip() {
     }
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    setTimeout(() => resumeWithAnnounce('drag'), 100);
-  };
-
-  const handleMouseLeave = () => {
-    if (isDragging) {
-      setIsDragging(false);
-      setTimeout(() => resumeWithAnnounce('drag'), 100);
-    }
-  };
+  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseLeave = () => setIsDragging(false);
 
   if (isLoading) {
     return (
-      <section className="py-12 px-6 bg-background/50 backdrop-blur-sm border-y border-border/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-muted rounded w-1/3 mx-auto" />
-            <div className="h-64 bg-muted rounded" />
+      <section className="py-20 px-6 relative overflow-hidden">
+        <div className="max-w-[95vw] mx-auto">
+          <div className="animate-pulse space-y-8">
+            <div className="h-12 bg-white/5 rounded-xl w-1/3 mx-auto" />
+            <div className="h-96 bg-white/5 rounded-2xl" />
           </div>
         </div>
       </section>
@@ -124,14 +82,19 @@ export default function CurrentEventsStrip() {
 
   if (events.length === 0) {
     return (
-      <section className="py-16 px-6 bg-accent/5 backdrop-blur-sm border-y border-border/50">
+      <section className="py-20 px-6 relative overflow-hidden">
         <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-2">
-            Upcoming Events
-          </h2>
-          <p className="text-muted-foreground">
-            No events available at the moment. Check back soon!
-          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+              Upcoming Events
+            </h2>
+            <p className="text-white/60">
+              No events available at the moment. Check back soon!
+            </p>
+          </motion.div>
         </div>
       </section>
     );
@@ -139,94 +102,165 @@ export default function CurrentEventsStrip() {
 
   return (
     <section 
-      className="py-16 px-0 bg-accent/5 backdrop-blur-sm border-y border-border/50 w-full"
-      onMouseEnter={() => pauseWithAnnounce('hover')}
-      onMouseLeave={() => resumeWithAnnounce('hover')}
-      onFocus={() => pauseWithAnnounce('focus')}
-      onBlur={() => resumeWithAnnounce('focus')}
-      aria-atomic="true"
+      ref={ref}
+      className="py-24 px-0 relative overflow-hidden"
     >
-      <div className="max-w-[95vw] mx-auto">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-foreground mb-2">
+      {/* Animated background gradient */}
+      <motion.div
+        animate={{
+          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+        }}
+        transition={{
+          duration: 20,
+          repeat: Infinity,
+          ease: "linear"
+        }}
+        className="absolute inset-0"
+      />
+
+      <div className="max-w-[95vw] mx-auto relative z-10">
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-12"
+        >
+          <motion.span
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.6 }}
+            className="inline-block mb-4 text-sm font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 text-purple-400"
+          >
+            Featured Events
+          </motion.span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
             Upcoming Events
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-white/60 text-lg">
             Don't miss out on our next events
           </p>
-        </div>
+        </motion.div>
 
         <div className="relative">
-          {/* Navigation Buttons */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-accent/30 hover:bg-accent/10"
-            onClick={goToPrev}
-            aria-label="Previous event"
+          {/* Navigation Buttons with magnetic effect */}
+          <MagneticButton
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20"
+            onClick={() => scroll('left')}
+            disabled={currentIndex === 0}
           >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+            <ChevronLeft className="h-5 w-5" />
+          </MagneticButton>
 
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-background/90 backdrop-blur-sm border-accent/30 hover:bg-accent/10"
-            onClick={goToNext}
-            aria-label="Next event"
+          <MagneticButton
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20"
+            onClick={() => scroll('right')}
+            disabled={currentIndex === events.length - 1}
           >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            <ChevronRight className="h-5 w-5" />
+          </MagneticButton>
 
           {/* Scrollable Container */}
-          <div
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.8, delay: 0.2 }}
             ref={scrollContainerRef}
-            className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide cursor-grab active:cursor-grabbing px-16"
+            className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide cursor-grab active:cursor-grabbing px-16 py-4"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
             style={{ scrollBehavior: isDragging ? 'auto' : 'smooth' }}
           >
-            {events.map((event) => (
-              <EventCard key={event.id} event={event} compact />
+            {events.map((event, index) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, x: 50 }}
+                animate={inView ? { opacity: 1, x: 0 } : {}}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <EventCard event={event} compact />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Progress indicators */}
+          <div className="flex justify-center gap-2 mt-8">
+            {events.map((_, index) => (
+              <motion.button
+                key={index}
+                onClick={() => {
+                  setCurrentIndex(index);
+                  if (scrollContainerRef.current) {
+                    const cardWidth = 380 + 24;
+                    scrollContainerRef.current.scrollTo({
+                      left: index * cardWidth,
+                      behavior: 'smooth'
+                    });
+                  }
+                }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentIndex 
+                    ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500' 
+                    : 'w-2 bg-white/20 hover:bg-white/40'
+                }`}
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+              />
             ))}
           </div>
-
-            {/* Progress Dots
-            <div className="flex justify-center gap-2 mt-6">
-              {events.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToIndex(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    index === currentIndex 
-                      ? 'w-8 bg-accent' 
-                      : 'w-2 bg-muted hover:bg-accent/50'
-                  }`}
-                  aria-label={`Go to event ${index + 1}`}
-                  aria-current={index === currentIndex}
-                />
-              ))}
-            </div> */}
-
-          {/* Progress Bar
-          {!isPaused && (
-            <div className="mt-4 h-1 bg-muted rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-accent"
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 7, ease: "linear" }}
-                key={currentIndex}
-              />
-            </div>
-          )} */}
-        
-          {/* Offscreen live region for announcements (pause/resume/visible item) */}
-          <div className="sr-only" aria-live="polite">{srAnnouncement}</div>
         </div>
       </div>
     </section>
+  );
+}
+
+// Magnetic Button Component
+function MagneticButton({ 
+  children, 
+  className = "", 
+  onClick,
+  disabled = false 
+}: { 
+  children: React.ReactNode; 
+  className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  
+  const springX = useSpring(x, { stiffness: 300, damping: 20 });
+  const springY = useSpring(y, { stiffness: 300, damping: 20 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!ref.current || disabled) return;
+    const rect = ref.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set((e.clientX - centerX) * 0.3);
+    y.set((e.clientY - centerY) * 0.3);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.button
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      disabled={disabled}
+      style={{ x: springX, y: springY }}
+      className={`p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${className}`}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      {children}
+    </motion.button>
   );
 }

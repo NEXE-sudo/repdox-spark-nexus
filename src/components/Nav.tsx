@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Moon, Sun } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 
 export default function Nav() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -21,10 +22,13 @@ export default function Nav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const { scrollY } = useScroll();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-
-  const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
@@ -214,6 +218,10 @@ export default function Nav() {
     };
   }, [user]);
 
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    setScrolled(latest > 50);
+  });
+
   const navigationLinks = [
     { href: "/events", label: "Events" },
     { href: "/community", label: "Community" },
@@ -287,123 +295,142 @@ export default function Nav() {
   }
 
   // Desktop view
-  return (
-    <header className="bg-background/80 backdrop-blur-md border-b border-border/40 px-3 md:px-6 z-50 sticky top-0">
-      <div className="flex h-16 items-center justify-between gap-4 max-w-7xl mx-auto">
-        {/* Left side */}
-        <div className="flex items-center gap-8">
-          <Link
-            to="/"
-            className="text-primary hover:text-primary/90 flex-shrink-0 font-bold text-lg"
-          >
-            <img src={logo} alt="Repdox" className="h-8 w-auto" />
-          </Link>
-          <NavigationMenu>
-            <NavigationMenuList className="gap-1">
-              {navigationLinks.map((link, index) => (
-                <NavigationMenuItem key={index}>
-                  <NavigationMenuLink
-                    href={link.href}
-                    className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-md transition-all duration-200"
-                  >
-                    {link.label}
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
+   return (
+    <motion.header
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scroll 
+          ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/50' 
+          : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex h-16 items-center justify-between gap-4">
+          {/* Left side */}
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex-shrink-0">
+              <motion.img 
+                src={logo} 
+                alt="Repdox" 
+                className="h-8 w-auto"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              />
+            </Link>
+            
+            <NavigationMenu>
+              <NavigationMenuList className="gap-1">
+                {navigationLinks.map((link, index) => (
+                  <NavigationMenuItem key={index}>
+                    <NavigationMenuLink
+                      href={link.href}
+                      className="relative px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors group"
+                    >
+                      {link.label}
+                      <motion.span
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
+                        transition={{ duration: 0.3 }}
+                      />
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
 
-        {/* Right side - avatar or sign in */}
-        <div className="flex items-center gap-3 flex-shrink-0 relative">
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-5 w-5 text-accent" />
-            ) : (
-              <Moon className="h-5 w-5 text-muted-foreground" />
-            )}
-          </button>
-
-          {user ? (
-            <div className="relative">
-              <button
-                onClick={() => setMenuOpen((s) => !s)}
-                className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-offset-2 ring-offset-background ring-transparent hover:ring-accent/40 transition"
-                aria-label="Open user menu"
-              >
-                {avatarSrc && !avatarError ? (
-                  <img
-                    src={avatarSrc}
-                    alt="avatar"
-                    className="w-full h-full object-cover"
-                    onError={() => setAvatarError(true)}
-                  />
-                ) : (
-                  (() => {
-                    const meta = (user.user_metadata ?? {}) as Record<
-                      string,
-                      unknown
-                    >;
-                    const name =
-                      fullName ||
-                      (typeof meta["full_name"] === "string"
-                        ? (meta["full_name"] as string)
-                        : user.email ?? "");
-                    const initials = name
-                      .split(" ")
-                      .map((s) => s[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase();
-                    return (
-                      <div className="w-full h-full bg-accent flex items-center justify-center text-white font-semibold">
-                        {initials || "U"}
-                      </div>
-                    );
-                  })()
-                )}
-              </button>
-
-              {menuOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-2 z-60">
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      navigate("/profile");
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      navigate("/my-events");
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    My Events
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="text-sm px-6 h-10 rounded-lg border-accent/50 hover:bg-accent/10 font-medium"
+          {/* Right side */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Theme Toggle */}
+            <motion.button
+              onClick={toggleTheme}
+              whileHover={{ scale: 1.1, rotate: 180 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+              aria-label="Toggle theme"
             >
-              <Link to="/signin">Sign In</Link>
-            </Button>
-          )}
+              {theme === "dark" ? (
+                <Sun className="h-5 w-5 text-yellow-400" />
+              ) : (
+                <Moon className="h-5 w-5 text-purple-400" />
+              )}
+            </motion.button>
+
+            {user ? (
+              <div className="relative">
+                <motion.button
+                  onClick={() => setMenuOpen((s) => !s)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="h-10 w-10 rounded-full overflow-hidden ring-2 ring-offset-2 ring-offset-transparent ring-purple-500/50 hover:ring-purple-500 transition-all"
+                  aria-label="Open user menu"
+                >
+                  {avatarSrc && !avatarError ? (
+                    <img
+                      src={avatarSrc}
+                      alt="avatar"
+                      className="w-full h-full object-cover"
+                      onError={() => setAvatarError(true)}
+                    />
+                  ) : (
+                    (() => {
+                      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+                      const name = fullName || 
+                        (typeof meta["full_name"] === "string" ? meta["full_name"] : user.email ?? "");
+                      const initials = name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+                      return (
+                        <div className="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold">
+                          {initials || "U"}
+                        </div>
+                      );
+                    })()
+                  )}
+                </motion.button>
+
+                {menuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-48 bg-black/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 py-2 z-60 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/profile");
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/my-events");
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      My Events
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+            ) : (
+              <Link to="/signin">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-shadow"
+                >
+                  Sign In
+                </motion.button>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }

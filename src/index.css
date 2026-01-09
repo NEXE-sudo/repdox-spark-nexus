@@ -8,91 +8,74 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Global monochrome theme: black background, white foreground */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
+  /* Light mode: pure white background, pure black text */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
 
-    /* Cards / surfaces: slightly lighter than pure black */
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 100%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
 
-    /* Primary / accent use neutral greys so UI remains B&W */
-    --primary: 0 0% 88%;
-    --primary-foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 100%;
+  --secondary: 0 0% 100%;
+  --secondary-foreground: 0 0% 0%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 70%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 40%;
 
-    --accent: 0 0% 60%;
-    --accent-foreground: 0 0% 0%;
+  --accent: 0 0% 0%;
+  --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 0% 40%;
-    --destructive-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 14%;
-    --input: 0 0% 12%;
-    --ring: 0 0% 70%;
+  --border: 0 0% 85%;
+  --input: 0 0% 100%;
+  --ring: 0 0% 0%;
 
-    --radius: 0.75rem;
+  --radius: 0.75rem;
 
-    /* Grayscale gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(0 0% 14%), hsl(0 0% 28%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 6%), hsl(0 0% 12%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 22%));
-
-    /* Backgrounds */
-    --gradient-section: linear-gradient(180deg, hsl(0 0% 0%), hsl(0 0% 8%));
-
-    /* Shadows (darker to match dark surfaces) */
-    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.6);
-    --shadow-card-hover: 0 8px 24px -4px hsl(0 0% 0% / 0.7);
-    --shadow-glow: 0 0 40px hsl(0 0% 100% / 0.05);
-
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+  --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.1);
+  --shadow-card-hover: 0 8px 24px -4px hsl(0 0% 0% / 0.15);
+}
 
   .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
+  /* Dark mode: pure black background, pure white text */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
 
-    --card: 0 0% 6%;
-    --card-foreground: 0 0% 100%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 100%;
+  --popover: 0 0% 0%;
+  --popover-foreground: 0 0% 100%;
 
-    --primary: 0 0% 88%;
-    --primary-foreground: 0 0% 0%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 0%;
 
-    --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 100%;
+  --secondary: 0 0% 0%;
+  --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 70%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 60%;
 
-    --accent: 0 0% 60%;
-    --accent-foreground: 0 0% 0%;
+  --accent: 0 0% 100%;
+  --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 0% 40%;
-    --destructive-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 14%;
-    --input: 0 0% 12%;
-    --ring: 0 0% 70%;
+  --border: 0 0% 15%;
+  --input: 0 0% 0%;
+  --ring: 0 0% 100%;
 
-    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.6);
-    --shadow-card-hover: 0 8px 24px -4px hsl(0 0% 0% / 0.7);
-
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 6%), hsl(0 0% 12%));
-    --gradient-section: linear-gradient(180deg, hsl(0 0% 0%), hsl(0 0% 8%));
-  }
+  --shadow-card: 0 2px 8px -2px hsl(0 0% 100% / 0.1);
+  --shadow-card-hover: 0 8px 24px -4px hsl(0 0% 100% / 0.15);
+}
 }
 
 @layer base {
@@ -105,46 +88,6 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-  }
-
-  /* Enforce B&W site appearance (black background, white text). This is intentionally high-specificity to ensure global consistency. */
-  html, body, #root, #__next {
-    background-color: hsl(0 0% 0%) !important;
-    color: hsl(0 0% 100%) !important;
-  }
-
-  /* Make almost all UI elements use white text and transparent backgrounds.
-     Media assets (images/svg/video) are converted to grayscale by default.
-     Use the `.preserve-color` class to opt-out for any element. */
-  body *:not(img):not(svg):not(picture):not(canvas):not(video) {
-    color: hsl(0 0% 100%) !important;
-    background-color: transparent !important;
-    fill: currentColor !important;
-    stroke: currentColor !important;
-  }
-
-  /* Convert raster and vector media to grayscale to maintain B&W aesthetic */
-  img, svg, picture, canvas, video {
-    filter: grayscale(100%) contrast(100%) brightness(95%) !important;
-  }
-
-  /* Subtle neutral borders */
-  * {
-    border-color: hsl(0 0% 18%) !important;
-  }
-
-  /* Form controls and interactive elements should inherit the neutral monochrome style unless explicitly styled. */
-  button, a, input, textarea, select {
-    color: inherit !important;
-    background-color: transparent !important;
-    border-color: hsl(0 0% 18%) !important;
-  }
-
-  /* Helper class to opt elements back into color if needed */
-  .preserve-color, .preserve-color * {
-    filter: none !important;
-    color: initial !important;
-    background-color: initial !important;
   }
 }
 
@@ -176,4 +119,73 @@ All colors MUST be HSL.
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
+}
+
+@layer utilities {
+  /* Gradient text utilities */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400;
+  }
+
+  /* Glassmorphism utilities */
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/10 hover:border-white/20;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-radial {
+    background: radial-gradient(circle at center, rgba(120,119,198,0.15), transparent 70%);
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-white/5 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-white/20 rounded-full hover:bg-white/30;
+  }
+}
+
+/* Remove default scrollbar from specific elements */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scrolling for the whole page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom selection colors */
+::selection {
+  background-color: rgba(168, 85, 247, 0.3);
+  color: white;
+}
+
+/* Prevent text selection on draggable elements */
+.select-none {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }

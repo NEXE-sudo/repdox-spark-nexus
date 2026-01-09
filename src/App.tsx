@@ -22,6 +22,8 @@ import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import Bookmarks from "./pages/Bookmarks";
 import Groups from "./pages/Groups";
+import AnimatedBackground from "@/components/AnimatedBackground";
+import SmoothScroll from "@/components/SmoothScroll";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <SmoothScroll>
+          <AnimatedBackground />
           <BrowserRouter>
             <div className="flex flex-col min-h-screen">
               <Nav />
@@ -58,6 +62,7 @@ const App = () => {
               </Routes>
             </div>
           </BrowserRouter>
+          </SmoothScroll>
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

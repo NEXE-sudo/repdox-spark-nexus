@@ -389,7 +389,7 @@ export default function AddEvent() {
           </p>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-8 bg-black">
           {/* Basic Information Card */}
           <Card>
             <CardContent className="pt-6 space-y-6">
