@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ProfileCard from "@/components/ProfileCard";
 import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ import {
   MapPin,
   Globe,
   Calendar,
+  QrCode,
 } from "lucide-react";
 
 interface UserProfile {
@@ -52,6 +54,7 @@ const sections = [
   { id: "personal", label: "Personal Info", icon: UserIcon },
   { id: "professional", label: "Professional", icon: Briefcase },
   { id: "contact", label: "Contact", icon: Phone },
+  { id: "card", label: "Digital Card", icon: QrCode },
   { id: "security", label: "Security", icon: UserIcon }, // Add this line
 ];
 
@@ -639,6 +642,8 @@ export default function Profile() {
                     </div>
                   </div>
                 )}
+
+                {activeSection === "card"}
 
                 {activeSection === "security" && (
                   <div className="space-y-6">
