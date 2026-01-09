@@ -1439,15 +1439,12 @@ export default function Community() {
               </span>
             </div>
           </nav>
-
-          <Button className="w-full py-6 text-lg font-bold rounded-full bg-accent hover:bg-accent/90 active:scale-95 transition-transform">
-            Post
-          </Button>
+          
         </aside>
         {/* Center Content */}
         <div className="w-full max-w-[600px] border-r border-border overflow-y-auto h-full flex flex-col">
           {/* Post Composition */}
-          <div className="border-b border-border p-4">
+          <div className="border-b border-border p-4 glass-effect">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
                 {getAvatarUrl(currentUserProfile?.avatar_url) ? (
@@ -1475,7 +1472,7 @@ export default function Community() {
                       updateMentionSuggestions(v);
                     }}
                     placeholder="What's happening?!"
-                    className="w-full bg-transparent text-xl text-foreground placeholder:text-muted-foreground outline-none resize-none font-normal"
+                    className="w-full bg-transparent text-xl text-foreground placeholder:text-muted-foreground outline-none resize-none font-normal transition-all duration-200 focus:scale-[1.01]"
                     rows={3}
                     style={{
                       fontFamily:
@@ -1912,7 +1909,7 @@ export default function Community() {
                       </Alert>
                     )}
                     <Button
-                      onClick={handleCreatePost}
+                      onClick={handleCreatePost} className="magnetic-hover glow-on-hover"
                       disabled={
                         isLoading ||
                         !newPost.trim() ||
@@ -1952,7 +1949,7 @@ export default function Community() {
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="border-b border-border px-4 py-3 hover:bg-muted/30 transition cursor-pointer"
+                className="border-b border-border px-4 py-3 hover:bg-muted/30 transition-base cursor-pointer card-lift rounded-lg my-2 glass-hover"
                 onClick={() => {
                   incrementPostViews(post.id);
                   navigate(`/community/${post.id}`);
