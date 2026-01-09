@@ -55,7 +55,7 @@ const sections = [
   { id: "professional", label: "Professional", icon: Briefcase },
   { id: "contact", label: "Contact", icon: Phone },
   { id: "card", label: "Digital Card", icon: QrCode },
-  { id: "security", label: "Security", icon: UserIcon }, // Add this line
+  { id: "security", label: "Security", icon: UserIcon },
 ];
 
 export default function Profile() {
@@ -94,12 +94,10 @@ export default function Profile() {
     loadUserProfile();
   }, []);
 
-  // Also update the useEffect that loads the avatar URL:
   useEffect(() => {
     if (profile?.avatar_url) {
       console.log("[Profile] Loading avatar from path:", profile.avatar_url);
 
-      // The getAvatarSignedUrl function will clean the path
       getAvatarSignedUrl(profile.avatar_url)
         .then((url) => {
           console.log("[Profile] Avatar URL loaded:", url);
@@ -121,9 +119,7 @@ export default function Profile() {
         error: userError,
       } = await supabase.auth.getUser();
 
-      // If a userId param is present, load that profile for viewing (public view)
       if (userId) {
-        // try to load profile by param
         const { data: profileData, error: profileError } = await supabase
           .from("user_profiles")
           .select("*")
@@ -138,7 +134,6 @@ export default function Profile() {
           setProfile(profileData);
         }
 
-        // set current user if available (not required to view another profile)
         if (!userError && currentUser) setUser(currentUser);
         return;
       }
@@ -225,24 +220,14 @@ export default function Profile() {
     try {
       let avatarPath = profile?.avatar_url;
 
-      // Upload avatar if a new one is selected
       if (avatarFile) {
         console.log("[Profile] Uploading new avatar...");
-
-        // uploadAvatar returns the path WITHOUT bucket name
-        // e.g., "user-id/avatar-123.jpg" NOT "avatars/user-id/avatar-123.jpg"
         avatarPath = await uploadAvatarService(user.id, avatarFile);
-
         console.log("[Profile] Avatar uploaded, path:", avatarPath);
-
-        // IMPORTANT: Do NOT add 'avatars/' prefix here!
-        // The path should be: user-id/avatar-123.jpg
-        // NOT: avatars/user-id/avatar-123.jpg
       }
 
       console.log("[Profile] Saving profile with avatar path:", avatarPath);
 
-      // Upsert profile data
       const { error: upsertError } = await supabase
         .from("user_profiles")
         .upsert(
@@ -257,7 +242,7 @@ export default function Profile() {
             phone: phone || null,
             location: locationInput || null,
             "Date of Birth": dateOfBirth || null,
-            avatar_url: avatarPath, // This should be: user-id/avatar-123.jpg
+            avatar_url: avatarPath,
             updated_at: new Date().toISOString(),
           },
           {
@@ -271,10 +256,8 @@ export default function Profile() {
       setAvatarFile(null);
       setAvatarPreview(null);
 
-      // Reload profile data
       await loadUserProfile();
 
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: unknown) {
       console.error("Error saving profile:", err);
@@ -325,7 +308,6 @@ export default function Profile() {
       <div className="flex h-screen">
         {/* Sidebar */}
         <aside className="w-72 bg-card border-r border-border flex flex-col">
-          {/* Profile Header in Sidebar */}
           <div className="p-6 border-b border-border">
             <div className="flex flex-col items-center">
               <div className="h-24 w-24 rounded-full overflow-hidden ring-4 ring-accent/20 flex items-center justify-center bg-accent/10 mb-4">
@@ -356,7 +338,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Navigation */}
           <nav className="flex-1 p-4">
             <div className="space-y-1">
               {sections.map((section) => {
@@ -379,7 +360,6 @@ export default function Profile() {
             </div>
           </nav>
 
-          {/* Logout Button */}
           <div className="p-4 border-t border-border">
             <Button
               onClick={handleSignOut}
@@ -438,7 +418,6 @@ export default function Profile() {
                       Personal Information
                     </h2>
 
-                    {/* Avatar Upload */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-3">
                         Profile Picture
@@ -457,7 +436,6 @@ export default function Profile() {
                       </label>
                     </div>
 
-                    {/* Full Name */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Full Name
@@ -471,7 +449,6 @@ export default function Profile() {
                       />
                     </div>
 
-                    {/* Handle (Twitter-style @handle) */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         @Handle (like @twitter)
@@ -496,7 +473,6 @@ export default function Profile() {
                       </p>
                     </div>
 
-                    {/* Date of Birth */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Date of Birth
@@ -512,7 +488,6 @@ export default function Profile() {
                       </div>
                     </div>
 
-                    {/* Bio */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Bio
@@ -534,7 +509,6 @@ export default function Profile() {
                       Professional Details
                     </h2>
 
-                    {/* Job Title */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Job Title
@@ -551,7 +525,6 @@ export default function Profile() {
                       </div>
                     </div>
 
-                    {/* Company */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Company
@@ -568,7 +541,6 @@ export default function Profile() {
                       </div>
                     </div>
 
-                    {/* Website */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Website
@@ -593,7 +565,6 @@ export default function Profile() {
                       Contact Information
                     </h2>
 
-                    {/* Email (Read-only) */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Email
@@ -607,7 +578,6 @@ export default function Profile() {
                       </p>
                     </div>
 
-                    {/* Phone */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Phone
@@ -624,7 +594,6 @@ export default function Profile() {
                       </div>
                     </div>
 
-                    {/* Location */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Location
@@ -643,7 +612,50 @@ export default function Profile() {
                   </div>
                 )}
 
-                {activeSection === "card"}
+                {activeSection === "card" && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Your Digital Card
+                    </h2>
+                    
+                    <p className="text-sm text-muted-foreground mb-8">
+                      This is your personal digital business card. Share it with others by showing the QR code or sharing your profile link.
+                    </p>
+
+                    <div className="flex justify-center items-center min-h-[600px] bg-gradient-to-br from-background to-muted/30 rounded-xl p-8">
+                      <ProfileCard
+                        mode="personal"
+                        userData={{
+                          user_id: user.id,
+                          full_name: fullName || "Your Name",
+                          handle: handle || "yourhandle",
+                          bio: bio || "Your bio",
+                          avatar_url: avatarUrl,
+                          phone: phone,
+                          email: user.email || null,
+                          job_title: jobTitle,
+                          company: company,
+                          location: locationInput,
+                          socials: {
+                            linkedin_url: null,
+                            github_url: null,
+                            twitter_url: null,
+                            instagram_url: null,
+                            portfolio_url: website,
+                          },
+                        }}
+                        enableTilt={true}
+                        behindGlowEnabled={true}
+                      />
+                    </div>
+
+                    <div className="mt-8 p-4 bg-accent/5 border border-accent/20 rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        <strong className="text-foreground">💡 Tip:</strong> Keep your profile information up to date to ensure your digital card always shows the latest details.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {activeSection === "security" && (
                   <div className="space-y-6">
@@ -651,7 +663,6 @@ export default function Profile() {
                       Security & Privacy
                     </h2>
 
-                    {/* Danger Zone */}
                     <div className="border border-destructive/30 rounded-lg p-6 bg-destructive/5">
                       <h3 className="text-lg font-semibold text-destructive mb-2">
                         Danger Zone
@@ -685,17 +696,19 @@ export default function Profile() {
                   </div>
                 )}
 
-                {/* Save Button */}
-                <div className="mt-8 pt-6 border-t border-border">
-                  <Button
-                    onClick={handleSave}
-                    disabled={isLoading}
-                    className="w-full sm:w-auto gap-2 bg-accent hover:bg-accent/90"
-                  >
-                    <Save className="w-4 h-4" />
-                    {isLoading ? "Saving..." : "Save Changes"}
-                  </Button>
-                </div>
+                {/* Save Button - Only show for editable sections */}
+                {activeSection !== "card" && activeSection !== "security" && (
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <Button
+                      onClick={handleSave}
+                      disabled={isLoading}
+                      className="w-full sm:w-auto gap-2 bg-accent hover:bg-accent/90"
+                    >
+                      <Save className="w-4 h-4" />
+                      {isLoading ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
