@@ -24,7 +24,6 @@ import Bookmarks from "./pages/Bookmarks";
 import Groups from "./pages/Groups";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import SmoothScroll from "@/components/SmoothScroll";
-import PublicProfile from '@/pages/PublicProfile';
 
 const queryClient = new QueryClient();
 
@@ -46,7 +45,6 @@ const App = () => {
                 <Route path="/events/new" element={<AddEvent />} />
                 <Route path="/events/:slug" element={<EventDetail />} />
                 <Route path="/events/:slug/edit" element={<AddEvent />} />
-                <Route path="/profile/:userId" element={<PublicProfile />} />
                 <Route path="/my-events" element={<MyEvents />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/about" element={<About />} />
