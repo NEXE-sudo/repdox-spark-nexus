@@ -308,6 +308,111 @@ export async function deleteUserAccount() {
   }
 }
 
+// --------------------------
+// Profile confirmation helpers
+// --------------------------
+
+/**
+ * Creates a verification token row for a user (email or phone). This is a helper stub
+ * that stores the token server-side; you should integrate your email/SMS provider
+ * to actually send the token to the user in production.
+ */
+export async function createVerification(
+  userId: string,
+  type: "email" | "phone",
+  contact: string,
+  ttlSeconds = 60 * 60
+) {
+  const token = type === "phone" ? String(Math.floor(100000 + Math.random() * 900000)) : cryptoRandomString();
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from("profile_verifications")
+    .insert([
+      {
+        user_id: userId,
+        type,
+        contact,
+        token,
+        expires_at: expiresAt,
+        verified: false,
+      },
+    ]);
+
+  if (error) throw error;
+
+  // Attempt to send token via Edge Function if available (optional)
+  let sent = false;
+  try {
+    // This function is optional; if not present the invocation will fail and be caught
+    const fnRes = await supabase.functions.invoke("send-verification", {
+      body: JSON.stringify({ userId, type, contact, ttlSeconds }),
+    });
+
+    if (fnRes?.error) {
+      console.warn("send-verification invocation error:", fnRes.error);
+    } else {
+      // Function may return JSON like { ok: true, sent: true }
+      try {
+        const parsed = typeof fnRes.data === 'string' ? JSON.parse(fnRes.data) : fnRes.data;
+        sent = !!parsed?.sent;
+      } catch (e) {
+        // older client responses may not be stringified JSON, fall back to truthy check
+        sent = !!fnRes.data;
+      }
+    }
+  } catch (e) {
+    console.warn("send-verification function not available or failed:", e);
+  }
+
+  // For local/dev testing we log the token so devs can see it without an email/SMS backend
+  console.log(`[profileService] Verification token for ${type}:${contact} -> ${token} (sent=${sent})`);
+
+  return { token, id: (data as any)?.[0]?.id, sent };
+}
+
+export async function verifyToken(
+  userId: string,
+  type: "email" | "phone",
+  token: string
+) {
+  const { data, error } = await supabase
+    .from("profile_verifications")
+    .select("id, expires_at, verified")
+    .eq("user_id", userId)
+    .eq("type", type)
+    .eq("token", token)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) throw error;
+
+  if (!data) return false;
+
+  if (data.verified) return true;
+
+  const expiresAt = new Date((data as any).expires_at).getTime();
+  if (Date.now() > expiresAt) return false;
+
+  const { error: uerr } = await supabase
+    .from("profile_verifications")
+    .update({ verified: true })
+    .eq("id", (data as any).id);
+
+  if (uerr) throw uerr;
+
+  return true;
+}
+
+function cryptoRandomString(len = 32) {
+  // fallback random string generator (not cryptographically strong in older browsers)
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
 /**
  * Helper: Get URL for any storage file in private bucket
  * Works because Supabase client includes auth token

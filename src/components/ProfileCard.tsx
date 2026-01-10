@@ -24,6 +24,16 @@ const ROLE_THEMES = {
   vice_chair: { gradient: 'linear-gradient(145deg, #FF634780 0%, #FF8A6580 100%)', border: '#FF6347' }
 };
 
+const hexToRgba = (hex: string, alpha = 1) => {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const bigint = parseInt(h, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 const clamp = (v, min = 0, max = 100) => Math.min(Math.max(v, min), max);
 const round = (v, precision = 3) => parseFloat(v.toFixed(precision));
 const adjust = (v, fMin, fMax, tMin, tMax) => round(tMin + ((tMax - tMin) * (v - fMin)) / (fMax - fMin));
@@ -34,10 +44,7 @@ const ProfileCardComponent = ({
   avatarUrl = '<Placeholder for avatar URL>',
   iconUrl = '<Placeholder for icon URL>',
   grainUrl = '<Placeholder for grain URL>',
-  innerGradient,
   behindGlowEnabled = true,
-  behindGlowColor,
-  behindGlowSize,
   className = '',
   enableTilt = true,
   enableMobileTilt = false,
@@ -54,6 +61,9 @@ const ProfileCardComponent = ({
   metalness = 1,
   roughness = 0.4,
   overlayColor = 'rgba(255, 255, 255, 0.1)',
+  innerGradient = DEFAULT_INNER_GRADIENT,
+  behindGlowColor = undefined,
+  behindGlowSize = undefined,
   idCardName = 'ALEXANDER DOE',
   idCardRole = 'SENIOR DEVELOPER',
   idNumber = '8901-2345-6789',
@@ -356,21 +366,36 @@ const qrData = useMemo(() => {
     handleDeviceOrientation
   ]);
 
-  const cardStyle = useMemo(
-  () => ({
-    '--icon': iconUrl ? `url(${iconUrl})` : 'none',
-    '--grain': grainUrl ? `url(${grainUrl})` : 'none',
-    '--inner-gradient': innerGradient || roleTheme.gradient, // CHANGED
-    '--behind-glow-color': behindGlowColor ?? roleTheme.border, // CHANGED
-    '--behind-glow-size': behindGlowSize ?? '50%',
-    '--metalness': metalness, // ADD if missing
-    '--roughness': roughness, // ADD if missing
-    '--overlay-color': overlayColor, // ADD if missing
-    '--text-color': 'white', // ADD
-    '--role-border-color': roleTheme.border // ADD
-  }),
-  [iconUrl, grainUrl, innerGradient, behindGlowColor, behindGlowSize, metalness, roughness, overlayColor, roleTheme]
-);
+  const cardStyle = useMemo(() => {
+    const base = roleTheme?.border ?? '#71C4FF';
+    const sp1 = hexToRgba(base, 0.85);
+    const sp2 = hexToRgba(base, 0.6);
+    const sp3 = hexToRgba(base, 0.45);
+    const sp4 = hexToRgba(base, 0.3);
+    const sp5 = hexToRgba(base, 0.18);
+    const sp6 = hexToRgba(base, 0.08);
+    const glareGradient = innerGradient || `linear-gradient(135deg, ${hexToRgba(base, 0.18)} 0%, ${hexToRgba(base, 0.06)} 100%)`;
+
+    return {
+      '--icon': iconUrl ? `url(${iconUrl})` : 'none',
+      '--grain': grainUrl ? `url(${grainUrl})` : 'none',
+      '--inner-gradient': innerGradient || roleTheme.gradient,
+      '--behind-glow-color': behindGlowColor ?? roleTheme.border,
+      '--behind-glow-size': behindGlowSize ?? '50%',
+      '--metalness': metalness,
+      '--roughness': roughness,
+      '--overlay-color': overlayColor,
+      '--text-color': 'white',
+      '--role-border-color': roleTheme.border,
+      '--sunpillar-clr-1': sp1,
+      '--sunpillar-clr-2': sp2,
+      '--sunpillar-clr-3': sp3,
+      '--sunpillar-clr-4': sp4,
+      '--sunpillar-clr-5': sp5,
+      '--sunpillar-clr-6': sp6,
+      '--glare-gradient': glareGradient
+    } as React.CSSProperties;
+  }, [iconUrl, grainUrl, innerGradient, behindGlowColor, behindGlowSize, metalness, roughness, overlayColor, roleTheme]);
 
   const handleContactClick = useCallback(() => {
     onContactClick?.();
@@ -396,8 +421,17 @@ const renderEventCard = () => (
         <div className="inner-line" />
 
         <div className="card-body">
-          <div className="user-info-event">
-            <h2 className="user-name">{userData.full_name?.toUpperCase()}</h2>
+          
+            {userData.avatar_url && (
+            <img 
+              src={userData.avatar_url} 
+              alt={userData.full_name}
+              className="personal-avatar"
+            />
+          )}
+          <div className="user-info-personal">
+            <h2 className="user-name">{userData.full_name}</h2>
+          </div>
             <p className="user-role" style={{ color: roleTheme.border }}>
               {eventRegistration?.role?.replace('_', ' ').toUpperCase()}
             </p>
@@ -410,7 +444,6 @@ const renderEventCard = () => (
             {eventRegistration?.country && (
               <p className="user-country">🌍 {eventRegistration.country}</p>
             )}
-          </div>
         </div>
 
         <div className="inner-line" />
@@ -418,7 +451,7 @@ const renderEventCard = () => (
         <div className="card-footer">
           <div className="id-section">
             <span className="label">EVENT</span>
-            <span className="value-small">{eventData?.title}</span>
+            <span className="value">{eventData?.title}</span>
             <span className="label" style={{ marginTop: '8px' }}>REG ID</span>
             <span className="value">{eventRegistration?.registration_id}</span>
           </div>
@@ -449,7 +482,7 @@ const renderPersonalCard = () => (
           )}
           <div className="user-info-personal">
             <h2 className="user-name">{userData.full_name}</h2>
-            </div>
+          </div>
             {userData.job_title && (
               <p className="user-role">{userData.job_title}</p>
             )}

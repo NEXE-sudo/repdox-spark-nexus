@@ -31,6 +31,7 @@ import {
   Check,
   Trash2,
   Edit,
+  Instagram,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -43,10 +44,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import eventService from "@/lib/eventService";
+import OrganizerRegistrations from "@/components/OrganizerRegistrations";
+import { getSignedUrl } from "@/lib/storageService";
 import { getEventImage } from "@/lib/eventImages";
+import type { Database } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import AddToCalendar from "@/components/AddToCalendar";
+import RecentlyViewedEvents from '@/components/RecentlyViewedEvents';
 
 export default function EventDetail() {
   const navigate = useNavigate();
@@ -57,6 +62,7 @@ export default function EventDetail() {
     email: "",
     phone: "",
     message: "",
+    role: "",
   });
 
   const { data: event, isLoading } = useQuery({
@@ -89,8 +95,9 @@ export default function EventDetail() {
   const countdown = useCountdown(event?.start_at || "");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<import('@supabase/supabase-js').User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [roleCounts, setRoleCounts] = useState<Record<string, number>>({});
 
   // Check if current user owns this event
   useEffect(() => {
@@ -104,6 +111,24 @@ export default function EventDetail() {
   }, []);
 
   const isOwner = user && event?.created_by === user.id;
+
+  // Fetch per-role registration counts to show remaining capacity
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (event?.id) {
+          const counts = await eventService.countRegistrationsByRole(event.id);
+          if (mounted) setRoleCounts(counts);
+        }
+      } catch (e) {
+        // ignore errors for now
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [event?.id]);
 
   const handleDeleteClick = () => {
     setDeleteDialogOpen(true);
@@ -149,7 +174,36 @@ export default function EventDetail() {
   const [heroImageSrc, setHeroImageSrc] = useState<string | undefined>(
     event?.image_url ? getEventImage(event.image_url) : undefined
   );
-
+useEffect(() => {
+  if (event) {
+    try {
+      const stored = localStorage.getItem('recentlyViewedEvents');
+      let recent: unknown[] = stored ? JSON.parse(stored) : [];
+      
+      // Remove if already exists
+      recent = recent.filter(e => e.id !== event.id);
+      
+      // Add to front
+      recent.unshift({
+        id: event.id,
+        slug: event.slug,
+        title: event.title,
+        image_url: event.image_url,
+        start_at: event.start_at,
+        location: event.location,
+        type: event.type,
+        viewedAt: Date.now()
+      });
+      
+      // Keep only last 10
+      recent = recent.slice(0, 10);
+      
+      localStorage.setItem('recentlyViewedEvents', JSON.stringify(recent));
+    } catch (err) {
+      console.error('Error saving recent event:', err);
+    }
+  }
+}, [event]);
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -231,40 +285,69 @@ export default function EventDetail() {
     e.preventDefault();
     (async () => {
       try {
+        // Check registration deadline
+        if (event?.registration_deadline) {
+          const deadline = new Date(event.registration_deadline);
+          if (Date.now() > deadline.getTime()) {
+            toast({
+              title: "Registration closed",
+              description: "Registration for this event is no longer open.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+
         // attempt to attach user if signed in
         const userResp = await supabase.auth.getUser();
         const user = userResp.data.user ?? null;
 
-        const payload = {
+        // Check capacity if role selected
+        if (formData.role) {
+          const allowed = await eventService.canRegister(event.id, formData.role);
+          if (!allowed) {
+            toast({ title: "Registration full", description: "The selected role is full. Please choose another role or contact the organizer.", variant: "destructive" });
+            return;
+          }
+        }
+
+        const params = {
           event_id: event.id,
           user_id: user ? user.id : null,
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
           message: formData.message,
-          status: "registered",
+          role: formData.role || null,
         };
 
-        const { error } = await supabase
-          .from("event_registrations")
-          .insert(payload);
-        if (error) throw error;
+        await eventService.registerForEvent(params);
 
         toast({
           title: "Registration submitted!",
           description:
             "You are registered for this event. Check your email for confirmation.",
         });
-        setFormData({ name: "", email: "", phone: "", message: "" });
+        setFormData({ name: "", email: "", phone: "", message: "", role: "" });
       } catch (err: unknown) {
-        const msg =
+        let msg =
           typeof err === "object" &&
           err !== null &&
           "message" in err &&
           typeof (err as Record<string, unknown>).message === "string"
             ? ((err as Record<string, unknown>).message as string)
             : String(err);
-        toast({ title: "Registration failed", description: msg });
+
+        // Map server-side error keys to friendly messages
+        if (msg?.includes("role_full")) {
+          msg = "The selected role is full. Please choose another role or contact the organizer.";
+        } else if (msg?.includes("registration_closed")) {
+          msg = "Registration for this event is closed.";
+        } else if (msg?.includes("already_registered")) {
+          msg = "You are already registered for this event.";
+        }
+
+        toast({ title: "Registration failed", description: msg, variant: "destructive" });
       }
     })();
   };
@@ -325,9 +408,11 @@ export default function EventDetail() {
     url: window.location.href,
   };
 
+  const roles = ((event as any).roles as unknown[] | undefined);
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Structured Data for SEO */}
+          {/* Structured Data for SEO */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -438,6 +523,19 @@ export default function EventDetail() {
               >
                 Teams
               </button>
+
+              {isOwner && (
+                <button
+                  onClick={() => setTab("registrations")}
+                  className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                    activeTab === "registrations"
+                      ? "border-accent text-accent"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Registrations
+                </button>
+              )}
             </div>
           </div>
 
@@ -522,6 +620,13 @@ export default function EventDetail() {
                     )}
                   </CardContent>
                 </Card>
+              )}
+
+              {isOwner && activeTab === "registrations" && (
+                <div>
+                  {/* Organizer Registrations component will fetch registrations and provide exports */}
+                  <OrganizerRegistrations eventId={event.id} />
+                </div>
               )}
 
               {activeTab === "details" && (
@@ -631,6 +736,37 @@ export default function EventDetail() {
                             required
                           />
                         </div>
+
+                        {roles && Array.isArray(roles) && roles.length > 0 && (
+                          <div>
+                            <Label htmlFor="role">Role</Label>
+                            <select
+                              id="role"
+                              value={formData.role}
+                              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                              className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            >
+                              <option value="">Select a role (optional)</option>
+                              {(roles as unknown[]).map((r: unknown, i: number) => {
+                                const obj = r as Record<string, unknown>;
+                                const name = typeof r === 'string' ? (r as string) : typeof obj.name === 'string' ? (obj.name as string) : typeof obj.role === 'string' ? (obj.role as string) : `Role ${i + 1}`;
+                                const capacityNum = typeof obj.capacity === 'number' ? (obj.capacity as number) : null;
+                                let label = name;
+                                if (capacityNum != null) {
+                                  const used = roleCounts[name] || 0;
+                                  const remaining = capacityNum - used;
+                                  label = `${name} (cap ${capacityNum}${remaining <= 0 ? ", full" : `, ${remaining} remaining`})`;
+                                }
+                                return (
+                                  <option key={i} value={name}>
+                                    {label}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+                        )}
+
                         <div>
                           <Label htmlFor="message">
                             Why do you want to attend?
@@ -759,6 +895,8 @@ export default function EventDetail() {
                   </div>
                 </CardContent>
               </Card>
+
+              <RecentlyViewedEvents />
 
               {/* Prizes */}
               {event.prizes &&

@@ -115,6 +115,10 @@ export default function AddEvent() {
   const { state: draftSaveState, load: loadDraft, manualSave: manualSaveDraft, clear: clearDraft } = useAutoSave<EventDraft>(draftKey, draft, { debounceMs: 700 });
   const [savedDraftAvailable, setSavedDraftAvailable] = useState<{ payload?: EventDraft; savedAt?: number } | null>(null);
 
+  // Roles text (organizer-defined roles) and preview toggle
+  const [rolesText, setRolesText] = useState<string>("");
+  const [showPreview, setShowPreview] = useState<boolean>(true);
+
   // Publish later
   const [publishLater, setPublishLater] = useState(false);
   const [publish_date, setPublishDate] = useState('');
@@ -122,6 +126,27 @@ export default function AddEvent() {
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Helpers for date/time constraints
+  const todayStr = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const nowTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const startTimeMin = form.start_date === todayStr ? nowTime : '00:00';
+  const endDateMin = form.start_date || todayStr;
+  const regDateMin = todayStr;
+  const regDateMax = form.start_date || undefined;
+  const regTimeMax =
+    form.registration_deadline_date === form.start_date && form.start_time
+      ? ((): string => {
+          const [h, m] = form.start_time.split(":").map(Number);
+          let total = h * 60 + m - 1;
+          if (total < 0) total = 0;
+          const hh = String(Math.floor(total / 60)).padStart(2, "0");
+          const mm = String(total % 60).padStart(2, "0");
+          return `${hh}:${mm}`;
+        })()
+      : undefined;
 
   // Mobile pane toggle: 'fields' or 'preview' (small screens)
   const [mobilePane, setMobilePane] = useState<'fields' | 'preview'>('fields');
@@ -451,6 +476,30 @@ export default function AddEvent() {
     const nextErrors: Record<string, string> = {};
     if (!form.title || !form.title.trim()) nextErrors.title = 'Please enter an event title.';
     if (!form.start_date || !form.start_time) nextErrors.start = 'Start date and time are required.';
+
+    // Date/time validation: start cannot be in the past
+    try {
+      const startAt = new Date(`${form.start_date}T${form.start_time}`);
+      if (startAt.getTime() < Date.now()) {
+        nextErrors.start = 'Event start must be in the future.';
+      }
+
+      if (form.end_date && form.end_time) {
+        const endAt = new Date(`${form.end_date}T${form.end_time}`);
+        if (endAt.getTime() <= startAt.getTime()) {
+          nextErrors.end = 'End time must be after start time.';
+        }
+      }
+
+      if (form.registration_deadline_date && form.registration_deadline_time) {
+        const regDead = new Date(`${form.registration_deadline_date}T${form.registration_deadline_time}`);
+        if (regDead.getTime() >= startAt.getTime()) {
+          nextErrors.registration_deadline = 'Registration deadline must be before the event start.';
+        }
+      }
+    } catch (err) {
+      // ignore parse errors here; other validations will catch
+    }
     if (!form.location || !form.location.trim()) nextErrors.location = 'Venue or platform is required.';
 
     setErrors(nextErrors);
@@ -464,6 +513,17 @@ export default function AddEvent() {
 
     setLoading(true);
     try {
+      const parsedRoles = rolesText
+        ? rolesText
+            .split(/\r?\n/)
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .map((line) => {
+              const [name, cap] = line.split('|').map((p) => p.trim());
+              return { name, capacity: cap ? (parseInt(cap, 10) || null) : null };
+            })
+        : null;
+
       const payloadBase = {
         form,
         tags,
@@ -472,6 +532,7 @@ export default function AddEvent() {
         prizeText,
         faqs: faqs.map((f) => ({ question: f.question, answer: f.answer })),
         uploadedFiles,
+        roles: parsedRoles && parsedRoles.length ? parsedRoles : null,
       };
 
       const payload = publishLater && publish_date
@@ -580,6 +641,9 @@ export default function AddEvent() {
           <div className="text-right">
             <div className="text-sm text-muted-foreground">Draft: <span className="font-medium text-neutral-700">{draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'saved' ? 'Saved' : draftSaveState}</span></div>
             <div className="mt-2 text-xs text-muted-foreground">Progress is auto-saved to your browser</div>
+            <div className="mt-3">
+              <button type="button" onClick={() => setShowPreview((p) => !p)} className="px-3 py-1 rounded-md bg-neutral-100 text-sm">{showPreview ? 'Hide Preview' : 'Show Preview'}</button>
+            </div>
           </div>
         </div>
 
@@ -593,7 +657,7 @@ export default function AddEvent() {
           </div>
         </div>
 
-        <div className={`${mobilePane === 'fields' ? 'block' : 'hidden'} lg:block space-y-8 bg-black`}>
+        <div className={`${mobilePane === 'fields' ? 'block' : 'hidden'} lg:block space-y-8 bg-background`}>
           {/* Basic Information Card */}
           <Card>
             <CardContent className="pt-6 space-y-6">
@@ -722,6 +786,7 @@ export default function AddEvent() {
                       value={form.start_date}
                       onChange={(e) => onChange("start_date", e.target.value)}
                       required
+                      min={todayStr}
                       className="h-11"
                       aria-invalid={!!errors.start}
                       aria-describedby={errors.start ? 'start-error' : undefined}
@@ -731,6 +796,7 @@ export default function AddEvent() {
                       value={form.start_time}
                       onChange={(e) => onChange("start_time", e.target.value)}
                       required
+                      min={startTimeMin}
                       className="h-11"
                       aria-invalid={!!errors.start}
                     />
@@ -749,6 +815,7 @@ export default function AddEvent() {
                       value={form.end_date}
                       onChange={(e) => onChange("end_date", e.target.value)}
                       required
+                      min={endDateMin}
                       className="h-11"
                     />
                     <Input
@@ -756,6 +823,7 @@ export default function AddEvent() {
                       value={form.end_time}
                       onChange={(e) => onChange("end_time", e.target.value)}
                       required
+                      min={form.end_date === form.start_date ? form.start_time : undefined}
                       className="h-11"
                     />
                   </div>
@@ -773,6 +841,8 @@ export default function AddEvent() {
                       onChange={(e) =>
                         onChange("registration_deadline_date", e.target.value)
                       }
+                      min={regDateMin}
+                      max={regDateMax}
                       className="h-11"
                     />
                     <Input
@@ -781,6 +851,8 @@ export default function AddEvent() {
                       onChange={(e) =>
                         onChange("registration_deadline_time", e.target.value)
                       }
+                      min={form.registration_deadline_date === todayStr ? nowTime : '00:00'}
+                      max={regTimeMax}
                       className="h-11"
                     />
                   </div>
@@ -1149,6 +1221,27 @@ export default function AddEvent() {
             </CardContent>
           </Card>
 
+          {/* Participant Roles Card */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Participant Roles</h2>
+                <p className="text-sm text-muted-foreground">
+                  Optionally define roles attendees can choose when registering. One per line. Format: Role Name | capacity (optional)
+                </p>
+              </div>
+
+              <Textarea
+                id="roles"
+                value={rolesText}
+                onChange={(e) => setRolesText(e.target.value)}
+                rows={4}
+                placeholder="Participant | 200\nVolunteer | 50\nJudge | 10"
+                className="resize-none font-mono text-sm"
+              />
+            </CardContent>
+          </Card>
+
           {/* Links Card */}
           <Card>
             <CardContent className="pt-6 space-y-6">
@@ -1282,7 +1375,7 @@ export default function AddEvent() {
             <LivePreview draft={draft} />
           </div>
 
-          <aside className="hidden lg:block sticky top-24 self-start h-[calc(100vh-6rem)] overflow-auto">
+          <aside className={`${showPreview ? 'hidden lg:block' : 'hidden'} sticky top-24 self-start h-[calc(100vh-6rem)] overflow-auto`}>
             <Card>
               <CardContent>
                 <div className="text-sm text-muted-foreground font-medium mb-3">Preview</div>

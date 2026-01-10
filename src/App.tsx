@@ -26,6 +26,7 @@ import Bookmarks from "./pages/Bookmarks";
 import Groups from "./pages/Groups";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import Loading from '@/loading';
+import CommandPalette from '@/components/CommandPalette';
 
 const queryClient = new QueryClient();
 
@@ -56,7 +57,7 @@ const App = () => {
       }, 900);
     }
   } catch (e) {
-    setShowIntro(false);
+    console.warn("[App] Error determining intro display:", e);
   }
   
   return () => {
@@ -113,15 +114,20 @@ const App = () => {
       setIsPageLoading(false);
       try {
         sessionStorage.setItem('skipInitialLoad', 'true');
-      } catch (_) {}
+      } catch (e) {
+        console.warn("[App] sessionStorage set failed:", e);
+      }
       window.location.href = href;
     })
-    .catch(() => {
+    .catch((err) => {
       // If fetch fails, just navigate anyway
+      console.warn("[App] preload fetch failed:", err);
       setIsPageLoading(false);
       try {
         sessionStorage.setItem('skipInitialLoad', 'true');
-      } catch (_) {}
+      } catch (e) {
+        console.warn("[App] sessionStorage set failed:", e);
+      }
       window.location.href = href;
     });
 };
@@ -129,7 +135,10 @@ const App = () => {
     const onPop = () => {
   try {
     sessionStorage.setItem('skipInitialLoad', 'true');
-  } catch (_) {}
+  } catch (err: unknown) {
+      // Non-fatal: store action failed (e.g., private mode)
+      console.debug("[App] sessionStorage set failed (onPop):", err);
+    }
 };
 
     document.addEventListener('click', onClick);
@@ -150,7 +159,10 @@ const App = () => {
     isFirstLoad.current = false;
     try {
       sessionStorage.setItem('hasSeenIntro', 'true');
-    } catch (_) {}
+    } catch (err: unknown) {
+      // Non-fatal: sessionStorage may be unavailable (incognito)
+      console.debug("[App] sessionStorage set failed (introComplete):", err);
+    }
   };
 
   return (
@@ -161,6 +173,7 @@ const App = () => {
           <Sonner />
             <AnimatedBackground />
             <BrowserRouter>
+              <CommandPalette />
               <div className="flex flex-col min-h-screen">
                 {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
                 {isPageLoading && !showIntro && <Loading />}

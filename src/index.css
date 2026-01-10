@@ -403,3 +403,7 @@ html {
   -ms-user-select: none;
   user-select: none;
 }
+
+kbd {
+  @apply inline-flex items-center justify-center px-2 py-1 text-xs font-medium bg-muted border border-border rounded;
+}

@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   uploadAvatar as uploadAvatarService,
   getAvatarSignedUrl,
   deleteUserAccount,
+  createVerification,
+  verifyToken,
 } from "@/lib/profileService";
 import {
   AlertDialog,
@@ -32,7 +35,10 @@ import {
   Globe,
   Calendar,
   QrCode,
+  Settings,
+  Users,
 } from "lucide-react";
+import Dashboard from "./Dashboard";
 
 interface UserProfile {
   id: string;
@@ -45,13 +51,21 @@ interface UserProfile {
   website: string | null;
   company: string | null;
   job_title: string | null;
+  handle?: string | null;
+  linkedin_url?: string | null;
+  github_url?: string | null;
+  twitter_url?: string | null;
+  instagram_url?: string | null;
+  portfolio_url?: string | null;
   "Date of Birth"?: string | null;
   created_at: string;
   updated_at: string;
 }
 
 const sections = [
+  { id: "preferences", label: "Preferences", icon: Settings },
   { id: "personal", label: "Personal Info", icon: UserIcon },
+  { id: "dashboard", label: "Dashboard", icon: Users },
   { id: "professional", label: "Professional", icon: Briefcase },
   { id: "contact", label: "Contact", icon: Phone },
   { id: "card", label: "Digital Card", icon: QrCode },
@@ -65,6 +79,22 @@ export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeSection, setActiveSection] = useState("personal");
+
+  // if a ?section= parameter is present, switch to it (dashboard only when viewing own profile)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const section = params.get("section");
+    if (!section) return;
+
+    if (section === "dashboard") {
+      // only allow dashboard when viewing own profile (no userId) or it's the current user
+      if (!userId || (user && profile && user.id === profile.user_id)) {
+        setActiveSection("dashboard");
+      }
+    } else {
+      setActiveSection(section);
+    }
+  }, [location.search, user, profile, userId]);
 
   // Form states
   const [fullName, setFullName] = useState("");
@@ -88,6 +118,12 @@ const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 const [userEvents, setUserEvents] = useState<any[]>([]);
 const [selectedEventReg, setSelectedEventReg] = useState<any>(null);
 
+const [preferences, setPreferences] = useState({
+  theme: 'auto',
+  emailNotifications: true,
+  eventReminders: true
+});
+
   // Avatar states
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -98,28 +134,102 @@ const [selectedEventReg, setSelectedEventReg] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-useEffect(() => {
-  if (user) {
-    loadUserEvents();
-  }
-}, [user]);
+  // Verification states
+  const [emailVerificationSent, setEmailVerificationSent] = useState(false);
+  const [emailToken, setEmailToken] = useState("");
+  const [phoneVerificationSent, setPhoneVerificationSent] = useState(false);
+  const [phoneToken, setPhoneToken] = useState("");
 
-const loadUserEvents = async () => {
+  const loadUserProfile = useCallback(async () => {
   try {
-    const { data, error } = await supabase
-      .from('event_registrations')
-      .select('*, events(*)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    setUserEvents(data || []);
-  } catch (err) {
-    console.error('Error loading events:', err);
-  }
-};
+    const {
+      data: { user: currentUser },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-// When event is selected, load registration details
+    if (userId) {
+      const { data: profileData, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (profileError && profileError.code !== "PGRST116") {
+        throw profileError;
+      }
+
+      if (profileData) {
+        setProfile(profileData);
+      }
+
+      if (!userError && currentUser) setUser(currentUser);
+      
+      // Load preferences even when viewing other profiles
+      try {
+        const stored = localStorage.getItem('userPreferences');
+        if (stored) {
+          setPreferences(JSON.parse(stored));
+        }
+      } catch (err) {
+        console.error('Error loading preferences:', err);
+      }
+      
+      return;
+    }
+
+    if (userError) throw userError;
+    if (!currentUser) {
+      navigate("/signin");
+      return;
+    }
+
+    setUser(currentUser);
+
+    const { data: profileData, error: profileError } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("user_id", currentUser.id)
+      .single();
+
+    if (profileError && profileError.code !== "PGRST116") {
+      throw profileError;
+    }
+
+    if (profileData) {
+      setProfile(profileData);
+      setFullName(profileData.full_name || "");
+      setHandle(profileData.handle || "");
+      setBio(profileData.bio || "");
+      setJobTitle(profileData.job_title || "");
+      setCompany(profileData.company || "");
+      setWebsite(profileData.website || "");
+      setPhone(profileData.phone || "");
+
+      setLocationInput(profileData.location || "");
+      setDateOfBirth(profileData["Date of Birth"] || "");
+      setLinkedinUrl(profileData.linkedin_url || "");
+      setGithubUrl(profileData.github_url || "");
+      setTwitterUrl(profileData.twitter_url || "");
+      setInstagramUrl(profileData.instagram_url || "");
+      setPortfolioUrl(profileData.portfolio_url || "");
+    }
+
+    // Load user preferences from localStorage
+    try {
+      const stored = localStorage.getItem('userPreferences');
+      if (stored) {
+        setPreferences(JSON.parse(stored));
+      }
+    } catch (err) {
+      console.error('Error loading preferences:', err);
+    }
+
+  } catch (err) {
+    console.error("Error loading profile:", err);
+    setError("Failed to load profile data");
+  }
+}, [navigate, userId]);
+
 useEffect(() => {
   if (selectedEventId) {
     const reg = userEvents.find(e => e.event_id === selectedEventId);
@@ -129,10 +239,33 @@ useEffect(() => {
   }
 }, [selectedEventId, userEvents]);
 
+const loadUserEvents = useCallback(async () => {
+  try {
+    const userIdToQuery = user?.id;
+    if (!userIdToQuery) return;
+    const { data, error } = await supabase
+      .from('event_registrations')
+      .select('*, events(*)')
+      .eq('user_id', userIdToQuery)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    setUserEvents(data || []);
+  } catch (err) {
+    console.error('Error loading events:', err);
+  }
+}, [user?.id]);
+
+useEffect(() => {
+  if (user) {
+    loadUserEvents();
+  }
+}, [user, loadUserEvents]);
+
   // Load user and profile on mount
   useEffect(() => {
     loadUserProfile();
-  }, []);
+  }, [loadUserProfile]);
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -151,73 +284,6 @@ useEffect(() => {
       setAvatarUrl(null);
     }
   }, [profile?.avatar_url]);
-
-  const loadUserProfile = async () => {
-    try {
-      const {
-        data: { user: currentUser },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userId) {
-        const { data: profileData, error: profileError } = await supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("user_id", userId)
-          .single();
-
-        if (profileError && profileError.code !== "PGRST116") {
-          throw profileError;
-        }
-
-        if (profileData) {
-          setProfile(profileData);
-        }
-
-        if (!userError && currentUser) setUser(currentUser);
-        return;
-      }
-
-      if (userError) throw userError;
-      if (!currentUser) {
-        navigate("/login");
-        return;
-      }
-
-      setUser(currentUser);
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("user_id", currentUser.id)
-        .single();
-
-      if (profileError && profileError.code !== "PGRST116") {
-        throw profileError;
-      }
-
-      if (profileData) {
-        setProfile(profileData);
-        setFullName(profileData.full_name || "");
-        setHandle(profileData.handle || "");
-        setBio(profileData.bio || "");
-        setJobTitle(profileData.job_title || "");
-        setCompany(profileData.company || "");
-        setWebsite(profileData.website || "");
-        setPhone(profileData.phone || "");
-        setLocationInput(profileData.location || "");
-        setDateOfBirth(profileData["Date of Birth"] || "");
-        setLinkedinUrl(profileData.linkedin_url || "");
-setGithubUrl(profileData.github_url || "");
-setTwitterUrl(profileData.twitter_url || "");
-setInstagramUrl(profileData.instagram_url || "");
-setPortfolioUrl(profileData.portfolio_url || "");
-      }
-    } catch (err) {
-      console.error("Error loading profile:", err);
-      setError("Failed to load profile data");
-    }
-  };
 
   const loadAvatarUrl = async (path: string) => {
     try {
@@ -344,9 +410,9 @@ setPortfolioUrl(profileData.portfolio_url || "");
     try {
       await deleteUserAccount();
       navigate("/");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error deleting account:", err);
-      setError(err.message || "Failed to delete account");
+      setError(err instanceof Error ? err.message : "Failed to delete account");
     } finally {
       setDeleteLoading(false);
       setDeleteDialogOpen(false);
@@ -390,7 +456,9 @@ setPortfolioUrl(profileData.portfolio_url || "");
 
           <nav className="flex-1 p-4">
             <div className="space-y-1">
-              {sections.map((section) => {
+              {sections
+                .filter((s) => s.id !== 'dashboard' || (!userId || (user && profile && user.id === profile.user_id)))
+                .map((section) => {
                 const Icon = section.icon;
                 return (
                   <button
@@ -549,6 +617,18 @@ setPortfolioUrl(profileData.portfolio_url || "");
                         rows={4}
                         className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition resize-none"
                       />
+                    </div>
+                  </div>
+                )}
+
+                {activeSection === "dashboard" && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Dashboard
+                    </h2>
+
+                    <div>
+                      <Dashboard embeddedUser={user} />
                     </div>
                   </div>
                 )}
@@ -719,10 +799,73 @@ setPortfolioUrl(profileData.portfolio_url || "");
                       <div className="flex items-center gap-3 px-4 py-3 bg-muted rounded-lg text-muted-foreground">
                         <Mail className="w-5 h-5" />
                         {user.email}
+                        <div className="ml-auto">
+                          {user?.email_confirmed_at ? (
+                            <span className="text-xs text-accent">Verified</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Not verified</span>
+                          )}
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Email cannot be changed
                       </p>
+
+                      {!user?.email_confirmed_at && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            className="px-3 py-2 rounded bg-accent text-accent-foreground text-sm"
+                            onClick={async () => {
+                              try {
+                                if (!user?.id || !user.email) return;
+                                const res = await createVerification(user.id, "email", user.email);
+                                const desc = res?.token && import.meta.env.DEV ? `Token: ${res.token} (dev only)` : `A verification token was created (id=${res.id})`;
+                                toast({ title: "Verification sent", description: desc });
+                                setEmailVerificationSent(true);
+                              } catch (err: unknown) {
+                                console.error("Send email verification failed", err);
+                                const message = err instanceof Error ? err.message : String(err);
+                                toast({ title: "Failed", description: message, variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Send verification token
+                          </button>
+
+                          {emailVerificationSent && (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={emailToken}
+                                onChange={(e) => setEmailToken(e.target.value)}
+                                placeholder="Enter token"
+                                className="px-3 py-2 border rounded"
+                              />
+                              <button
+                                className="px-3 py-2 rounded bg-accent text-accent-foreground text-sm"
+                                onClick={async () => {
+                                  try {
+                                    if (!user?.id) return;
+                                    const ok = await verifyToken(user.id, "email", emailToken);
+                                    if (ok) {
+                                      toast({ title: "Verified", description: "Email verified successfully" });
+                                      // reload user
+                                      const { data: { user: updated } } = await supabase.auth.getUser();
+                                      setUser(updated as any);
+                                    } else {
+                                      toast({ title: "Invalid token", description: "Token expired or incorrect", variant: "destructive" });
+                                    }
+                                  } catch (err: unknown) {
+                                    toast({ title: "Verification failed", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                Verify
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -738,6 +881,56 @@ setPortfolioUrl(profileData.portfolio_url || "");
                           placeholder="+1 (555) 123-4567"
                           className="w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition"
                         />
+                      </div>
+
+                      <div className="mt-3 flex items-center gap-2">
+                        <button
+                          className="px-3 py-2 rounded bg-accent text-accent-foreground text-sm"
+                          onClick={async () => {
+                            try {
+                              if (!user?.id || !phone) return;
+                              const res = await createVerification(user.id, "phone", phone);
+                              const descPhone = res?.token && import.meta.env.DEV ? `Code: ${res.token} (dev only)` : `OTP created (id=${res.id})`;
+                              toast({ title: "OTP sent", description: descPhone });
+                              setPhoneVerificationSent(true);
+                            } catch (err: unknown) {
+                              toast({ title: "Failed to send OTP", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+                            }
+                          }}
+                        >
+                          Send OTP
+                        </button>
+
+                        {phoneVerificationSent && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={phoneToken}
+                              onChange={(e) => setPhoneToken(e.target.value)}
+                              placeholder="Enter code"
+                              className="px-3 py-2 border rounded"
+                            />
+                            <button
+                              className="px-3 py-2 rounded bg-accent text-accent-foreground text-sm"
+                              onClick={async () => {
+                                try {
+                                  if (!user?.id) return;
+                                  const ok = await verifyToken(user.id, "phone", phoneToken);
+                                  if (ok) {
+                                    toast({ title: "Verified", description: "Phone verified successfully" });
+                                    await loadUserProfile();
+                                  } else {
+                                    toast({ title: "Invalid code", description: "Code expired or incorrect", variant: "destructive" });
+                                  }
+                                } catch (err: unknown) {
+                                  toast({ title: "Verification failed", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+                                }
+                              }}
+                            >
+                              Verify
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -919,6 +1112,49 @@ setPortfolioUrl(profileData.portfolio_url || "");
                   </div>
                 )}
 
+{activeSection === "preferences" && (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold text-foreground mb-6">
+      Your Preferences
+    </h2>
+
+    <div className="space-y-4">
+      <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+        <div>
+          <div className="font-medium">Email Notifications</div>
+          <div className="text-sm text-muted-foreground">Receive updates about your events</div>
+        </div>
+        <input 
+          type="checkbox" 
+          checked={preferences.emailNotifications}
+          onChange={(e) => {
+            const updated = { ...preferences, emailNotifications: e.target.checked };
+            setPreferences(updated);
+            localStorage.setItem('userPreferences', JSON.stringify(updated));
+          }}
+          className="w-4 h-4"
+        />
+      </div>
+
+      <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+        <div>
+          <div className="font-medium">Event Reminders</div>
+          <div className="text-sm text-muted-foreground">Get reminded before events start</div>
+        </div>
+        <input 
+          type="checkbox" 
+          checked={preferences.eventReminders}
+          onChange={(e) => {
+            const updated = { ...preferences, eventReminders: e.target.checked };
+            setPreferences(updated);
+            localStorage.setItem('userPreferences', JSON.stringify(updated));
+          }}
+          className="w-4 h-4"
+        />
+      </div>
+    </div>
+  </div>
+)}
                 {/* Save Button - Only show for editable sections */}
                 {activeSection !== "card" && activeSection !== "security" && (
                   <div className="mt-8 pt-6 border-t border-border">

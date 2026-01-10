@@ -15,6 +15,14 @@ import { Moon, Sun } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 
+type UserProfile = {
+  id: string;
+  user_id: string;
+  full_name?: string | null;
+  avatar_url?: string | null;
+  handle?: string | null;
+};
+
 export default function Nav() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [user, setUser] = useState<User | null>(null);
@@ -33,7 +41,7 @@ export default function Nav() {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -97,7 +105,7 @@ export default function Nav() {
       mounted = false;
       listener?.subscription?.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   // derive avatar URL from user_profiles table, then metadata or identities
   useEffect(() => {

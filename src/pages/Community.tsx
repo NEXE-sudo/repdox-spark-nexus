@@ -1909,7 +1909,8 @@ export default function Community() {
                       </Alert>
                     )}
                     <Button
-                      onClick={handleCreatePost} className="magnetic-hover glow-on-hover"
+                      onClick={handleCreatePost}
+                      className="magnetic-hover glow-on-hover rounded-full px-8 font-bold"
                       disabled={
                         isLoading ||
                         !newPost.trim() ||
@@ -1925,7 +1926,6 @@ export default function Community() {
                             );
                           })())
                       }
-                      className="rounded-full px-8 font-bold"
                     >
                       {isLoading ? "Posting..." : "Post"}
                     </Button>

@@ -112,6 +112,45 @@ export default function About() {
             );
           })}
         </div>
+
+        {/* Extra Content: Organizer Benefits, Guidelines, Contact */}
+        <div className="max-w-4xl mx-auto mt-16 space-y-10">
+          <section className="bg-muted rounded-lg p-6 border border-muted/40">
+            <h3 className="text-2xl font-semibold mb-3">For Organizers</h3>
+            <p className="text-muted-foreground">
+              Repdox supports organizers with tools to create events, manage registrations,
+              accept role-based signups, and export participant lists. We provide
+              templates and best practices for running safe, accessible, and impactful events.
+            </p>
+          </section>
+
+          <section className="bg-muted rounded-lg p-6 border border-muted/40">
+            <h3 className="text-2xl font-semibold mb-3">Community Guidelines</h3>
+            <p className="text-muted-foreground">
+              We strive to build welcoming spaces. Treat others with respect, follow local
+              laws and venue rules, and report any behavior that makes you uncomfortable.
+              Organizers are expected to provide clear codes of conduct and accessibility information.
+            </p>
+          </section>
+
+          <section className="bg-muted rounded-lg p-6 border border-muted/40">
+            <h3 className="text-2xl font-semibold mb-3">Get Involved</h3>
+            <p className="text-muted-foreground">
+              Interested in contributing content, organizing events, or sponsoring? Reach out
+              to <a className="underline" href="/contact">our team</a> with your ideas — we’re always happy to collaborate.
+            </p>
+          </section>
+
+          <section className="bg-muted rounded-lg p-6 border border-muted/40">
+            <h3 className="text-2xl font-semibold mb-3">Verification & Safety</h3>
+            <p className="text-muted-foreground">
+              We offer account verification via email or phone to help organisers and attendees trust interactions on the platform. You can request a verification token in your profile settings — this token is sent via email or SMS (or shown during testing).
+            </p>
+            <p className="text-muted-foreground mt-2">
+              Organisers should provide clear codes of conduct and keep registration deadlines and capacities up to date. Use the export tools in the organiser dashboard to manage participant lists securely.
+            </p>
+          </section>
+        </div>
       </div>
     </section>
   );

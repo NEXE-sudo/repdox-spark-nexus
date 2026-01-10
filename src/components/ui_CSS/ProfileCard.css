@@ -235,15 +235,15 @@
 .pc-glare {
   transform: translate3d(0, 0, 1.1px);
   overflow: hidden;
-  background-image: radial-gradient(
+  background-image: var(--glare-gradient, radial-gradient(
   farthest-corner circle at var(--pointer-x) var(--pointer-y),
   hsl(248, 25%, 60%) 12%,
   hsla(207, 40%, 30%, 0.5) 90%
-);
-mix-blend-mode: overlay;
-filter: brightness(0.6) contrast(1.0);
-/* reduced glare intensity */
-opacity: 0.25;
+));
+  mix-blend-mode: overlay;
+  filter: brightness(0.6) contrast(1.0);
+  /* reduced glare intensity */
+  opacity: 0.25;
 }
 
 /* subtle separators between header/body/footer */
@@ -593,7 +593,7 @@ opacity: 0.25;
   opacity: 0.4;
 }
 
-.user-info-event, .user-info-personal {
+.user-info-personal {
   width: 100%;
 }
 
@@ -666,12 +666,6 @@ opacity: 0.25;
   gap: 8px;
   font-size: 11px;
   opacity: 0.8;
-}
-
-.value-small {
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  opacity: 0.9;
 }
 
 .qr-button {
