@@ -50,7 +50,7 @@ export default function Footer() {
               {/* Social Links */}
               <div className="flex gap-3">
                 {[
-                  { icon: MessageCircle, href: "#", label: "Discord", color: "from-indigo-500 to-blue-500" },
+                  { icon: MessageCircle, href: "https://discord.gg/tp3CM47tRM", label: "Discord", color: "from-indigo-500 to-blue-500" },
                   { icon: Instagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500" },
                   { icon: Twitter, href: "#", label: "Twitter", color: "from-blue-400 to-cyan-400" },
                   { icon: Github, href: "#", label: "Github", color: "from-gray-400 to-gray-600" },

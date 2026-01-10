@@ -12,13 +12,14 @@ export default function Loading() {
       <div style={{
         height: '100%',
         backgroundColor: '#8B5CF6',
-        animation: 'progress 1.5s ease-in-out',
+        animation: 'progress 2s ease-out infinite',
         transformOrigin: 'left',
       }} />
       
-      <style jsx>{`
+      <style>{`
         @keyframes progress {
           0% { transform: scaleX(0); }
+          90% { transform: scaleX(0.9); }
           100% { transform: scaleX(0.9); }
         }
       `}</style>

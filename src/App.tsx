@@ -25,37 +25,41 @@ import Messages from "./pages/Messages";
 import Bookmarks from "./pages/Bookmarks";
 import Groups from "./pages/Groups";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import SmoothScroll from "@/components/SmoothScroll";
 import Loading from '@/loading';
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [showIntro, setShowIntro] = useState(true);
-  const [isPageLoading, setIsPageLoading] = useState(true);
-const loadingTimeoutRef = useRef<number | null>(null);
+  const [showIntro, setShowIntro] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const loadingTimeoutRef = useRef<number | null>(null);
+  const isFirstLoad = useRef(true);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
-useEffect(() => {
-  const onLoad = () => {
-    if (loadingTimeoutRef.current) {
-      window.clearTimeout(loadingTimeoutRef.current);
-      loadingTimeoutRef.current = null;
+  // Check if intro should be shown (only on first session)
+  useEffect(() => {
+  try {
+    const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
+    const skipInitial = sessionStorage.getItem('skipInitialLoad');
+    
+    if (skipInitial) {
+      sessionStorage.removeItem('skipInitialLoad');
+      // Coming from navigation, don't show anything
+    } else if (!hasSeenIntro) {
+      setShowIntro(true);  // Show intro only if NOT seen before
+    } else {
+      // Reload - show top bar on initial page load
+      setIsPageLoading(true);
+      loadingTimeoutRef.current = window.setTimeout(() => {
+        setIsPageLoading(false);
+        loadingTimeoutRef.current = null;
+      }, 900);
     }
-    setIsPageLoading(false);
-  };
-
-  if (document.readyState === 'complete') {
-    onLoad();
-  } else {
-    window.addEventListener('load', onLoad, { once: true });
-    loadingTimeoutRef.current = window.setTimeout(() => {
-      setIsPageLoading(false);
-      loadingTimeoutRef.current = null;
-    }, 1200); // fallback
+  } catch (e) {
+    setShowIntro(false);
   }
-
+  
   return () => {
-    window.removeEventListener('load', onLoad);
     if (loadingTimeoutRef.current) {
       window.clearTimeout(loadingTimeoutRef.current);
       loadingTimeoutRef.current = null;
@@ -63,79 +67,87 @@ useEffect(() => {
   };
 }, []);
 
+  // Show top bar loading on navigation clicks
   useEffect(() => {
-    try {
-      const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
-      if (hasSeenIntro) setShowIntro(false);
-    } catch (e) {
-      // In environments without sessionStorage, skip intro
-      setShowIntro(false);
-    }
-  }, []);
-
-  // Show a small top loading bar on internal navigation clicks
-useEffect(() => {
-  const showTempLoading = () => {
-    setIsPageLoading(true);
-    if (loadingTimeoutRef.current) {
-      window.clearTimeout(loadingTimeoutRef.current);
-    }
-    loadingTimeoutRef.current = window.setTimeout(() => {
-      setIsPageLoading(false);
-      loadingTimeoutRef.current = null;
-    }, 900);
-  };
-
-  const onClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement | null;
-    if (!target) return;
-    const anchor = target.closest && (target.closest('a') as HTMLAnchorElement | null);
-    if (!anchor) return;
-    const href = anchor.getAttribute('href');
-    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
-    try {
-      const url = new URL(href, window.location.href);
-      if (url.origin !== window.location.origin) return;
-    } catch {
+    // Skip setting up navigation listeners until intro is complete
+    if (showIntro && isFirstLoad.current) {
       return;
     }
-    showTempLoading();
-  };
 
-  const onPop = () => setIsPageLoading(false);
+    const showTempLoading = () => {
+      setIsPageLoading(true);
+      if (loadingTimeoutRef.current) {
+        window.clearTimeout(loadingTimeoutRef.current);
+      }
+      loadingTimeoutRef.current = window.setTimeout(() => {
+        setIsPageLoading(false);
+        loadingTimeoutRef.current = null;
+      }, 900);
+    };
 
-  // Patch history APIs to detect programmatic navigations
-  const _push = history.pushState;
-  const _replace = history.replaceState;
-  (history as any).pushState = function (...args: any[]) {
-    _push.apply(history, args);
-    window.dispatchEvent(new Event('locationchange'));
-  };
-  (history as any).replaceState = function (...args: any[]) {
-    _replace.apply(history, args);
-    window.dispatchEvent(new Event('locationchange'));
-  };
-  const onLocationChange = () => showTempLoading();
+    const onClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  const anchor = target.closest && (target.closest('a') as HTMLAnchorElement | null);
+  if (!anchor) return;
+  const href = anchor.getAttribute('href');
+  if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+  try {
+    const url = new URL(href, window.location.href);
+    if (url.origin !== window.location.origin) return;
+  } catch {
+    return;
+  }
+  
+  // Prevent default navigation
+  e.preventDefault();
+  
+  // Start loading animation
+  setIsPageLoading(true);
+  
+  // Preload the page - navigate only when fully loaded
+  fetch(href)
+    .then(response => response.text())
+    .then(() => {
+      // Page is loaded, stop animation and navigate
+      setIsPageLoading(false);
+      try {
+        sessionStorage.setItem('skipInitialLoad', 'true');
+      } catch (_) {}
+      window.location.href = href;
+    })
+    .catch(() => {
+      // If fetch fails, just navigate anyway
+      setIsPageLoading(false);
+      try {
+        sessionStorage.setItem('skipInitialLoad', 'true');
+      } catch (_) {}
+      window.location.href = href;
+    });
+};
 
-  document.addEventListener('click', onClick);
-  window.addEventListener('popstate', onPop);
-  window.addEventListener('locationchange', onLocationChange);
+    const onPop = () => {
+  try {
+    sessionStorage.setItem('skipInitialLoad', 'true');
+  } catch (_) {}
+};
 
-  return () => {
-    document.removeEventListener('click', onClick);
-    window.removeEventListener('popstate', onPop);
-    window.removeEventListener('locationchange', onLocationChange);
-    history.pushState = _push;
-    history.replaceState = _replace;
-    if (loadingTimeoutRef.current) {
-      window.clearTimeout(loadingTimeoutRef.current);
-      loadingTimeoutRef.current = null;
-    }
-  };
-}, []);
+    document.addEventListener('click', onClick);
+    window.addEventListener('popstate', onPop);
+
+    return () => {
+      document.removeEventListener('click', onClick);
+      window.removeEventListener('popstate', onPop);
+      if (loadingTimeoutRef.current) {
+        window.clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    };
+  }, [showIntro]);
 
   const handleIntroComplete = () => {
     setShowIntro(false);
+    isFirstLoad.current = false;
     try {
       sessionStorage.setItem('hasSeenIntro', 'true');
     } catch (_) {}
@@ -147,39 +159,37 @@ useEffect(() => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <SmoothScroll>
-          <AnimatedBackground />
-          <BrowserRouter>
-            <div className="flex flex-col min-h-screen">
-              {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
-              {isPageLoading && <Loading />}
-              <Nav />
-              <main className="flex-1 md:pt-16">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/events" element={<EventsList />} />
-                  <Route path="/events/new" element={<AddEvent />} />
-                  <Route path="/events/:slug" element={<EventDetail />} />
-                  <Route path="/events/:slug/edit" element={<AddEvent />} />
-                  <Route path="/my-events" element={<MyEvents />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/profile/:userId" element={<Profile />} />
-                  <Route path="/community" element={<Community />} />
-                  <Route path="/community/:postId" element={<CommentDetail />} />
-                  <Route path="/explore" element={<Explore />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/messages" element={<Messages />} />
-                  <Route path="/bookmarks" element={<Bookmarks />} />
-                  <Route path="/groups" element={<Groups />} />
-                  <Route path="/signin" element={<SignIn />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
-          </BrowserRouter>
-          </SmoothScroll>
+            <AnimatedBackground />
+            <BrowserRouter>
+              <div className="flex flex-col min-h-screen">
+                {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
+                {isPageLoading && !showIntro && <Loading />}
+                <Nav />
+                <main className="flex-1 md:pt-16">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/events" element={<EventsList />} />
+                    <Route path="/events/new" element={<AddEvent />} />
+                    <Route path="/events/:slug" element={<EventDetail />} />
+                    <Route path="/events/:slug/edit" element={<AddEvent />} />
+                    <Route path="/my-events" element={<MyEvents />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/profile/:userId" element={<Profile />} />
+                    <Route path="/community" element={<Community />} />
+                    <Route path="/community/:postId" element={<CommentDetail />} />
+                    <Route path="/explore" element={<Explore />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/messages" element={<Messages />} />
+                    <Route path="/bookmarks" element={<Bookmarks />} />
+                    <Route path="/groups" element={<Groups />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
+            </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
