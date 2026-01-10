@@ -25,7 +25,6 @@ import Messages from "./pages/Messages";
 import Bookmarks from "./pages/Bookmarks";
 import Groups from "./pages/Groups";
 import AnimatedBackground from "@/components/AnimatedBackground";
-import Loading from '@/loading';
 import CommandPalette from '@/components/CommandPalette';
 
 const queryClient = new QueryClient();
@@ -189,7 +188,6 @@ const App = () => {
               <CommandPalette />
               <div className="flex flex-col min-h-screen">
                 {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
-                {isPageLoading && !showIntro && <Loading />}
                 <Nav />
                 <main className="flex-1 md:pt-16">
                   <Routes>
