@@ -110,17 +110,24 @@ const App = () => {
   fetch(href)
     .then(response => response.text())
     .then(() => {
-      // Page is loaded, stop animation and navigate
+      // Page is loaded, stop animation and navigate (client-side if possible)
       setIsPageLoading(false);
       try {
         sessionStorage.setItem('skipInitialLoad', 'true');
       } catch (e) {
         console.warn("[App] sessionStorage set failed:", e);
       }
-      window.location.href = href;
+      try {
+        const path = url.pathname + url.search + url.hash;
+        window.history.pushState({}, '', path);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch (err) {
+        // Fallback to full navigation if client-side nav fails
+        window.location.href = href;
+      }
     })
     .catch((err) => {
-      // If fetch fails, just navigate anyway
+      // If fetch fails, try client-side navigation, otherwise fall back
       console.warn("[App] preload fetch failed:", err);
       setIsPageLoading(false);
       try {
@@ -128,7 +135,13 @@ const App = () => {
       } catch (e) {
         console.warn("[App] sessionStorage set failed:", e);
       }
-      window.location.href = href;
+      try {
+        const path = url.pathname + url.search + url.hash;
+        window.history.pushState({}, '', path);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } catch (err) {
+        window.location.href = href;
+      }
     });
 };
 
