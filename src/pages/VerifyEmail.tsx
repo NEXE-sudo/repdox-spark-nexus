@@ -40,6 +40,18 @@ export default function VerifyEmail() {
     }
   }, []);
 
+  //automatic refresh check
+useEffect(() => {
+  checkVerificationStatus();
+  
+  // Check verification status every 3 seconds
+  const interval = setInterval(() => {
+    checkVerificationStatus();
+  }, 3000);
+  
+  return () => clearInterval(interval);
+}, []);
+
   // Cooldown timer
   useEffect(() => {
     if (cooldownSeconds <= 0) return;

@@ -22,27 +22,34 @@ export default function AuthForm() {
     setErrorMessage("");
 
     try {
-      if (isLogin) {
-        // LOGIN FLOW
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-
-        // Check if email is verified
-        if (data.user && !data.user.email_confirmed_at) {
-          // Email not verified - redirect to verification page
+    if (isLogin) {
+      // LOGIN FLOW
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        // Check if error is due to unverified email
+        if (error.message.includes('Email not confirmed')) {
           setErrorMessage("Please verify your email before logging in.");
-          
-          // Sign out the user since they're not verified
-          await supabase.auth.signOut();
-          
-          // Redirect to verification page with email pre-filled
           navigate(`/verify-email?email=${encodeURIComponent(email)}`);
           return;
         }
+        throw error;
+      }
+
+      // Check if email is verified
+      if (data.user && !data.user.email_confirmed_at) {
+        setErrorMessage("Please verify your email before logging in.");
+        
+        // Sign out the user since they're not verified
+        await supabase.auth.signOut();
+        
+        // Redirect to verification page
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
 
         // Email is verified - proceed with normal login
         if (data.user) {
@@ -67,19 +74,31 @@ export default function AuthForm() {
           email,
           password,
           options: {
-            // Redirect users to verification page after clicking email link
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            // Store timestamp for tracking
+            signup_time: new Date().toISOString()
+          }
           },
         });
         
         if (error) throw error;
 
         if (data.user) {
+
+          // Check if email confirmation is required
+        if (data.user.identities && data.user.identities.length === 0) {
+          // User already exists but not confirmed
+          setErrorMessage("This email is already registered but not verified. Redirecting to verification...");
+        }
+
           // Show success message
           alert(
-            "Sign-up successful! Please check your email for a verification link. " +
-            "You'll need to verify your email before you can log in."
-          );
+          "Account created successfully! 🎉\n\n" +
+          "We've sent a verification email to " + email + "\n\n" +
+          "Please check your inbox and spam folder.\n" +
+          "Click the link in the email to verify your account."
+        );
           
           // Redirect to verification page
           navigate(`/verify-email?email=${encodeURIComponent(email)}&signup=true`);

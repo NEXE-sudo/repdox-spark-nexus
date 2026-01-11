@@ -304,32 +304,38 @@ export default function Community() {
   };
 
   const incrementPostViews = async (postId: string) => {
+    if (!user?.id) {
+      console.log('[incrementPostViews] No user logged in, skipping view tracking');
+      return;
+    }
+
     try {
-      // Get current views
-      const { data: post } = await supabase
-        .from("community_posts")
-        .select("views_count")
-        .eq("id", postId)
-        .single();
+      console.log('[incrementPostViews] Tracking view for post:', postId, 'user:', user.id);
+      
+      // Call the database function to safely increment view count
+      const { data, error } = await supabase.rpc('increment_post_view', {
+        post_uuid: postId,
+        user_uuid: user.id
+      });
 
-      if (post) {
-        const newViewCount = (post.views_count || 0) + 1;
+      if (error) {
+        console.error('[incrementPostViews] Error:', error);
+        throw error;
+      }
 
-        // Update views
-        await supabase
-          .from("community_posts")
-          .update({ views_count: newViewCount })
-          .eq("id", postId);
+      console.log('[incrementPostViews] New view count:', data);
 
-        // Update local state
-        setFeedPosts(
-          feedPosts.map((p) =>
-            p.id === postId ? { ...p, views_count: newViewCount } : p
+      // Update local state with the new count
+      if (data !== null && data !== undefined) {
+        setFeedPosts(prevPosts =>
+          prevPosts.map((p) =>
+            p.id === postId ? { ...p, views_count: data } : p
           )
         );
       }
     } catch (err) {
-      console.error("Error incrementing views:", err);
+      console.error('[incrementPostViews] Error incrementing views:', err);
+      // Don't throw - views are not critical for user experience
     }
   };
 
@@ -677,27 +683,25 @@ export default function Community() {
       // First, get posts with user profiles
       const { data: posts, error: postsError } = await supabase
         .from("community_posts")
-        .select(
-          `
-        *,
-        user_profiles!community_posts_user_id_fkey (
-          id,
-          user_id,
-          full_name,
-          handle,
-          bio,
-          avatar_url,
-          job_title,
-          location,
-          phone,
-          website,
-          company,
-          "Date of Birth",
-          created_at,
-          updated_at
-        )
-      `
-        )
+        .select(`
+          *,
+          user_profiles!community_posts_user_id_fkey (
+            id,
+            user_id,
+            full_name,
+            handle,
+            bio,
+            avatar_url,
+            job_title,
+            location,
+            phone,
+            website,
+            company,
+            "Date of Birth",
+            created_at,
+            updated_at
+          )
+        `)
         .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -1447,19 +1451,27 @@ export default function Community() {
           <div className="border-b border-border p-4 glass-effect">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                {getAvatarUrl(currentUserProfile?.avatar_url) ? (
-                  <img
-                    src={getAvatarUrl(currentUserProfile?.avatar_url)!}
-                    alt={currentUserProfile?.full_name || "You"}
-                    className="w-10 h-10 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition-opacity">
-                    {currentUserProfile?.full_name?.[0] ||
-                      user?.email?.[0].toUpperCase() ||
-                      "U"}
-                  </div>
-                )}
+                {getAvatarUrl(post.user_profile?.avatar_url) ? (
+  <img 
+    src={getAvatarUrl(post.user_profile.avatar_url)!}
+    alt={post.user_profile?.full_name || "User"}
+    className="w-10 h-10 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/profile/${post.user_id}`);
+    }}
+  />
+) : (
+  <div 
+    className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition-opacity"
+    onClick={(e) => {
+      e.stopPropagation();
+      navigate(`/profile/${post.user_id}`);
+    }}
+  >
+    {post.user_profile?.full_name?.[0] || "U"}
+  </div>
+)}
               </div>
               <div className="flex-1">
                 <div className="relative">
@@ -1956,24 +1968,36 @@ export default function Community() {
                 }}
               >
                 <div className="flex gap-3">
-                  {getAvatarUrl(currentUserProfile?.avatar_url) ? (
-                    <img
-                      src={getAvatarUrl(currentUserProfile?.avatar_url)!}
-                      alt={currentUserProfile?.full_name || "You"}
+                  {getAvatarUrl(post.user_profile?.avatar_url) ? (
+                    <img 
+                      src={getAvatarUrl(post.user_profile.avatar_url)!}
+                      alt={post.user_profile?.full_name || "User"}
                       className="w-10 h-10 rounded-full flex-shrink-0 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${post.user_id}`);
+                      }}
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition-opacity">
-                      {currentUserProfile?.full_name?.[0] ||
-                        user?.email?.[0].toUpperCase() ||
-                        "U"}
+                    <div 
+                      className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 font-bold cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${post.user_id}`);
+                      }}
+                    >
+                      {post.user_profile?.full_name?.[0] || "U"}
                     </div>
                   )}
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <div
                         className="flex items-center gap-1 flex-1 cursor-pointer"
-                        onClick={() => navigate(`/profile/${post.user_id}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/profile/${post.user_id}`);
+                        }}
                       >
                         <span className="font-bold text-foreground hover:underline text-[15px]">
                           {post.user_profile?.full_name || "Anonymous"}

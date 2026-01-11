@@ -64,15 +64,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   // Show loading spinner while checking auth
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-purple-400 mx-auto mb-4" />
-          <p className="text-white/80 text-sm">Checking authentication...</p>
-        </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="text-center">
+        <Loader2 className="h-12 w-12 animate-spin text-purple-400 mx-auto mb-4" />
+        <p className="text-white/80 text-sm">Verifying your access...</p>
+        <p className="text-white/60 text-xs mt-2">This should only take a moment</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   // Redirect to signin if not authenticated
   if (!isAuthenticated) {
