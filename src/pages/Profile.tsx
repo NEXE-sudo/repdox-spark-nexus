@@ -40,9 +40,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Info,
+  Award,
 } from "lucide-react";
 import Dashboard from "./Dashboard";
 import EmailChangeModal from '@/components/EmailChangeModal';
+import AchievementCard from '@/components/AchievementCard';
+import { getUserAchievements, type Achievement } from '@/lib/achievementService';
 
 interface UserProfile {
   id: string;
@@ -70,6 +73,7 @@ const sections = [
   { id: "preferences", label: "Preferences", icon: Settings },
   { id: "personal", label: "Personal Info", icon: UserIcon },
   { id: "dashboard", label: "Dashboard", icon: Users },
+  { id: "achievements", label: "Achievements", icon: Award },
   { id: "professional", label: "Professional", icon: Briefcase },
   { id: "contact", label: "Contact", icon: Phone },
   { id: "card", label: "Digital Card", icon: QrCode },
@@ -86,25 +90,36 @@ export default function Profile() {
   const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
 
   const calculateProfileCompletion = () => {
-  if (!profileData) return 0;
-  
-  const fields = [
-    profileData.full_name,
-    profileData['Date of Birth'],
-    profileData.bio,
-    profileData.avatar_url,
-    profileData.phone,
-    profileData.location,
-    profileData.website,
-    profileData.company,
-    profileData.job_title,
-  ];
-  
-  const completed = fields.filter(field => field && field.toString().trim() !== '').length;
-  return Math.round((completed / fields.length) * 100);
-};
+    if (!profile) return { percentage: 0, missing: [] };
+    
+    const fields = [
+      { key: 'full_name', label: 'Full Name', value: profile.full_name },
+      { key: 'date_of_birth', label: 'Date of Birth', value: profile['Date of Birth'] },
+      { key: 'bio', label: 'Bio', value: profile.bio },
+      { key: 'avatar_url', label: 'Profile Picture', value: profile.avatar_url },
+      { key: 'phone', label: 'Phone Number', value: profile.phone },
+      { key: 'location', label: 'Location', value: profile.location },
+      { key: 'website', label: 'Website', value: profile.website },
+      { key: 'company', label: 'Company', value: profile.company },
+      { key: 'job_title', label: 'Job Title', value: profile.job_title },
+    ];
+    
+    const completed = fields.filter(field => field.value && field.value.toString().trim() !== '');
+    const missing = fields.filter(field => !field.value || field.value.toString().trim() === '');
+    const percentage = Math.round((completed.length / fields.length) * 100);
+    
+    return { percentage, missing: missing.map(f => f.label) };
+  };
 
-const completionPercentage = calculateProfileCompletion();
+const { percentage: completionPercentage, missing: missingFields } = calculateProfileCompletion();
+
+const [achievements, setAchievements] = useState<Achievement[]>([]);
+
+useEffect(() => {
+  if (user?.id) {
+    getUserAchievements(user.id).then(setAchievements);
+  }
+}, [user?.id, profile]);
 
   // if a ?section= parameter is present, switch to it (dashboard only when viewing own profile)
   useEffect(() => {
@@ -569,28 +584,38 @@ useEffect(() => {
               transition={{ duration: 0.5 }}
             >
               <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-cyan-50 rounded-lg border border-purple-200">
-  <div className="flex items-center justify-between mb-2">
-    <span className="text-sm font-medium text-gray-700">Profile Completion</span>
-    <span className="text-sm font-bold text-purple-600">{completionPercentage}%</span>
-  </div>
-  <div className="w-full bg-gray-200 rounded-full h-2.5">
-    <div 
-      className="bg-gradient-to-r from-purple-600 to-cyan-600 h-2.5 rounded-full transition-all duration-500"
-      style={{ width: `${completionPercentage}%` }}
-    ></div>
-  </div>
-  {completionPercentage < 100 && (
-    <p className="text-xs text-gray-600 mt-2">
-      Complete your profile to unlock all features!
-    </p>
-  )}
-  {completionPercentage === 100 && (
-    <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-      <CheckCircle2 size={14} />
-      Your profile is 100% complete!
-    </p>
-  )}
-</div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Profile Completion</span>
+                  <span className="text-sm font-bold text-purple-600">{completionPercentage}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-gradient-to-r from-purple-600 to-cyan-600 h-2.5 rounded-full transition-all duration-500"
+                    style={{ width: `${completionPercentage}%` }}
+                  ></div>
+                </div>
+                {completionPercentage < 100 && missingFields.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text- xs text-gray-600 mb-2">Missing fields:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {missingFields.map((field) => (
+                        <span 
+                          key={field}
+                          className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full border border-amber-200"
+                        >
+                          {field}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {completionPercentage === 100 && (
+                  <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                    <CheckCircle2 size={14} />
+                    Your profile is 100% complete!
+                  </p>
+                )}
+              </div>
               {/* Header */}
               <div className="mb-8">
                 <h1 className="text-4xl font-bold text-foreground mb-2">
@@ -899,6 +924,43 @@ useEffect(() => {
                       </div>
                     </div>
 
+                  </div>
+                )}
+
+                {activeSection === "achievements" && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Your Achievements
+                    </h2>
+
+                    <div className="grid gap-3">
+                      {achievements
+                        .sort((a, b) => {
+                          if (a.unlocked === b.unlocked) return 0;
+                          return a.unlocked ? -1 : 1;
+                        })
+                        .map((achievement) => (
+                          <AchievementCard key={achievement.id} achievement={achievement} />
+                        ))}
+                    </div>
+
+                    <div className="mt-6 p-4 bg-accent/5 rounded-lg border border-accent/20">
+                      <h3 className="font-semibold text-sm mb-2">Achievement Stats</h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Unlocked</p>
+                          <p className="text-2xl font-bold text-accent">
+                            {achievements.filter(a => a.unlocked).length}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Total</p>
+                          <p className="text-2xl font-bold">
+                            {achievements.length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 

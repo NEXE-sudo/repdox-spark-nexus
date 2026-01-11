@@ -60,9 +60,8 @@ export async function createEvent(payload: CreateEventPayload) {
     throw new Error("Start date and time are required");
   if (!form?.location) throw new Error("Location is required");
 
-  // Require authenticated user so created_by can be set and RLS policies work
+  // Require authenticated user
   const userRes = await supabase.auth.getUser();
-  // supabase.auth.getUser() returns { data: { user } } in client
   const user = (userRes?.data?.user ?? null) as User | null;
   if (!user || !user.id) {
     throw new Error("Authentication required to create events");
@@ -80,7 +79,7 @@ export async function createEvent(payload: CreateEventPayload) {
         )
       : new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
 
-  // Build base event object (no slug yet, slug will be attempted with uniqueness)
+  // Build base event object
   const baseEvent: Record<string, unknown> = {
     title: form.title,
     type: form.type || null,
@@ -111,27 +110,18 @@ export async function createEvent(payload: CreateEventPayload) {
     created_by: user.id,
   };
 
-  // Handle upload (first file only). Store path in image_url.
+  // Handle upload
   if (uploadedFiles && uploadedFiles.length > 0) {
     try {
       const file = uploadedFiles[0].file;
 
-      // Validate file
-      console.log(
-        "[eventService] Uploading file:",
-        file.name,
-        "Size:",
-        file.size,
-        "Type:",
-        file.type
-      );
+      console.log("[eventService] Uploading file:", file.name);
 
       if (!file.type.startsWith("image/")) {
         throw new Error("Only image files are allowed");
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        // 10MB limit
         throw new Error("File size must be less than 10MB");
       }
 
@@ -141,16 +131,10 @@ export async function createEvent(payload: CreateEventPayload) {
           ? form.slug
           : slugify(form.title || "event");
       base = base.replace(/[^a-z0-9-]/g, "");
-      // Ensure base is not empty
       if (!base || base === "-") {
         base = "event";
       }
       const fileName = `${base}-${Date.now()}.${ext}`;
-
-      console.log(
-        "[eventService] Uploading to event-images bucket, filename:",
-        fileName
-      );
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("event-images")
@@ -161,79 +145,78 @@ export async function createEvent(payload: CreateEventPayload) {
 
       if (uploadError) {
         console.error("[eventService] Upload error:", uploadError);
-        console.error(
-          "[eventService] Error details:",
-          JSON.stringify(uploadError, null, 2)
-        );
-        const msg =
-          typeof uploadError === "object" &&
-          uploadError !== null &&
-          "message" in uploadError
-            ? String((uploadError as { message?: unknown }).message ?? "")
-            : String(uploadError);
-        console.warn("Supabase upload error (continuing without image):", msg);
+        console.warn("Supabase upload error (continuing without image):", uploadError.message);
       } else {
         console.log("[eventService] Upload successful:", uploadData);
         baseEvent.image_url = fileName;
       }
     } catch (err) {
       console.error("[eventService] Upload exception:", err);
-      console.warn(
-        "Failed to upload event image, continuing without image",
-        err
-      );
+      console.warn("Failed to upload event image, continuing without image", err);
     }
   }
 
-  // Slug uniqueness: attempt inserting up to N times with slug variants
+  // FIX: Slug uniqueness with proper error handling
   const maxAttempts = 5;
-  let lastError: unknown = null;
   let createdEvent: Database["public"]["Tables"]["events"]["Row"] | null = null;
   const requestedSlug =
     form.slug && form.slug.trim() !== ""
       ? form.slug.trim()
       : slugify(form.title || "");
 
+  // Try to insert with unique slug
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const candidateSlug =
       attempt === 0 ? requestedSlug : `${requestedSlug}-${generateSuffix(4)}`;
+    
     const eventPayload = {
       ...baseEvent,
       slug: candidateSlug,
     } as unknown as Database["public"]["Tables"]["events"]["Insert"];
 
+    console.log(`[eventService] Attempt ${attempt + 1}: Trying slug "${candidateSlug}"`);
+
     const { data, error } = await supabase
       .from("events")
-      .insert(eventPayload as Database["public"]["Tables"]["events"]["Insert"])
+      .insert(eventPayload)
       .select("*")
       .single();
 
-    if (!error) {
+    if (!error && data) {
+      // SUCCESS - event created
       createdEvent = data as Database["public"]["Tables"]["events"]["Row"];
+      console.log("[eventService] Event created successfully:", createdEvent.id);
       break;
     }
 
-    // detect unique-violation for slug and retry
+    // Check if it's a unique constraint error
     const errorObj = error as unknown as { message?: string; code?: string };
     const message = String(errorObj?.message ?? "");
+    const code = String(errorObj?.code ?? "");
+    
+    // PostgreSQL unique violation codes: 23505, or message contains "duplicate"
     const isUniqueViolation =
+      code === "23505" ||
       message.toLowerCase().includes("duplicate") ||
-      (typeof errorObj?.code === "string" && errorObj.code.startsWith("23"));
+      message.toLowerCase().includes("unique");
 
-    lastError = error;
     if (!isUniqueViolation) {
-      // not a uniqueness issue, stop retrying
-      break;
+      // Not a uniqueness issue - throw the error
+      console.error("[eventService] Non-unique error:", error);
+      throw new Error(`Failed to create event: ${message}`);
     }
 
-    // else continue and try another slug
+    // If this was the last attempt, throw error
+    if (attempt === maxAttempts - 1) {
+      throw new Error(`Failed to create event after ${maxAttempts} attempts. Please try a different title or slug.`);
+    }
+
+    // Otherwise, continue to next attempt with different slug
+    console.log(`[eventService] Slug "${candidateSlug}" already exists, trying another...`);
   }
 
   if (!createdEvent) {
-    // Provide helpful error context
-    throw new Error(
-      `Failed to create event: ${JSON.stringify(lastError ?? "unknown")}`
-    );
+    throw new Error("Failed to create event: Unknown error");
   }
 
   const eventId = createdEvent.id as string;
@@ -293,7 +276,6 @@ export async function createEvent(payload: CreateEventPayload) {
 
   return createdEvent;
 }
-
 function slugify(text: string) {
   return text
     .toString()
