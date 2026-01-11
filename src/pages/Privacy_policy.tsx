@@ -34,7 +34,7 @@ export default function PrivacyPolicy() {
       <div className="max-w-5xl mx-auto">
         <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
         <p className="text-muted-foreground mb-6">
-          Paste your privacy policy into the editor below. Your draft is auto-saved to your browser's local storage so it won't be lost on refresh.
+          https://repdox-spark-nexus.vercel.app/
         </p>
 
         <div className="flex gap-3 mb-4">

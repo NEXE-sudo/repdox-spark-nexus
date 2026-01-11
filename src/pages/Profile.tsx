@@ -37,8 +37,10 @@ import {
   QrCode,
   Settings,
   Users,
+  CheckCircle2,
 } from "lucide-react";
 import Dashboard from "./Dashboard";
+import EmailChangeModal from '@/components/EmailChangeModal';
 
 interface UserProfile {
   id: string;
@@ -79,6 +81,28 @@ export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeSection, setActiveSection] = useState("personal");
+  const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
+
+  const calculateProfileCompletion = () => {
+  if (!profileData) return 0;
+  
+  const fields = [
+    profileData.full_name,
+    profileData['Date of Birth'],
+    profileData.bio,
+    profileData.avatar_url,
+    profileData.phone,
+    profileData.location,
+    profileData.website,
+    profileData.company,
+    profileData.job_title,
+  ];
+  
+  const completed = fields.filter(field => field && field.toString().trim() !== '').length;
+  return Math.round((completed / fields.length) * 100);
+};
+
+const completionPercentage = calculateProfileCompletion();
 
   // if a ?section= parameter is present, switch to it (dashboard only when viewing own profile)
   useEffect(() => {
@@ -498,6 +522,29 @@ useEffect(() => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
+              <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-cyan-50 rounded-lg border border-purple-200">
+  <div className="flex items-center justify-between mb-2">
+    <span className="text-sm font-medium text-gray-700">Profile Completion</span>
+    <span className="text-sm font-bold text-purple-600">{completionPercentage}%</span>
+  </div>
+  <div className="w-full bg-gray-200 rounded-full h-2.5">
+    <div 
+      className="bg-gradient-to-r from-purple-600 to-cyan-600 h-2.5 rounded-full transition-all duration-500"
+      style={{ width: `${completionPercentage}%` }}
+    ></div>
+  </div>
+  {completionPercentage < 100 && (
+    <p className="text-xs text-gray-600 mt-2">
+      Complete your profile to unlock all features!
+    </p>
+  )}
+  {completionPercentage === 100 && (
+    <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+      <CheckCircle2 size={14} />
+      Your profile is 100% complete!
+    </p>
+  )}
+</div>
               {/* Header */}
               <div className="mb-8">
                 <h1 className="text-4xl font-bold text-foreground mb-2">
@@ -807,6 +854,15 @@ useEffect(() => {
                           )}
                         </div>
                       </div>
+                      <div className="flex items-center gap-2">
+  <span>{user?.email}</span>
+  <button
+    onClick={() => setShowEmailChangeModal(true)}
+    className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+  >
+    Change
+  </button>
+</div>
                       <p className="text-xs text-muted-foreground mt-1">
                         Email cannot be changed
                       </p>
@@ -1199,6 +1255,21 @@ useEffect(() => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {showEmailChangeModal && (
+  <EmailChangeModal
+    currentEmail={user?.email || ''}
+    onClose={() => setShowEmailChangeModal(false)}
+    onSuccess={() => {
+      // Refresh user data
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) {
+          // User state will update automatically
+        }
+      });
+    }}
+  />
+)}
     </main>
   );
 }
