@@ -14,6 +14,7 @@ import MyEvents from "./pages/MyEvents";
 import Contact from "./pages/Contact";
 import SignIn from "./pages/SignIn";
 import About from "./pages/About";
+import PrivacyPolicy from "./pages/Privacy_policy";
 import Profile from "./pages/Profile";
 import Community from "./pages/Community";
 import CommentDetail from "./pages/CommentDetail";
