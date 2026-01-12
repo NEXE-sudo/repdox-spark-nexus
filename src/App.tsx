@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import IntroLoader from "@/components/IntroLoader";
 import Nav from "@/components/Nav";
 import CommandPalette from "@/components/CommandPalette";
+import { GlobalListeners } from "@/components/GlobalListeners";
 // Implement code splitting
 import PageLoader from "@/components/PageLoader"; // Assuming this component exists or we'll create a simple fallback
 
@@ -188,6 +189,7 @@ const App = () => {
           <BrowserRouter>
             <CommandPalette />
             <div className="flex flex-col min-h-screen">
+              <GlobalListeners />
               {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
               <Nav />
               <main className="flex-1 md:pt-16">

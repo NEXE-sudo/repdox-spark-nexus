@@ -21,6 +21,8 @@ import {
   Settings,
   MoreVertical,
 } from "lucide-react";
+import { CommunitySidebar } from "@/components/CommunitySidebar";
+import { slugify, generateRandomString } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,15 +33,15 @@ import {
 interface Community {
   id: string;
   name: string;
-  description: string;
-  avatar_url: string | null;
-  cover_url: string | null;
-  member_count: number;
-  post_count: number;
+  description: string | null;
+  image_url: string | null; // Database uses image_url
+  member_count?: number; // Fetched separately or count of join
   is_private: boolean;
   created_by: string;
   created_at: string;
-  is_member: boolean;
+  slug: string;
+  // UI helpers
+  is_member?: boolean;
 }
 
 export default function Groups() {
@@ -51,6 +53,11 @@ export default function Groups() {
   const [discoverGroups, setDiscoverGroups] = useState<Community[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  
+  // Create Modal State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newGroupData, setNewGroupData] = useState({ name: '', description: '', is_private: false });
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const initializeGroups = async () => {
@@ -77,53 +84,33 @@ export default function Groups() {
     try {
       setIsLoading(true);
 
-      // Mock data - in a real app, you'd fetch from a groups table
-      const mockGroups: Community[] = [
-        {
-          id: "1",
-          name: "Tech Innovators",
-          description:
-            "A community for tech enthusiasts and innovators to share ideas and collaborate",
-          avatar_url: null,
-          cover_url: null,
-          member_count: 1234,
-          post_count: 567,
-          is_private: false,
-          created_by: userId,
-          created_at: new Date().toISOString(),
-          is_member: true,
-        },
-        {
-          id: "2",
-          name: "Design Masters",
-          description:
-            "Share your design work, get feedback, and learn from the best",
-          avatar_url: null,
-          cover_url: null,
-          member_count: 892,
-          post_count: 423,
-          is_private: false,
-          created_by: userId,
-          created_at: new Date().toISOString(),
-          is_member: true,
-        },
-        {
-          id: "3",
-          name: "Startup Founders",
-          description:
-            "Private community for startup founders to discuss challenges and share wins",
-          avatar_url: null,
-          cover_url: null,
-          member_count: 156,
-          post_count: 234,
-          is_private: true,
-          created_by: userId,
-          created_at: new Date().toISOString(),
-          is_member: true,
-        },
-      ];
+      const { data: memberships, error } = await supabase
+        .from('community_memberships')
+        .select(`
+          community:communities(*)
+        `)
+        .eq('user_id', userId);
 
-      setJoinedGroups(mockGroups);
+      if (error) throw error;
+
+      // Extract communities from memberships and format
+      const groups: Community[] = (memberships || [])
+        .map((m: any) => m.community)
+        .filter((c: any) => c !== null) // Safety check
+        .map((c: any) => ({
+           id: c.id,
+           name: c.name,
+           description: c.description,
+           image_url: c.image_url,
+           is_private: c.is_private || false,
+           created_by: c.created_by,
+           created_at: c.created_at,
+           slug: c.slug,
+           is_member: true,
+           member_count: 0 //TODO: fetch count if needed
+        }));
+
+      setJoinedGroups(groups);
     } catch (err) {
       console.error("Error loading joined groups:", err);
     } finally {
@@ -133,65 +120,29 @@ export default function Groups() {
 
   const loadDiscoverGroups = async () => {
     try {
-      // Mock data for discovery
-      const mockGroups: Community[] = [
-        {
-          id: "4",
-          name: "AI & Machine Learning",
-          description:
-            "Discuss the latest in AI, ML, and deep learning technologies",
-          avatar_url: null,
-          cover_url: null,
-          member_count: 5432,
-          post_count: 2341,
-          is_private: false,
-          created_by: "other-user",
-          created_at: new Date().toISOString(),
-          is_member: false,
-        },
-        {
-          id: "5",
-          name: "Web3 Builders",
-          description: "Build the decentralized future together",
-          avatar_url: null,
-          cover_url: null,
-          member_count: 3210,
-          post_count: 1567,
-          is_private: false,
-          created_by: "other-user",
-          created_at: new Date().toISOString(),
-          is_member: false,
-        },
-        {
-          id: "6",
-          name: "Product Management",
-          description:
-            "For product managers to share insights and best practices",
-          avatar_url: null,
-          cover_url: null,
-          member_count: 2876,
-          post_count: 1234,
-          is_private: false,
-          created_by: "other-user",
-          created_at: new Date().toISOString(),
-          is_member: false,
-        },
-        {
-          id: "7",
-          name: "DevOps Engineers",
-          description: "Infrastructure, CI/CD, and all things DevOps",
-          avatar_url: null,
-          cover_url: null,
-          member_count: 1987,
-          post_count: 987,
-          is_private: false,
-          created_by: "other-user",
-          created_at: new Date().toISOString(),
-          is_member: false,
-        },
-      ];
+      // Fetch all communities (limit 20)
+      const { data, error } = await supabase
+        .from('communities')
+        .select('*')
+        .limit(20)
+        .order('created_at', { ascending: false });
 
-      setDiscoverGroups(mockGroups);
+      if (error) throw error;
+
+      const groups: Community[] = (data || []).map((c: any) => ({
+           id: c.id,
+           name: c.name,
+           description: c.description,
+           image_url: c.image_url,
+           is_private: c.is_private || false,
+           created_by: c.created_by,
+           created_at: c.created_at,
+           slug: c.slug,
+           is_member: false,
+           member_count: 0
+      }));
+
+      setDiscoverGroups(groups);
     } catch (err) {
       console.error("Error loading discover groups:", err);
     }
@@ -199,19 +150,38 @@ export default function Groups() {
 
   const handleJoinCommunity = async (communityId: string) => {
     try {
+      if (!user) return;
+
+      // Insert into community_memberships
+      const { error } = await supabase
+        .from('community_memberships')
+        .insert({
+          community_id: communityId,
+          user_id: user.id,
+          role: 'member'
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          alert("You are already a member of this group!");
+        } else {
+          throw error;
+        }
+        return;
+      }
+
       const community = discoverGroups.find((c) => c.id === communityId);
-      if (!community) return;
-
-      // In a real app, you'd save to a community_members table
-      const updatedCommunity = { ...community, is_member: true };
-
-      setJoinedGroups([...joinedGroups, updatedCommunity]);
-      setDiscoverGroups(discoverGroups.filter((c) => c.id !== communityId));
-
-      setSuccess(`Joined ${community.name}!`);
-      setTimeout(() => setSuccess(null), 2000);
+      if (community) {
+        setSuccess(`Joined ${community.name}!`);
+        setTimeout(() => setSuccess(null), 2000);
+        
+        // Reload groups to reflect changes
+        await loadJoinedGroups(user.id);
+        await loadDiscoverGroups();
+      }
     } catch (err) {
       console.error("Error joining community:", err);
+      alert("Failed to join community");
     }
   };
 
@@ -237,6 +207,72 @@ export default function Groups() {
     }
   };
 
+  const handleCreateGroup = async () => {
+    try {
+      if (!newGroupData.name.trim() || !user) return;
+      setIsCreating(true);
+
+      // 1. Check if name exists
+      const { data: existing } = await supabase
+        .from('communities')
+        .select('id')
+        .ilike('name', newGroupData.name.trim())
+        .maybeSingle();
+      
+      if (existing) {
+        alert("A community with this name already exists!");
+        setIsCreating(false);
+        return;
+      }
+
+      // 2. Generate slug
+      let slug = slugify(newGroupData.name);
+      
+      // 3. Create community
+      const { data: community, error: createError } = await supabase
+        .from('communities')
+        .insert({
+          name: newGroupData.name.trim(),
+          description: newGroupData.description.trim(),
+          is_private: newGroupData.is_private,
+          created_by: user.id,
+          slug: `${slug}-${generateRandomString(4)}`
+        })
+        .select()
+        .single();
+      
+      if (createError) throw createError;
+
+      // 4. Add creator as admin
+      const { error: memberError } = await supabase
+        .from('community_memberships')
+        .insert({
+          community_id: community.id,
+          user_id: user.id,
+          role: 'admin'
+        });
+      
+      if (memberError) throw memberError;
+
+      setSuccess("Community created successfully!");
+      setShowCreateModal(false);
+      setNewGroupData({ name: '', description: '', is_private: false });
+      
+      // 5. Reload groups
+      await Promise.all([
+        loadJoinedGroups(user.id),
+        loadDiscoverGroups()
+      ]);
+
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      console.error("Error creating community:", err);
+      alert("Failed to create community. Please try again.");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const filteredGroups =
     activeTab === "joined"
       ? joinedGroups.filter((c) =>
@@ -250,54 +286,7 @@ export default function Groups() {
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex h-screen w-full max-w-[1323px]">
         {/* Left Sidebar */}
-        <aside className="w-64 border-r border-border p-4 hidden lg:flex flex-col sticky top-0 h-full overflow-y-auto">
-          <nav className="space-y-2 flex-1">
-            <div
-              onClick={() => navigate("/community")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Home className="w-6 h-6" />
-              <span className="text-xl">Home</span>
-            </div>
-            <div
-              onClick={() => navigate("/explore")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Compass className="w-6 h-6" />
-              <span className="text-xl">Explore</span>
-            </div>
-            <div
-              onClick={() => navigate("/notifications")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Bell className="w-6 h-6" />
-              <span className="text-xl">Notifications</span>
-            </div>
-            <div
-              onClick={() => navigate("/messages")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Mail className="w-6 h-6" />
-              <span className="text-xl">Messages</span>
-            </div>
-            <div
-              onClick={() => navigate("/bookmarks")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Bookmark className="w-6 h-6" />
-              <span className="text-xl">Bookmarks</span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full bg-accent/20 transition cursor-pointer">
-              <Users className="w-6 h-6 text-accent" />
-              <span className="text-xl font-bold">Groups</span>
-            </div>
-          </nav>
-
-          <Button className="w-full py-6 text-lg font-bold rounded-full bg-accent hover:bg-accent/90">
-            <Plus className="w-5 h-5 mr-2" />
-            Create
-          </Button>
-        </aside>
+        <CommunitySidebar activePath="/groups" />
 
         {/* Center Content */}
         <div className="w-full max-w-[600px] border-r border-border overflow-y-auto h-full">
@@ -315,20 +304,23 @@ export default function Groups() {
                   <h1 className="text-xl font-bold">Groups</h1>
                   <p className="text-sm text-muted-foreground">
                     {activeTab === "joined"
-                      ? `${joinedGroups.length} joined`
-                      : "Discover new groups"}
+                      ? "Communities you're part of"
+                      : "Discover new communities"}
                   </p>
                 </div>
               </div>
-              <Button size="sm" className="rounded-full lg:hidden">
-                <Plus className="w-4 h-4" />
-              </Button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="p-2 hover:bg-accent/10 rounded-full transition"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Search Bar */}
-            <div className="px-4 pb-4">
+            {/* Search */}
+            <div className="p-4 border-b border-border">
               <div className="relative">
-                <Search className="absolute left-4 top-3 w-5 h-5 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -395,35 +387,43 @@ export default function Groups() {
                 {filteredGroups.map((community) => (
                   <motion.div
                     key={community.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="border border-border rounded-lg p-4 hover:bg-accent/5 transition"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-card border border-border rounded-xl overflow-hidden hover:border-accent hover:shadow-md transition group cursor-pointer"
+                    onClick={() => navigate(`/groups/${community.id}`)}
                   >
-                    <div className="flex gap-4">
-                      <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-accent/30 to-accent/10 flex items-center justify-center flex-shrink-0">
-                        <Users className="w-8 h-8 text-accent" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-bold text-lg">
-                                {community.name}
-                              </h3>
-                              {community.is_private ? (
-                                <Lock className="w-4 h-4 text-muted-foreground" />
-                              ) : (
-                                <Globe className="w-4 h-4 text-muted-foreground" />
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {community.description}
-                            </p>
-                          </div>
-                          {activeTab === "joined" && (
+                    {/* Cover Image */}
+                    <div className="h-32 bg-muted relative">
+                      {community.image_url ? (
+                        <img
+                          src={community.image_url}
+                          alt={community.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-accent/5">
+                          <Users className="w-10 h-10 text-accent/20" />
+                        </div>
+                      )}
+                      
+                      {/* Privacy Badge */}
+                      {community.is_private && (
+                         <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-md px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            Private
+                         </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <div className="flex justify-between items-start mb-2">
+                         <h3 className="font-bold text-lg leading-tight group-hover:text-accent transition">
+                           {community.name}
+                         </h3>
+                         {activeTab === "joined" && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <button className="p-2 hover:bg-accent/10 rounded-full transition">
+                                <button className="p-2 -mr-2 hover:bg-accent/10 rounded-full transition">
                                   <MoreVertical className="w-5 h-5" />
                                 </button>
                               </DropdownMenuTrigger>
@@ -446,12 +446,17 @@ export default function Groups() {
                               </DropdownMenuContent>
                             </DropdownMenu>
                           )}
-                        </div>
+                      </div>
 
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2 min-h-[40px]">
+                        {community.description || "No description provided."}
+                      </p>
+
+                      <div className="flex items-center justify-between mt-auto">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Users className="w-4 h-4" />
-                            {community.member_count.toLocaleString()} members
+                            {(community.member_count || 0).toLocaleString()} members
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-4 h-4" />
@@ -475,7 +480,7 @@ export default function Groups() {
                             variant="outline"
                             className="rounded-full"
                           >
-                            View Posts
+                             View
                           </Button>
                         )}
                       </div>
@@ -547,6 +552,64 @@ export default function Groups() {
       {success && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-green-500/20 border border-green-500 text-green-500 p-4 rounded-lg z-50">
           {success}
+        </div>
+      )}
+      
+      {/* Create Group Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setShowCreateModal(false)}
+            />
+            <div className="relative bg-background rounded-xl p-6 w-full max-w-md shadow-xl border border-border">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold">Create Community</h3>
+                  <button onClick={() => setShowCreateModal(false)}><ArrowLeft className="w-5 h-5 text-muted-foreground rotate-180" /></button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Name</label>
+                    <input 
+                       className="w-full bg-muted border border-border rounded-lg px-3 py-2"
+                       value={newGroupData.name}
+                       onChange={e => setNewGroupData({...newGroupData, name: e.target.value})}
+                       placeholder="e.g. Design Enthusiasts"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <textarea 
+                       className="w-full bg-muted border border-border rounded-lg px-3 py-2 min-h-[100px]"
+                       value={newGroupData.description}
+                       onChange={e => setNewGroupData({...newGroupData, description: e.target.value})}
+                       placeholder="What is this group about?"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <input 
+                       type="checkbox" 
+                       id="is_private"
+                       checked={newGroupData.is_private}
+                       onChange={e => setNewGroupData({...newGroupData, is_private: e.target.checked})}
+                       className="rounded border-border bg-muted"
+                     />
+                     <label htmlFor="is_private" className="text-sm">Private Group</label>
+                  </div>
+                  
+                  <div className="pt-2 flex justify-end gap-2">
+                     <Button variant="ghost" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+                     <Button 
+                       disabled={isCreating || !newGroupData.name} 
+                       onClick={handleCreateGroup}
+                       className="bg-accent text-white"
+                     >
+                       {isCreating ? 'Creating...' : 'Create'}
+                     </Button>
+                  </div>
+                </div>
+            </div>
         </div>
       )}
     </div>

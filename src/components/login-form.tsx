@@ -152,7 +152,7 @@ export default function AuthForm() {
       {/* Form container */}
       <div className="relative w-full h-full flex items-center justify-center p-4 md:p-8 z-10">
         <div className="w-full max-w-md md:max-w-3xl lg:max-w-5xl">
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-2xl overflow-hidden border border-border/50">
             <div className="grid md:grid-cols-2 gap-0">
               {/* Left side - Branding */}
               <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 to-cyan-600 p-8 text-white">
@@ -176,17 +176,17 @@ export default function AuthForm() {
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-xl mb-4">
                     <div className="text-white font-bold text-2xl">R</div>
                   </div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-2xl font-bold text-foreground mb-2">
                     {isLogin ? "Welcome back" : "Create account"}
                   </h1>
                 </div>
 
                 {/* Desktop header */}
                 <div className="hidden md:block mb-8">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-3xl font-bold text-foreground mb-2">
                     {isLogin ? "Sign In" : "Create Account"}
                   </h1>
-                  <p className="text-gray-600">
+                  <p className="text-muted-foreground">
                     {isLogin
                       ? "Sign in to your account to continue"
                       : "Get started with your free account"}
@@ -205,7 +205,7 @@ export default function AuthForm() {
                 <div className="space-y-3 mb-6">
                   <button
                     onClick={() => handleOAuth("google")}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow"
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-card border border-input rounded-lg font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200 shadow-sm hover:shadow"
                   >
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                       <path d="M19.9895 10.1871C19.9895 9.36767 19.9214 8.76973 19.7742 8.14966H10.1992V11.848H15.8195C15.7062 12.7671 15.0943 14.1512 13.7346 15.0813L13.7155 15.2051L16.7429 17.4969L16.9527 17.5174C18.8789 15.7789 19.9895 13.221 19.9895 10.1871Z" fill="#4285F4"/>
@@ -227,10 +227,10 @@ export default function AuthForm() {
                 {/* Divider */}
                 <div className="relative mb-6">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300"></div>
+                    <div className="w-full border-t border-border"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-4 bg-white text-gray-500">Or continue with email</span>
+                    <span className="px-4 bg-card text-muted-foreground">Or continue with email</span>
                   </div>
                 </div>
 
@@ -238,11 +238,11 @@ export default function AuthForm() {
                 <form onSubmit={handleEmailAuth} className="space-y-4">
                   {/* Email Input */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Email address
                     </label>
                     <div className="relative">
-                      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${focusedField === "email" ? "text-purple-600" : "text-gray-400"}`}>
+                      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${focusedField === "email" ? "text-purple-600" : "text-muted-foreground"}`}>
                         <Mail size={18} />
                       </div>
                       <input
@@ -253,18 +253,18 @@ export default function AuthForm() {
                         onBlur={() => setFocusedField("")}
                         placeholder="you@example.com"
                         required
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none transition-all duration-200"
+                        className="w-full pl-10 pr-4 py-2.5 bg-background border border-input text-foreground rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none transition-all duration-200"
                       />
                     </div>
                   </div>
 
                   {/* Password Input */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Password
                     </label>
                     <div className="relative">
-                      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${focusedField === "password" ? "text-purple-600" : "text-gray-400"}`}>
+                      <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${focusedField === "password" ? "text-purple-600" : "text-muted-foreground"}`}>
                         <Lock size={18} />
                       </div>
                       <input
@@ -275,12 +275,12 @@ export default function AuthForm() {
                         onBlur={() => setFocusedField("")}
                         placeholder="Enter your password"
                         required
-                        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none transition-all duration-200"
+                        className="w-full pl-10 pr-10 py-2.5 bg-background border border-input text-foreground rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none transition-all duration-200"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
@@ -291,8 +291,8 @@ export default function AuthForm() {
                   {isLogin && (
                     <div className="flex items-center justify-between">
                       <label className="flex items-center">
-                        <input type="checkbox" className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-600" />
-                        <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                        <input type="checkbox" className="w-4 h-4 text-purple-600 border-input rounded focus:ring-purple-600 bg-background" />
+                        <span className="ml-2 text-sm text-muted-foreground">Remember me</span>
                       </label>
                       <button type="button" className="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200">
                         Forgot password?
@@ -318,7 +318,7 @@ export default function AuthForm() {
 
                 {/* Toggle Login/Signup */}
                 <div className="mt-6 text-center">
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                     <button
                       onClick={toggleMode}

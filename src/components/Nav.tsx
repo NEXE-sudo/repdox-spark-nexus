@@ -287,12 +287,39 @@ export default function Nav() {
     },
   ];
 
-  // Mobile view: use CardNav
+  // Mobile view: use CardNav with updated items matching desktop
   if (isMobile) {
+    const mobileItems = [
+      {
+        label: "Menu",
+        bgColor: "#0D0716",
+        textColor: "#fff",
+        links: [
+          { label: "Events", href: "/events", ariaLabel: "Browse Events" },
+          { label: "Community", href: "/community", ariaLabel: "Community" },
+          { label: "About", href: "/about", ariaLabel: "About Us" },
+          { label: "Contact", href: "/contact", ariaLabel: "Contact Us" },
+        ],
+      },
+      {
+        label: "Account",
+        bgColor: "#170D27",
+        textColor: "#fff",
+        links: user 
+          ? [
+              { label: "Profile", href: "/profile", ariaLabel: "My Profile" },
+              { label: "My Events", href: "/my-events", ariaLabel: "My Events" },
+            ]
+          : [
+              { label: "Sign In", href: "/signin", ariaLabel: "Sign In" },
+            ]
+      }
+    ];
+
     return (
       <CardNav
         logo={logo}
-        items={items}
+        items={mobileItems}
         baseColor="#fff"
         menuColor="#000"
         buttonBgColor="#111"
@@ -305,9 +332,7 @@ export default function Nav() {
   // Desktop view
    return (
     <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      initial={false}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scroll 
           ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/50' 

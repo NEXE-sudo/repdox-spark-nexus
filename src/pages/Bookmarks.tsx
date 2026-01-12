@@ -19,6 +19,7 @@ import {
   Share,
   MoreVertical,
 } from "lucide-react";
+import { CommunitySidebar } from "@/components/CommunitySidebar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -180,50 +181,8 @@ export default function Bookmarks() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex h-screen w-full max-w-[1323px]">
-        {/* Left Sidebar */}
-        <aside className="w-64 border-r border-border p-4 hidden lg:flex flex-col sticky top-0 h-full overflow-y-auto">
-          <nav className="space-y-2 flex-1">
-            <div
-              onClick={() => navigate("/community")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Home className="w-6 h-6" />
-              <span className="text-xl">Home</span>
-            </div>
-            <div
-              onClick={() => navigate("/explore")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Compass className="w-6 h-6" />
-              <span className="text-xl">Explore</span>
-            </div>
-            <div
-              onClick={() => navigate("/notifications")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Bell className="w-6 h-6" />
-              <span className="text-xl">Notifications</span>
-            </div>
-            <div
-              onClick={() => navigate("/messages")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Mail className="w-6 h-6" />
-              <span className="text-xl">Messages</span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full bg-accent/20 transition cursor-pointer">
-              <Bookmark className="w-6 h-6 text-accent" />
-              <span className="text-xl font-bold">Bookmarks</span>
-            </div>
-            <div
-              onClick={() => navigate("/groups")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Users className="w-6 h-6" />
-              <span className="text-xl">Groups</span>
-            </div>
-          </nav>
-        </aside>
+        {/* Left Sidebar - Navigation */}
+        <CommunitySidebar activePath="/bookmarks" />
 
         {/* Center Content */}
         <div className="w-full max-w-[600px] border-r border-border overflow-y-auto h-full">

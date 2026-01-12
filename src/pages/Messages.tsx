@@ -21,11 +21,13 @@ import {
   Paperclip,
   Info,
 } from "lucide-react";
+import { CommunitySidebar } from "@/components/CommunitySidebar";
 import { getRelativeTime } from "@/lib/timeUtils";
 
+// Enhanced interfaces for real data
 interface UserProfile {
-  id: string;
-  user_id: string;
+  id: string; // profile id
+  user_id: string; // auth id
   full_name: string | null;
   handle: string | null;
   avatar_url: string | null;
@@ -34,29 +36,36 @@ interface UserProfile {
 
 interface Message {
   id: string;
+  conversation_id: string;
   sender_id: string;
-  receiver_id: string;
-  content: string;
+  encrypted_body: string; // We will store plain text here for now
   created_at: string;
-  read: boolean;
 }
 
 interface Conversation {
-  user: UserProfile;
-  lastMessage: Message;
-  unreadCount: number;
+  id: string;
+  title: string | null;
+  is_group: boolean;
+  participants: UserProfile[]; // Other participants
+  lastMessage?: Message;
+  updated_at?: string;
 }
 
 export default function Messages() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] =
-    useState<UserProfile | null>(null);
+  
+  // Track selected conversation ID instead of just user
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null); 
+  // Keep track of the *user* we are talking to (helpful for header display in 1:1)
+  const [selectedPartner, setSelectedPartner] = useState<UserProfile | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
@@ -79,7 +88,9 @@ export default function Messages() {
       // Check if navigated from another page with selected user
       const state = (window.history.state as any)?.usr;
       if (state?.selectedUserId) {
-        const conv = conversations.find(c => c.user.user_id === state.selectedUserId);
+        const conv = conversations.find(c => 
+          c.participants.some(p => p.user_id === state.selectedUserId)
+        );
         if (conv) {
           handleSelectConversation(conv);
         }
@@ -111,37 +122,68 @@ export default function Messages() {
     try {
       setIsLoading(true);
 
-      // Get friends to create mock conversations
-      const { data: friendships, error } = await supabase
-        .from("friendships")
-        .select(
-          `
-          *,
-          user_profiles!friendships_friend_id_fkey(id, user_id, full_name, handle, avatar_url, bio)
-        `
-        )
-        .eq("user_id", userId)
-        .eq("status", "accepted");
+      // 1. Get all conversation IDs the user is part of
+      const { data: myMemberships, error: memberError } = await supabase
+        .from('conversation_members')
+        .select('conversation_id')
+        .eq('user_id', userId);
 
-      if (error) throw error;
+      if (memberError) throw memberError;
 
-      // Create mock conversations
-      const mockConversations: Conversation[] = (friendships || []).map(
-        (friendship: any) => ({
-          user: friendship.user_profiles,
-          lastMessage: {
-            id: `msg-${friendship.id}`,
-            sender_id: friendship.user_profiles.user_id,
-            receiver_id: userId,
-            content: "Hey! How are you doing?",
-            created_at: friendship.created_at,
-            read: Math.random() > 0.5,
-          },
-          unreadCount: Math.floor(Math.random() * 5),
-        })
-      );
+      const conversationIds = myMemberships.map(m => m.conversation_id);
 
-      setConversations(mockConversations);
+      if (conversationIds.length === 0) {
+        setConversations([]);
+        return;
+      }
+
+      // 2. Fetch conversation details, other members, and latest messages
+      const { data: convData, error: convError } = await supabase
+        .from('conversations')
+        .select(`
+          id, title, is_group, created_at,
+          conversation_members!inner(
+             user_id,
+             user_profiles(id, user_id, full_name, handle, avatar_url, bio)
+          ),
+          messages(id, conversation_id, sender_id, encrypted_body, created_at)
+        `)
+        .in('id', conversationIds)
+        .order('created_at', { ascending: false }); // Order conversations by creation for now, ideally by last message
+
+      if (convError) throw convError;
+
+      // Process data to match UI needs
+      const processed: Conversation[] = convData.map((c: any) => {
+         // Filter out self from participants list for display
+         const participants = c.conversation_members
+            .map((m: any) => m.user_profiles)
+            .filter((p: any) => p && p.user_id !== userId);
+
+         // Find latest message (supabase return might not be sorted if we don't strict it, but we can sort here)
+         const sortedMsgs = (c.messages || []).sort((a: any, b: any) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+         );
+         const lastMsg = sortedMsgs[0];
+
+         return {
+           id: c.id,
+           title: c.title,
+           is_group: c.is_group,
+           participants,
+           lastMessage: lastMsg,
+           updated_at: lastMsg ? lastMsg.created_at : c.created_at
+         };
+      });
+
+      // Sort by last activity
+      processed.sort((a, b) => {
+         const tA = new Date(a.updated_at || 0).getTime();
+         const tB = new Date(b.updated_at || 0).getTime();
+         return tB - tA;
+      });
+
+      setConversations(processed);
     } catch (err) {
       console.error("Error loading conversations:", err);
     } finally {
@@ -149,126 +191,106 @@ export default function Messages() {
     }
   };
 
-  const loadMessages = async (conversationUserId: string) => {
-    try {
-      // Mock messages for demonstration
-      const mockMessages: Message[] = [
-        {
-          id: "1",
-          sender_id: conversationUserId,
-          receiver_id: user!.id,
-          content: "Hey! How are you doing?",
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          read: true,
-        },
-        {
-          id: "2",
-          sender_id: user!.id,
-          receiver_id: conversationUserId,
-          content: "I'm doing great! Thanks for asking 😊",
-          created_at: new Date(Date.now() - 3000000).toISOString(),
-          read: true,
-        },
-        {
-          id: "3",
-          sender_id: conversationUserId,
-          receiver_id: user!.id,
-          content: "That's awesome! Want to collaborate on a project?",
-          created_at: new Date(Date.now() - 1800000).toISOString(),
-          read: true,
-        },
-        {
-          id: "4",
-          sender_id: user!.id,
-          receiver_id: conversationUserId,
-          content: "Sure! What do you have in mind?",
-          created_at: new Date(Date.now() - 900000).toISOString(),
-          read: true,
-        },
-      ];
+  // Subscribe to real-time changes
+  useEffect(() => {
+    if (!activeConversationId) return;
 
-      setMessages(mockMessages);
+    const channel = supabase
+      .channel(`chat:${activeConversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${activeConversationId}`,
+        },
+        (payload) => {
+           const newMsg = payload.new as Message;
+           setMessages((prev) => [...prev, newMsg]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeConversationId]);
+
+  const loadMessages = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true }); // Oldest first for chat log
+
+      if (error) throw error;
+      setMessages(data as Message[]);
     } catch (err) {
       console.error("Error loading messages:", err);
     }
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
-    setSelectedConversation(conversation.user);
-    loadMessages(conversation.user.user_id);
+    setActiveConversationId(conversation.id);
+    
+    // For 1:1, set the partner
+    if (!conversation.is_group && conversation.participants.length > 0) {
+       setSelectedPartner(conversation.participants[0]);
+    } else {
+       // Handle group logic later, or just show title
+       setSelectedPartner(null);
+    }
+
+    loadMessages(conversation.id);
+    
+    // Update URL state/param if needed
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversation || !user) return;
+    if (!newMessage.trim() || !activeConversationId || !user) return;
 
-    const message: Message = {
-      id: `msg-${Date.now()}`,
-      sender_id: user.id,
-      receiver_id: selectedConversation.user_id,
-      content: newMessage,
-      created_at: new Date().toISOString(),
-      read: false,
-    };
+    setIsSending(true);
+    try {
+       const { error } = await supabase
+         .from('messages')
+         .insert({
+            conversation_id: activeConversationId,
+            sender_id: user.id,
+            encrypted_body: newMessage, // Storing plaintext for now
+            // encryption_version: 'none' // if needed by DB constraint
+         });
 
-    setMessages([...messages, message]);
-    setNewMessage("");
-
-    // In a real app, you would save this to the database
+       if (error) throw error;
+       setNewMessage("");
+       
+       // Optimistic update handled by Realtime subscription usually, 
+       // but we can also append locally if latency is high, 
+       // though realtime is generally fast enough.
+    } catch (err) {
+       console.error("Failed to send:", err);
+    } finally {
+       setIsSending(false);
+    }
   };
 
   const filteredConversations = conversations.filter(
-    (conv) =>
-      conv.user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conv.user.handle?.toLowerCase().includes(searchQuery.toLowerCase())
+    (conv) => {
+      const partner = conv.participants[0];
+      if (!partner) return false;
+      return (
+         partner.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+         partner.handle?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
   );
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex h-screen w-full max-w-[1323px]">
-        {/* Left Sidebar */}
-        <aside className="w-64 border-r border-border p-4 hidden lg:flex flex-col sticky top-0 h-full overflow-y-auto">
-          <nav className="space-y-2 flex-1">
-            <div
-              onClick={() => navigate("/community")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Home className="w-6 h-6" />
-              <span className="text-xl">Home</span>
-            </div>
-            <div
-              onClick={() => navigate("/explore")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Compass className="w-6 h-6" />
-              <span className="text-xl">Explore</span>
-            </div>
-            <div
-              onClick={() => navigate("/notifications")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Bell className="w-6 h-6" />
-              <span className="text-xl">Notifications</span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full bg-accent/20 transition cursor-pointer">
-              <Mail className="w-6 h-6 text-accent" />
-              <span className="text-xl font-bold">Messages</span>
-            </div>
-            <div
-              onClick={() => navigate("/bookmarks")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Bookmark className="w-6 h-6" />
-              <span className="text-xl">Bookmarks</span>
-            </div>
-            <div
-              onClick={() => navigate("/groups")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Users className="w-6 h-6" />
-              <span className="text-xl">Groups</span>
-            </div>
-          </nav>
-        </aside>
+        {/* Left Sidebar - Navigation */}
+        <CommunitySidebar activePath="/messages" />
 
         {/* Conversations List */}
         <div className="w-full max-w-[400px] border-r border-border overflow-y-auto h-full">
@@ -335,135 +357,120 @@ export default function Messages() {
                 </div>
               </div>
             ) : (
-              filteredConversations.map((conversation) => (
+              filteredConversations.map((conversation) => {
+                 const partner = conversation.participants[0];
+                 if (!partner) return null;
+                 
+                 const isActive = activeConversationId === conversation.id;
+                 const preview = conversation.lastMessage?.encrypted_body || 'Start a conversation';
+                 // We don't have is_read logic yet, assuming read for now
+                 const isRead = true; 
+
+                 return (
                 <motion.div
-                  key={conversation.user.id}
+                  key={conversation.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   onClick={() => handleSelectConversation(conversation)}
-                  className={`flex items-center gap-3 p-4 border-b border-border hover:bg-accent/10 transition cursor-pointer ${
-                    selectedConversation?.user_id === conversation.user.user_id
-                      ? "bg-accent/10"
-                      : ""
+                  className={`p-4 cursor-pointer hover:bg-accent/5 transition border-b border-border relative ${
+                    isActive ? "bg-accent/10 border-r-2 border-r-accent" : ""
                   }`}
                 >
-                  <div className="relative">
-                    {getAvatarUrl(conversation.user.avatar_url) ? (
-                      <img
-                        src={getAvatarUrl(conversation.user.avatar_url)!}
-                        alt={conversation.user.full_name || "User"}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center font-bold">
-                        {conversation.user.full_name?.[0] || "U"}
+                  <div className="flex gap-3">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-muted">
+                        <img
+                          src={getAvatarUrl(partner.avatar_url) || `https://ui-avatars.com/api/?name=${partner.full_name}&background=random`}
+                          alt={partner.handle || "User"}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    )}
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold truncate">
-                        {conversation.user.full_name || "Anonymous"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {getRelativeTime(conversation.lastMessage.created_at)}
-                      </span>
+                      {/* Online status indicator can go here */}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <p
-                        className={`text-sm truncate ${
-                          conversation.unreadCount > 0
-                            ? "text-foreground font-semibold"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {conversation.lastMessage.content}
-                      </p>
-                      {conversation.unreadCount > 0 && (
-                        <span className="ml-2 px-2 py-0.5 text-xs bg-accent text-white rounded-full">
-                          {conversation.unreadCount}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`font-semibold truncate ${!isRead ? "text-foreground" : ""}`}>
+                          {partner.full_name || partner.handle}
                         </span>
-                      )}
+                        {conversation.updated_at && (
+                          <span className={`text-xs whitespace-nowrap ml-2 ${!isRead ? "text-accent font-medium" : "text-muted-foreground"}`}>
+                            {getRelativeTime(conversation.updated_at)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className={`text-sm truncate pr-2 ${!isRead ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                           {conversation.lastMessage?.sender_id === user?.id && <span className="mr-1">You:</span>}
+                           {preview}
+                        </p>
+                        {/* Validation badges or unread counts can go here */}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
-              ))
+                 );
+              })
             )}
           </div>
         </div>
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {selectedConversation ? (
+          {activeConversationId && selectedPartner ? (
             <>
               {/* Chat Header */}
-              <div className="border-b border-border p-4 flex items-center justify-between bg-background">
-                <div
-                  className="flex items-center gap-3 cursor-pointer"
-                  onClick={() =>
-                    navigate(`/profile/${selectedConversation.user_id}`)
-                  }
-                >
-                  {getAvatarUrl(selectedConversation.avatar_url) ? (
+              <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border p-4 flex justify-between items-center shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-muted border border-border">
                     <img
-                      src={getAvatarUrl(selectedConversation.avatar_url)!}
-                      alt={selectedConversation.full_name || "User"}
-                      className="w-10 h-10 rounded-full object-cover"
+                      src={getAvatarUrl(selectedPartner.avatar_url) || `https://ui-avatars.com/api/?name=${selectedPartner.full_name}&background=random`}
+                      alt={selectedPartner.handle || "User"}
+                      className="w-full h-full object-cover"
                     />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center font-bold">
-                      {selectedConversation.full_name?.[0] || "U"}
-                    </div>
-                  )}
+                  </div>
                   <div>
-                    <div className="font-bold">
-                      {selectedConversation.full_name || "Anonymous"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      @{selectedConversation.handle || "user"}
-                    </div>
+                    <h2 className="font-bold text-lg leading-none">{selectedPartner.full_name}</h2>
+                    <span className="text-sm text-muted-foreground">@{selectedPartner.handle}</span>
                   </div>
                 </div>
-                <button className="p-2 hover:bg-accent/10 rounded-full transition">
-                  <Info className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="icon"><Info className="w-5 h-5 text-muted-foreground" /></Button>
+                </div>
               </div>
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${
-                      message.sender_id === user?.id
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                        message.sender_id === user?.id
-                          ? "bg-accent text-white"
-                          : "bg-muted text-foreground"
-                      }`}
-                    >
-                      <p className="text-sm break-words">{message.content}</p>
-                      <p
-                        className={`text-xs mt-1 ${
-                          message.sender_id === user?.id
-                            ? "text-white/70"
-                            : "text-muted-foreground"
-                        }`}
+                {messages.map((message) => {
+                    const isOwn = message.sender_id === user?.id;
+                    return (
+                      <div
+                        key={message.id}
+                        className={`flex mb-4 ${isOwn ? "justify-end" : "justify-start"}`}
                       >
-                        {getRelativeTime(message.created_at)}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
+                        <div
+                          className={`max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm ${
+                            isOwn
+                              ? "bg-purple-600 text-white rounded-br-none"
+                              : "bg-card border border-border text-foreground rounded-bl-none"
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap break-words">{message.encrypted_body}</p>
+                          <p
+                            className={`text-[10px] mt-1 text-right ${
+                              isOwn ? "text-white/70" : "text-muted-foreground"
+                            }`}
+                          >
+                            {new Date(message.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
+
 
               {/* Message Input */}
               <div className="border-t border-border p-4 bg-background">
@@ -552,28 +559,73 @@ export default function Messages() {
                 />
               </div>
             </div>
+            
+            <div className="max-h-[300px] overflow-y-auto space-y-2 mt-4">
+               {newMessageQuery.length > 0 && <p className="text-xs text-muted-foreground px-1 mb-2">Search results...</p>}
+               {/* Friends list search logic - Using a simplified search here for demonstration.
+                   In a full implementation, we'd fetch friends matching the query.
+                   Here we just assume you might want to start chat with existing friends or search globally.
+                   Let's implement a simple user search from profiles table.
+               */}
+               <FriendSearchList query={newMessageQuery} onSelect={async (selectedUser) => {
+                  try {
+                    if (!user) return;
+                    
+                    // Check if conversation exists
+                    // This is complex in SQL without a function, so for now we'll just create a new one 
+                    // or ideally check if we have a common conversation ID in memory (conversations list).
+                    
+                    const existing = conversations.find(c => 
+                      !c.is_group && c.participants.some(p => p.id === selectedUser.id)
+                    );
 
-            <div className="border-t border-border pt-3">
+                    if (existing) {
+                       handleSelectConversation(existing);
+                       setShowNewMessageModal(false);
+                       return;
+                    }
+
+                    // Create new conversation
+                    const { data: newConv, error: createError } = await supabase
+                      .from('conversations')
+                      .insert({ is_group: false, created_by: user.id })
+                      .select()
+                      .single();
+                      
+                    if (createError) throw createError;
+
+                    // Add members
+                    const { error: memberError } = await supabase
+                      .from('conversation_members')
+                      .insert([
+                        { conversation_id: newConv.id, user_id: user.id },
+                        { conversation_id: newConv.id, user_id: selectedUser.user_id }
+                      ]);
+
+                    if (memberError) throw memberError;
+
+                    // Reload conversations
+                    await loadConversations(user.id);
+                    
+                    setShowNewMessageModal(false);
+                    // We might need to select it after reload, but loadConversations is async. 
+                    // For now, user will see it appear at top.
+                  } catch (err) {
+                    console.error("Failed to start chat", err);
+                  }
+               }} />
+            </div>
+
+            <div className="border-t border-border pt-3 mt-4">
               <button
                 className="flex items-center gap-2 text-accent"
                 onClick={() => {
-                  /* stub: create group action */
+                   alert("Group creation coming soon!");
                 }}
               >
                 <Users className="w-5 h-5" />
                 Create a group
               </button>
-            </div>
-
-            <div className="flex justify-end mt-4">
-              <Button
-                onClick={() => {
-                  /* stub: search/next action */
-                }}
-                size="sm"
-              >
-                Next
-              </Button>
             </div>
           </div>
         </div>
@@ -663,6 +715,53 @@ export default function Messages() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Helper component for searching friends
+function FriendSearchList({ query, onSelect }: { query: string; onSelect: (u: UserProfile) => void }) {
+  const [results, setResults] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const search = async () => {
+       setLoading(true);
+       let q = supabase.from('user_profiles').select('*').limit(10);
+       
+       if (query) {
+         q = q.or(`full_name.ilike.%${query}%,handle.ilike.%${query}%`);
+       }
+       
+       const { data } = await q;
+       setResults(data || []);
+       setLoading(false);
+    };
+    
+    const timer = setTimeout(search, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  if (loading) return <div className="text-center p-4"><div className="animate-spin w-4 h-4 border-2 border-accent border-t-transparent rounded-full mx-auto"/></div>;
+  if (results.length === 0) return <div className="text-center p-4 text-muted-foreground text-sm">No users found.</div>;
+
+  return (
+    <div className="space-y-1">
+      {results.map(u => (
+        <div 
+          key={u.id} 
+          onClick={() => onSelect(u)}
+          className="flex items-center gap-3 p-2 hover:bg-accent/10 rounded cursor-pointer transition"
+        >
+           <div className="w-8 h-8 rounded-full bg-muted overflow-hidden">
+               {u.avatar_url ? <img src={supabase.storage.from('avatars').getPublicUrl(u.avatar_url).data.publicUrl} className="w-full h-full object-cover"/> : <div className="flex items-center justify-center h-full font-bold text-xs">{u.full_name?.[0]}</div>}
+           </div>
+           <div>
+              <div className="font-medium text-sm">{u.full_name}</div>
+              <div className="text-xs text-muted-foreground">@{u.handle}</div>
+           </div>
+        </div>
+      ))}
     </div>
   );
 }

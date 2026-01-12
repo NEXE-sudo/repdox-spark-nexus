@@ -47,6 +47,7 @@ import {
   Repeat2,
   Upload,
 } from "lucide-react";
+import { CommunitySidebar } from "@/components/CommunitySidebar";
 import {
   reverseGeocodeLocation,
   getPreferredMapUrl,
@@ -1453,63 +1454,7 @@ const handleSendDM = (userId: string) => {
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex h-screen w-full max-w-[1323px]">
         {/* Left Sidebar - Navigation */}
-        <aside className="w-64 border-r border-border p-4 hidden lg:flex flex-col sticky top-0 h-full overflow-y-auto">
-          <nav className="space-y-2 flex-1">
-            <div className="flex items-center gap-4 p-3 rounded-full bg-accent/20 transition cursor-pointer">
-              <Home className="w-6 h-6 text-accent" />
-              <span
-                onClick={() => navigate("/community")}
-                className="text-xl font-bold"
-              >
-                Home
-              </span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
-              <Compass className="w-6 h-6" />
-              <span
-                onClick={() => {
-                  navigate("/explore");
-                }}
-                className="text-xl"
-              >
-                Explore
-              </span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
-              <Bell className="w-6 h-6" />
-              <span className="text-xl">Notifications</span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
-              <Mail className="w-6 h-6" />
-              <span
-                onClick={() => {
-                  navigate("/messages");
-                }}
-                className="text-xl"
-              >
-                Messages
-              </span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
-              <Bookmark className="w-6 h-6" />
-              <span onClick={() => navigate("/bookmarks")} className="text-xl">
-                Bookmarks
-              </span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer active:scale-95">
-              <Users className="w-6 h-6" />
-              <span
-                onClick={() => {
-                  navigate("/community");
-                }}
-                className="text-xl"
-              >
-                Groups
-              </span>
-            </div>
-          </nav>
-          
-        </aside>
+        <CommunitySidebar activePath="/community" />
         {/* Center Content */}
         <div className="w-full max-w-[600px] border-r border-border overflow-y-auto h-full flex flex-col">
           {/* Post Composition */}

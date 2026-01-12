@@ -21,7 +21,9 @@ import {
   X,
   Settings,
   Search,
+  UserMinus,
 } from "lucide-react";
+import { CommunitySidebar } from "@/components/CommunitySidebar";
 import { getRelativeTime } from "@/lib/timeUtils";
 
 interface UserProfile {
@@ -34,12 +36,14 @@ interface UserProfile {
 
 interface Notification {
   id: string;
-  type: "like" | "comment" | "follow" | "friend_request" | "friend_accept";
-  from_user: UserProfile;
+  type: "like" | "comment" | "follow" | "friend_request" | "friend_accept" | "group_join";
+  from_user?: UserProfile;
   post_id?: string;
   post_content?: string;
   comment_content?: string;
   friendship_id?: string;
+  group_id?: string;
+  group_name?: string;
   created_at: string;
   read: boolean;
 }
@@ -159,7 +163,29 @@ export default function Notifications() {
         });
       }
 
-      // Sort by date
+      // Load community memberships (group joins)
+      const { data: joins } = await supabase
+        .from("community_memberships")
+        .select(`
+          *,
+          communities(*)
+        `)
+        .eq("user_id", userId)
+        .order("joined_at", { ascending: false })
+        .limit(10);
+
+      if (joins) {
+        joins.forEach((join: any) => {
+          mockNotifications.push({
+            id: join.id,
+            type: "group_join",
+            group_id: join.community_id,
+            group_name: join.communities?.name,
+            created_at: join.joined_at,
+            read: true, // For now, treat joins as read or adjust if schema allows
+          });
+        });
+      }
       mockNotifications.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -241,6 +267,8 @@ export default function Notifications() {
         return <UserPlus className="w-5 h-5 text-purple-500" />;
       case "friend_accept":
         return <UserCheck className="w-5 h-5 text-green-500" />;
+      case "group_join":
+        return <Users className="w-5 h-5 text-accent" />;
       default:
         return <Bell className="w-5 h-5 text-accent" />;
     }
@@ -248,6 +276,8 @@ export default function Notifications() {
 
   const getNotificationText = (notification: Notification) => {
     switch (notification.type) {
+      case "group_join":
+        return `You joined ${notification.group_name || 'a group'}`;
       case "like":
         return "liked your post";
       case "comment":
@@ -267,49 +297,7 @@ export default function Notifications() {
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="flex h-screen w-full max-w-[1323px]">
         {/* Left Sidebar */}
-        <aside className="w-64 border-r border-border p-4 hidden lg:flex flex-col sticky top-0 h-full overflow-y-auto">
-          <nav className="space-y-2 flex-1">
-            <div
-              onClick={() => navigate("/community")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Home className="w-6 h-6" />
-              <span className="text-xl">Home</span>
-            </div>
-            <div
-              onClick={() => navigate("/explore")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Compass className="w-6 h-6" />
-              <span className="text-xl">Explore</span>
-            </div>
-            <div className="flex items-center gap-4 p-3 rounded-full bg-accent/20 transition cursor-pointer">
-              <Bell className="w-6 h-6 text-accent" />
-              <span className="text-xl font-bold">Notifications</span>
-            </div>
-            <div
-              onClick={() => navigate("/messages")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Mail className="w-6 h-6" />
-              <span className="text-xl">Messages</span>
-            </div>
-            <div
-              onClick={() => navigate("/bookmarks")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Bookmark className="w-6 h-6" />
-              <span className="text-xl">Bookmarks</span>
-            </div>
-            <div
-              onClick={() => navigate("/groups")}
-              className="flex items-center gap-4 p-3 rounded-full hover:bg-accent/10 transition cursor-pointer"
-            >
-              <Users className="w-6 h-6" />
-              <span className="text-xl">Groups</span>
-            </div>
-          </nav>
-        </aside>
+        <CommunitySidebar activePath="/notifications" />
 
         {/* Center Content */}
         <div className="w-full max-w-[600px] border-r border-border overflow-y-auto h-full">
@@ -482,7 +470,9 @@ export default function Notifications() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   onClick={() => {
-                    if (notification.post_id) {
+                    if (notification.type === "group_join") {
+                      navigate(`/groups/${notification.group_id}`);
+                    } else if (notification.post_id) {
                       navigate(`/community/${notification.post_id}`);
                     } else if (notification.from_user) {
                       navigate(`/profile/${notification.from_user.user_id}`);
@@ -496,7 +486,18 @@ export default function Notifications() {
                     <div className="flex-shrink-0 mt-1">
                       {getNotificationIcon(notification.type)}
                     </div>
+                    {notification.type === "group_join" ? (
+                       <div className="flex-1 min-w-0">
+                          <p className="text-sm">
+                            {getNotificationText(notification)}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {getRelativeTime(notification.created_at)}
+                          </p>
+                       </div>
+                    ) : (
                     <div className="flex gap-3 flex-1">
+                       {/* Existing from_user rendering... */}
                       {getAvatarUrl(notification.from_user?.avatar_url) ? (
                         <img
                           src={
@@ -532,6 +533,7 @@ export default function Notifications() {
                         </p>
                       </div>
                     </div>
+                    )}
                   </div>
                 </motion.div>
               ))

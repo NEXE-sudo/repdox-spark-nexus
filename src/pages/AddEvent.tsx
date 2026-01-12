@@ -7,21 +7,21 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, X, GripVertical, CalendarDays } from "lucide-react";
+import { 
+  Plus, X, GripVertical, CalendarDays, 
+  Calendar, Clock, MapPin, Image as ImageIcon, 
+  FileText, List, HelpCircle, ChevronLeft, Save, 
+  Eye, Rocket, AlertCircle, CheckCircle2
+} from "lucide-react";
 import eventService from "@/lib/eventService";
 import FileUpload from "@/components/ui/File_upload";
 
 import EventBuilderExtensions from '@/components/EventBuilder/EventBuilderExtensions';
 import LivePreview from '@/components/EventBuilder/LivePreview';
+import EventCardPreview from '@/components/EventBuilder/EventCardPreview';
 import useAutoSave from '@/hooks/useAutoSave';
 import type { EventDraft } from '@/components/EventBuilder/LivePreview';
+import { SelectTrigger, SelectValue, SelectItem, SelectContent, Select } from "@/components/ui/select";
 
 // Suggested tags based on common event categories
 const SUGGESTED_TAGS = [
@@ -71,6 +71,8 @@ export default function AddEvent() {
     start_time: "09:00",
     end_date: "",
     end_time: "18:00",
+    registration_start_date: "",
+    registration_start_time: "00:00",
     registration_deadline_date: "",
     registration_deadline_time: "23:59",
     location: "",
@@ -86,6 +88,7 @@ export default function AddEvent() {
   const [scheduleText, setScheduleText] = useState("");
   const [teamsText, setTeamsText] = useState("");
   const [prizeText, setPrizeText] = useState("");
+  const [committeesText, setCommitteesText] = useState("");
 
   // FAQ state management (start empty; user can opt-in)
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -118,6 +121,7 @@ export default function AddEvent() {
   // Roles text (organizer-defined roles) and preview toggle
   const [rolesText, setRolesText] = useState<string>("");
   const [showPreview, setShowPreview] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<'split' | 'full'>('split');
 
   // Publish later
   const [publishLater, setPublishLater] = useState(false);
@@ -298,20 +302,17 @@ export default function AddEvent() {
 
   // keep `draft` in sync with the main form and extras (for preview / autosave)
   useEffect(() => {
-    const secs: EventDraft["sections"] = sectionOrder.map((type, i) => {
-      switch (type) {
-        case 'Agenda':
-          return { id: `agenda-${i}`, type: 'Agenda', title: 'Agenda', content: scheduleText };
-        case 'FAQs':
-          return { id: `faqs-${i}`, type: 'FAQs', title: 'FAQs', content: JSON.stringify(faqs) };
-        case 'Speakers':
-          return { id: `speakers-${i}`, type: 'Speakers', title: 'Speakers', content: JSON.stringify(speakers) };
-        case 'Resources':
-          return { id: `resources-${i}`, type: 'Resources', title: 'Resources', content: JSON.stringify(resources) };
-        default:
-          return { id: `${type}-${i}`, type, title: type, content: '' };
-      }
-    });
+    // Construct sections dynamically based on content
+    const secs: EventDraft["sections"] = [];
+    
+    if (scheduleText) secs.push({ id: 'agenda', type: 'Agenda', title: 'Agenda', content: scheduleText });
+    if (speakers.length > 0) secs.push({ id: 'speakers', type: 'Speakers', title: 'Speakers', content: JSON.stringify(speakers) });
+    if (teamsText && form.type !== 'Hackathon') secs.push({ id: 'teams', type: 'Teams', title: 'Teams', content: teamsText });
+    if (committeesText && form.type === 'MUN') secs.push({ id: 'committees', type: 'Committees', title: 'Committees', content: committeesText });
+    if (prizeText) secs.push({ id: 'prizes', type: 'Prizes', title: 'Prizes & Awards', content: prizeText });
+    if (rolesText) secs.push({ id: 'roles', type: 'Roles', title: 'Participant Roles', content: rolesText });
+    if (faqs.length > 0) secs.push({ id: 'faqs', type: 'FAQs', title: 'FAQs', content: JSON.stringify(faqs) });
+    if (resources.length > 0) secs.push({ id: 'resources', type: 'Resources', title: 'Resources', content: JSON.stringify(resources) });
 
     setDraft({
       id: eventId ?? undefined,
@@ -319,11 +320,16 @@ export default function AddEvent() {
       description: form.short_blurb || form.overview || form.long_description,
       date: form.start_date ? `${form.start_date}T${form.start_time}` : '',
       location: form.location,
-      cover: coverUrl ?? undefined,
+      cover: coverUrl || draft?.cover,
+      start_at: form.start_date,
+      end_at: form.end_date,
+      type: form.type,
+      registration_start: form.registration_start_date,
+      registration_end: form.registration_deadline_date,
       tags,
       sections: secs,
     });
-  }, [form, tags, scheduleText, faqs, speakers, resources, sectionOrder, eventId, coverUrl]);
+  }, [form, tags, scheduleText, faqs, speakers, resources, teamsText, prizeText, rolesText, committeesText, eventId, coverUrl]);
 
   // make saved draft available to restore (once)
   useEffect(() => {
@@ -610,780 +616,415 @@ export default function AddEvent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">
-              {isEditMode ? "Edit Event" : "Create Event"}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {isEditMode
-                ? "Update your event details"
-                : "Fill in the details to create your event"}
-            </p>
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-purple-500/30">
+      
+      {/* Top Navigation Bar */}
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
+        <div className="max-w-[1600px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => navigate('/my-events')}
+                className="p-2 -ml-2 rounded-full hover:bg-accent/10 transition-colors"
+                title="Back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <h1 className="text-lg font-semibold flex items-center gap-2">
+                {isEditMode ? 'Edit Event' : 'Create New Event'}
+                {draftSaveState === 'saving' && <span className="text-xs font-normal text-muted-foreground animate-pulse">Saving...</span>}
+                {draftSaveState === 'saved' && <span className="text-xs font-normal text-muted-foreground flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/>Saved</span>}
+              </h1>
+            </div>
 
+            <div className="flex items-center gap-3">
+              {/* Mobile Preview Toggle */}
+              <button 
+                onClick={() => setMobilePane(m => m === 'fields' ? 'preview' : 'fields')}
+                className="lg:hidden p-2 rounded-full hover:bg-accent/10 transition-colors"
+              >
+                {mobilePane === 'fields' ? <Eye className="w-5 h-5" /> : <List className="w-5 h-5" />}
+              </button>
+
+              <Button 
+                onClick={handleSubmit} 
+                disabled={loading}
+                className="rounded-full bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 shadow-lg shadow-purple-500/20"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    {isEditMode ? 'Update Event' : 'Publish Event'} 
+                    <Rocket className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <div className="hidden lg:flex items-center gap-2 border-l border-border pl-4 ml-4">
+                 <span className="text-sm font-medium text-muted-foreground">View:</span>
+                 <div className="flex bg-muted p-1 rounded-lg">
+                    <button 
+                      onClick={() => setViewMode('split')}
+                      className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${viewMode === 'split' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Split
+                    </button>
+                    <button 
+                       onClick={() => setViewMode('full')}
+                       className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${viewMode === 'full' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Full Preview
+                    </button>
+                 </div>
+            </div>
+
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col lg:flex-row max-w-[1600px] mx-auto w-full p-4 lg:p-6 gap-8 relative">
+        
+        {/* RIGHT COLUMN: Live Preview - Moved to appear first in DOM for proper flex order */}
+        <div className={`
+           shrink-0 transition-all duration-300 ease-in-out order-2 lg:order-2
+           ${viewMode === 'full' ? 'w-full max-w-5xl mx-auto' : 'w-full lg:w-[480px]'}
+           ${mobilePane === 'preview' ? 'block' : 'hidden lg:block'}
+           ${viewMode === 'full' && mobilePane === 'fields' ? 'hidden lg:block' : ''} 
+        `}>
+          <div className="lg:sticky lg:top-24 space-y-4">
+             <div className="bg-muted px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground uppercase tracking-widest text-center">
+               {viewMode === 'full' ? 'Full Event Preview' : 'Event Card Preview'}
+             </div>
+             
+             {/* Conditional Preview - Card or Full */}
+             {viewMode === 'split' ? (
+               // Event Card Preview (compact)
+               <EventCardPreview 
+                 title={draft.title}
+                 description={draft.description}
+                 date={draft.date}
+                 location={draft.location}
+                 cover={draft.cover}
+                 tags={draft.tags}
+                 type={draft.type}
+               />
+             ) : (
+               // Full Event Details Preview
+               <div className="border border-border rounded-3xl overflow-hidden shadow-2xl bg-background">
+                  <LivePreview draft={draft} />
+               </div>
+             )}
+             
+             <p className="text-center text-xs text-muted-foreground">
+               {viewMode === 'split' 
+                 ? 'This card preview updates in real-time as you type' 
+                 : 'Toggle to "Split" to see the compact card view'}
+             </p>
+          </div>
+        </div>
+        
+        {/* LEFT COLUMN: Input Fields */}
+        <div className={`flex-1 min-w-0 space-y-8 pb-32 lg:pb-0 order-1 lg:order-1 ${mobilePane === 'preview' ? 'hidden lg:block' : 'block'} ${viewMode === 'full' ? 'hidden lg:hidden' : ''}`}>
+            
+            {/* Banner for Saved Draft */}
             {savedDraftAvailable && (
-              <div className="mt-3 rounded-md bg-yellow-50/80 dark:bg-yellow-900/30 p-3 text-sm flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-medium">Local draft available</div>
-                  <div className="text-xs text-muted-foreground">Saved locally — you can restore or dismiss it.</div>
+              <div className="rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800 p-4 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                    <Save className="w-5 h-5 text-purple-600 dark:text-purple-300" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">Unsaved draft found</h3>
+                    <p className="text-xs text-purple-700 dark:text-purple-300">We found a draft from a previous session.</p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={restoreDraft} className="px-3 py-1 rounded-md bg-white/90">Restore</button>
-                  <button onClick={dismissSavedDraft} className="px-3 py-1 rounded-md bg-transparent">Dismiss</button>
+                  <Button size="sm" variant="ghost" onClick={dismissSavedDraft}>Dismiss</Button>
+                  <Button size="sm" variant="secondary" onClick={restoreDraft}>Restore</Button>
                 </div>
               </div>
             )}
-          </div>
 
-          <div className="text-right">
-            <div className="text-sm text-muted-foreground">Draft: <span className="font-medium text-neutral-700">{draftSaveState === 'saving' ? 'Saving…' : draftSaveState === 'saved' ? 'Saved' : draftSaveState}</span></div>
-            <div className="mt-2 text-xs text-muted-foreground">Progress is auto-saved to your browser</div>
-            <div className="mt-3">
-              <button type="button" onClick={() => setShowPreview((p) => !p)} className="px-3 py-1 rounded-md bg-neutral-100 text-sm">{showPreview ? 'Hide Preview' : 'Show Preview'}</button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-8">
-          {/* Mobile toggle - visible only on small screens */}
-        <div className="lg:hidden mb-4">
-          <div className="inline-flex items-center gap-3 rounded-md bg-muted p-1 text-sm" role="tablist" aria-label="Toggle fields or preview on small screens">
-            <button type="button" onClick={() => setMobilePane('fields')} className={`px-3 py-1 rounded-md ${mobilePane === 'fields' ? 'bg-white dark:bg-neutral-900 font-medium' : 'bg-transparent'}`} aria-pressed={mobilePane === 'fields'}>Fields</button>
-            <button type="button" onClick={() => setMobilePane('preview')} className={`px-3 py-1 rounded-md ${mobilePane === 'preview' ? 'bg-white dark:bg-neutral-900 font-medium' : 'bg-transparent'}`} aria-pressed={mobilePane === 'preview'}>Preview</button>
-            <div className="ml-3 text-xs text-muted-foreground">Press <kbd className="px-1 py-0.5 bg-muted rounded">P</kbd> to toggle</div>
-          </div>
-        </div>
-
-        <div className={`${mobilePane === 'fields' ? 'block' : 'hidden'} lg:block space-y-8 bg-background`}>
-          {/* Basic Information Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Basic Information</h2>
-                <p className="text-sm text-muted-foreground">
-                  Essential details about your event
-                </p>
+            {/* SECTION: Basic Info */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+                <FileText className="w-4 h-4" />
+                <span className="text-sm font-medium uppercase tracking-wider">Basic Details</span>
               </div>
-
+              
               <div className="grid gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium">
-                    Event Title *
-                  </Label>
-                  <Input
-                    id="title"
-                    value={form.title}
-                    onChange={(e) => onChange("title", e.target.value)}
-                    placeholder="Enter event title"
-                    required
-                    className="h-11"
-                    aria-invalid={!!errors.title}
-                    aria-describedby={errors.title ? 'title-error' : undefined}
-                  />
-                  {errors.title && <p id="title-error" role="alert" className="text-xs mt-1 text-red-600">{errors.title}</p>}
-                </div>
+                 {/* Title */}
+                 <div className="space-y-2">
+                   <Label className="text-base font-semibold">Event Title</Label>
+                   <Input 
+                     value={form.title} 
+                     onChange={e => onChange('title', e.target.value)} 
+                     placeholder="e.g. Annual Tech Summit 2024"
+                     className="h-12 text-lg bg-card/50 backdrop-blur-sm border-border/50 focus:bg-card transition-all"
+                   />
+                   {errors.title && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {errors.title}</p>}
+                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="slug" className="text-sm font-medium">
-                    URL Slug
-                  </Label>
-                  <Input
-                    id="slug"
-                    value={form.slug}
-                    onChange={(e) => onChange("slug", e.target.value)}
-                    placeholder="my-awesome-event"
-                    className="h-11"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Leave empty to auto-generate from title
-                  </p>
-                </div>
+                 {/* Event Type */}
+                 <div className="grid sm:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                       <Label>Event Type</Label>
+                       <Select value={form.type} onValueChange={v => onChange('type', v)}>
+                          <SelectTrigger className="bg-card/50"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                             <SelectItem value="Hackathon">Hackathon</SelectItem>
+                             <SelectItem value="Workshop">Workshop</SelectItem>
+                             <SelectItem value="Conference">Conference</SelectItem>
+                             <SelectItem value="MUN">MUN</SelectItem>
+                             <SelectItem value="Meetup">Meetup</SelectItem>
+                             <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                       </Select>
+                     </div>
 
-                {errors.location && <p id="location-error" role="alert" className="text-xs mt-1 text-red-600">{errors.location}</p>}
+                     <div className="space-y-2">
+                       <Label>Format</Label>
+                       <Select value={form.format} onValueChange={v => onChange('format', v)}>
+                         <SelectTrigger className="bg-card/50"><SelectValue /></SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="Online">Online</SelectItem>
+                           <SelectItem value="Offline">Offline</SelectItem>
+                           <SelectItem value="Hybrid">Hybrid</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Event Type *</Label>
-                    <Select
-                      value={form.type}
-                      onValueChange={(v) => onChange("type", v)}
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Hackathon">Hackathon</SelectItem>
-                        <SelectItem value="Workshop">Workshop</SelectItem>
-                        <SelectItem value="MUN">MUN</SelectItem>
-                        <SelectItem value="Gaming">Gaming</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                 {/* Slug */}
+                 <div className="space-y-2">
+                      <Label>URL Slug</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-3 text-muted-foreground text-sm">/events/</span>
+                        <Input 
+                          value={form.slug} 
+                          onChange={e => onChange('slug', e.target.value)}
+                          placeholder="my-event-slug"
+                          className="pl-16 bg-card/50"
+                        />
+                      </div>
+                 </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Format *</Label>
-                    <Select
-                      value={form.format}
-                      onValueChange={(v) => onChange("format", v)}
-                    >
-                      <SelectTrigger className="h-11">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Online">Online</SelectItem>
-                        <SelectItem value="Offline">Offline</SelectItem>
-                        <SelectItem value="Hybrid">Hybrid</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-medium">
-                    Location *
-                  </Label>
-                  <Input
-                    id="location"
-                    value={form.location}
-                    onChange={(e) => onChange("location", e.target.value)}
-                    placeholder="Enter venue or platform"
-                    required
-                    aria-invalid={!!errors.location}
-                    aria-describedby={errors.location ? 'location-error' : undefined}
-                    className="h-11"
-                  />
-                </div>
+                 {/* Location */}
+                 <div className="space-y-2">
+                   <Label>Location / Platform</Label>
+                   <div className="relative">
+                     <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                     <Input 
+                       value={form.location} 
+                       onChange={e => onChange('location', e.target.value)}
+                       className="pl-10 bg-card/50"
+                       placeholder="e.g. San Francisco Convention Center or Zoom Link"
+                     />
+                   </div>
+                   {errors.location && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {errors.location}</p>}
+                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </section>
 
-          {/* Date & Time Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5" />
-                  Date & Time
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Schedule your event
-                </p>
+            {/* SECTION: Date & Time */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+                <Calendar className="w-4 h-4" />
+                <span className="text-sm font-medium uppercase tracking-wider">Schedule</span>
               </div>
 
-              <div className="space-y-6">
-                {/* Start Date & Time */}
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">
-                    Start Date & Time *
-                  </Label>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <Input
-                      id="start"
-                      type="date"
-                      value={form.start_date}
-                      onChange={(e) => onChange("start_date", e.target.value)}
-                      required
-                      min={todayStr}
-                      className="h-11"
-                      aria-invalid={!!errors.start}
-                      aria-describedby={errors.start ? 'start-error' : undefined}
-                    />
-                    <Input
-                      type="time"
-                      value={form.start_time}
-                      onChange={(e) => onChange("start_time", e.target.value)}
-                      required
-                      min={startTimeMin}
-                      className="h-11"
-                      aria-invalid={!!errors.start}
-                    />
-                  </div>
-                  {errors.start && <p id="start-error" role="alert" className="text-xs mt-1 text-red-600">{errors.start}</p>}
-                </div>
-
-                {/* End Date & Time */}
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">
-                    End Date & Time *
-                  </Label>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <Input
-                      type="date"
-                      value={form.end_date}
-                      onChange={(e) => onChange("end_date", e.target.value)}
-                      required
-                      min={endDateMin}
-                      className="h-11"
-                    />
-                    <Input
-                      type="time"
-                      value={form.end_time}
-                      onChange={(e) => onChange("end_time", e.target.value)}
-                      required
-                      min={form.end_date === form.start_date ? form.start_time : undefined}
-                      className="h-11"
-                    />
-                  </div>
-                </div>
-
-                {/* Registration Deadline */}
-                <div className="space-y-4">
-                  <Label className="text-sm font-medium">
-                    Registration Deadline
-                  </Label>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <Input
-                      type="date"
-                      value={form.registration_deadline_date}
-                      onChange={(e) =>
-                        onChange("registration_deadline_date", e.target.value)
-                      }
-                      min={regDateMin}
-                      max={regDateMax}
-                      className="h-11"
-                    />
-                    <Input
-                      type="time"
-                      value={form.registration_deadline_time}
-                      onChange={(e) =>
-                        onChange("registration_deadline_time", e.target.value)
-                      }
-                      min={form.registration_deadline_date === todayStr ? nowTime : '00:00'}
-                      max={regTimeMax}
-                      className="h-11"
-                    />
-                  </div>
-                </div>
-
-                {/* Publish later control */}
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3">
-                    <input type="checkbox" checked={publishLater} onChange={(e) => setPublishLater(e.target.checked)} aria-label="Publish later" />
-                    <span className="text-sm">Publish later</span>
-                  </label>
-
-                  {publishLater && (
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <Input type="date" value={publish_date} onChange={(e) => setPublishDate(e.target.value)} className="h-11" aria-label="Publish date" />
-                      <Input type="time" value={publish_time} onChange={(e) => setPublishTime(e.target.value)} className="h-11" aria-label="Publish time" />
+               <div className="grid sm:grid-cols-2 gap-6">
+                  {/* Start */}
+                  <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                    <Label className="font-semibold text-purple-600 dark:text-purple-400">Starts</Label>
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                        <Input type="date" value={form.start_date} onChange={e => onChange('start_date', e.target.value)} className="pl-10 bg-transparent" min={todayStr} />
+                      </div>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                        <Input type="time" value={form.start_time} onChange={e => onChange('start_time', e.target.value)} className="pl-10 bg-transparent" />
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                    {errors.start && <p className="text-xs text-red-500">{errors.start}</p>}
+                  </div>
 
-          {/* Description Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Description</h2>
-                <p className="text-sm text-muted-foreground">
-                  Tell attendees about your event
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="short_blurb" className="text-sm font-medium">
-                    Short Blurb *
-                  </Label>
-                  <Input
-                    id="short_blurb"
-                    value={form.short_blurb}
-                    onChange={(e) => onChange("short_blurb", e.target.value)}
-                    placeholder="A brief one-liner about your event"
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="overview" className="text-sm font-medium">
-                    Overview
-                  </Label>
-                  <Textarea
-                    id="overview"
-                    value={form.overview}
-                    onChange={(e) => onChange("overview", e.target.value)}
-                    rows={4}
-                    placeholder="High-level summary of your event"
-                    className="resize-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="long_description"
-                    className="text-sm font-medium"
-                  >
-                    Detailed Description
-                  </Label>
-                  <Textarea
-                    id="long_description"
-                    value={form.long_description}
-                    onChange={(e) =>
-                      onChange("long_description", e.target.value)
-                    }
-                    rows={6}
-                    placeholder="Full details about your event"
-                    className="resize-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="rules" className="text-sm font-medium">
-                    Rules & Guidelines
-                  </Label>
-                  <Textarea
-                    id="rules"
-                    value={form.rules}
-                    onChange={(e) => onChange("rules", e.target.value)}
-                    rows={4}
-                    placeholder="Event rules and participation guidelines"
-                    className="resize-none"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Prizes Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="prizes" className="text-sm font-medium">
-                  Prizes
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Enter one prize per line
-                </p>
-              </div>
-              <Textarea
-                id="prizes"
-                value={prizeText}
-                onChange={(e) => setPrizeText(e.target.value)}
-                rows={5}
-                placeholder="1st Prize - ₹10,000&#10;2nd Prize - ₹5,000&#10;3rd Prize - ₹2,500"
-                className="resize-none font-mono text-sm"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Sections & Live Preview */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">Sections & Preview</h2>
-                  <p className="text-sm text-muted-foreground">Add optional sections that appear on the event page — reorder freely</p>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" className="px-3 py-1 rounded-md bg-neutral-50" onClick={() => { if (!sectionOrder.includes('Agenda')) setSectionOrder((s) => [...s, 'Agenda']); }}>Add Agenda</button>
-                  <button type="button" className="px-3 py-1 rounded-md bg-neutral-50" onClick={() => { if (!sectionOrder.includes('Speakers')) setSectionOrder((s) => [...s, 'Speakers']); }}>Add Speakers</button>
-                  <button type="button" className="px-3 py-1 rounded-md bg-neutral-50" onClick={() => { if (!sectionOrder.includes('FAQs')) { setShowFaqs(true); if (faqs.length === 0) setFaqs([{ id: Date.now().toString(), question: '', answer: '' }]); setSectionOrder((s) => [...s, 'FAQs']); } }}>Add FAQs</button>
-                  <button type="button" className="px-3 py-1 rounded-md bg-neutral-50" onClick={() => { if (!sectionOrder.includes('Resources')) setSectionOrder((s) => [...s, 'Resources']); }}>Add Resources</button>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <EventBuilderExtensions draft={draft} onChange={(d) => { setSectionOrder(d.sections.map((s) => s.type)); manualSaveDraft(); }} />
-                {/* On small screens show the preview beneath the sections */}
-                <div className="lg:hidden mt-4">
-                  <LivePreview draft={draft} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* FAQs: optional. Show toggle first. */}
-          <div className="mb-4">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showFaqs}
-                onChange={(e) => {
-                  const on = e.target.checked;
-                  setShowFaqs(on);
-                  if (on && faqs.length === 0) {
-                    // initialize one blank FAQ
-                    setFaqs([
-                      { id: Date.now().toString(), question: "", answer: "" },
-                    ]);
-                  }
-                  if (!on) {
-                    // clear faqs when toggle off
-                    setFaqs([]);
-                  }
-                }}
-              />
-              <span className="text-sm">Add FAQs</span>
-            </label>
-          </div>
-
-          {showFaqs && (
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold">FAQs</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Answer common questions
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {faqs.map((faq, index) => (
-                    <Card
-                      key={faq.id}
-                      draggable
-                      onDragStart={() => handleDragStart(faq.id)}
-                      onDragOver={(e) => handleDragOver(e, faq.id)}
-                      onDragEnd={handleDragEnd}
-                      className={`cursor-move transition-all hover:shadow-md ${
-                        draggedFaq === faq.id ? "opacity-50 scale-95" : ""
-                      }`}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <GripVertical className="h-5 w-5 text-muted-foreground mt-3 flex-shrink-0" />
-                          <div className="flex-1 space-y-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium text-muted-foreground">
-                                Question {index + 1}
-                              </span>
-                              {faqs.length > 1 && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeFaq(faq.id)}
-                                  className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                            <Input
-                              placeholder="Enter your question"
-                              value={faq.question}
-                              onChange={(e) =>
-                                updateFaq(faq.id, "question", e.target.value)
-                              }
-                              className="h-10"
-                            />
-                            <Textarea
-                              placeholder="Enter the answer"
-                              value={faq.answer}
-                              onChange={(e) =>
-                                updateFaq(faq.id, "answer", e.target.value)
-                              }
-                              rows={3}
-                              className="resize-none"
-                            />
+                  {/* End */}
+                  <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                    <Label className="font-semibold text-muted-foreground">Ends</Label>
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                        <Input type="date" value={form.end_date} onChange={e => onChange('end_date', e.target.value)} className="pl-10 bg-transparent" min={form.start_date}/>
+                      </div>
+                      <div className="relative">
+                         <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                         <Input type="time" value={form.end_time} onChange={e => onChange('end_time', e.target.value)} className="pl-10 bg-transparent" />
+                      </div>
+                    </div>
+                  </div>
+               </div>
+               
+               {/* Registration Dates */}
+               <div className="pt-4 border-t border-border/50">
+                 <Label className="mb-3 block font-semibold text-muted-foreground">Registration Period</Label>
+                 <div className="grid sm:grid-cols-2 gap-6">
+                    {/* Reg Start */}
+                    <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                        <Label className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Opens</Label>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                            <Input type="date" value={form.registration_start_date} onChange={e => onChange('registration_start_date', e.target.value)} className="pl-10 bg-transparent" />
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addFaq}
-                    className="w-full border-dashed border-2 h-12 hover:bg-accent"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Question
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                      </div>
+                    </div>
 
-          {/* Tags Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Tags</h2>
-                <p className="text-sm text-muted-foreground">
-                  Help people discover your event
-                </p>
+                    {/* Reg End */}
+                    <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                       <Label className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Closes</Label>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                            <Input type="date" value={form.registration_deadline_date} onChange={e => onChange('registration_deadline_date', e.target.value)} className="pl-10 bg-transparent" />
+                          </div>
+                           <div className="relative">
+                            <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                            <Input type="time" value={form.registration_deadline_time} onChange={e => onChange('registration_deadline_time', e.target.value)} className="pl-10 bg-transparent" />
+                          </div>
+                      </div>
+                    </div>
+                 </div>
+               </div>
+            </section>
+
+            {/* SECTION: Media */}
+            <section className="space-y-4">
+              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+                 <ImageIcon className="w-4 h-4" />
+                 <span className="text-sm font-medium uppercase tracking-wider">Media</span>
+              </div>
+              
+              <div className="space-y-4">
+                 <Label>Uploaded Files</Label>
+                 <FileUpload 
+                  onFilesSelected={(files) => {
+                    setUploadedFiles((prev) => [
+                      ...prev,
+                      ...files.map((file) => ({ file, name: file.name })),
+                    ]);
+                  }}
+                 />
+                 <p className="text-xs text-muted-foreground">
+                   Recommended: 16:9 aspect ratio for cover images.
+                 </p>
+                 {/* File List */}
+                 {uploadedFiles.length > 0 && (
+                   <ul className="space-y-2">
+                     {uploadedFiles.map((file, idx) => (
+                       <li key={idx} className="flex items-center justify-between p-2 rounded bg-muted/50 text-sm">
+                         <span className="truncate">{file.name}</span>
+                         <button 
+                           onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
+                           className="text-red-500 hover:text-red-700 p-1"
+                         >
+                           <X className="w-4 h-4" />
+                         </button>
+                       </li>
+                     ))}
+                   </ul>
+                 )}
+              </div>
+            </section>
+
+             {/* SECTION: Description */}
+             <section className="space-y-4">
+              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+                 <List className="w-4 h-4" />
+                 <span className="text-sm font-medium uppercase tracking-wider">Details</span>
               </div>
 
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-lg border">
-                  {tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="gap-1 px-3 py-1.5 text-sm"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+               <div className="space-y-6">
+                 <div className="space-y-2">
+                   <Label>Short Blurb</Label>
+                   <Input 
+                     value={form.short_blurb} 
+                     onChange={e => onChange('short_blurb', e.target.value)} 
+                     placeholder="A catchy one-liner..."
+                     className="bg-card/50"
+                     maxLength={150}
+                   />
+                   <p className="text-xs text-right text-muted-foreground">{form.short_blurb.length}/150</p>
+                 </div>
 
-              <div className="relative">
-                <Input
-                  placeholder="Type to search or add new tags..."
-                  value={tagInput}
-                  onChange={(e) => handleTagInputChange(e.target.value)}
-                  onKeyDown={handleTagKeyDown}
-                  onFocus={() => tagInput && setShowTagSuggestions(true)}
-                  onBlur={() =>
-                    setTimeout(() => setShowTagSuggestions(false), 200)
-                  }
-                  className="h-11"
-                />
+                 <div className="space-y-2">
+                   <div className="flex items-center justify-between">
+                     <Label>Long Description</Label>
+                     <span className="text-xs text-muted-foreground bg-accent/10 px-2 py-0.5 rounded">Markdown Supported</span>
+                   </div>
+                   <Textarea 
+                     value={form.long_description}
+                     onChange={e => onChange('long_description', e.target.value)}
+                     className="min-h-[200px] font-mono text-sm bg-card/50"
+                     placeholder="Describe your event in detail..."
+                   />
+                 </div>
+               </div>
+            </section>
+            
+            {/* Extended Sections (Agenda, FAQs, etc) */}
+            <EventBuilderExtensions
+              eventType={form.type}
+              scheduleText={scheduleText} setScheduleText={setScheduleText}
+              teamsText={teamsText} setTeamsText={setTeamsText}
+              committeesText={committeesText} setCommitteesText={setCommitteesText}
+              prizeText={prizeText} setPrizeText={setPrizeText}
+              faqs={faqs} setFaqs={setFaqs}
+              speakers={speakers} setSpeakers={setSpeakers}
+              resources={resources} setResources={setResources}
+              rolesText={rolesText} setRolesText={setRolesText}
+            />
 
-                {showTagSuggestions && filteredSuggestions.length > 0 && (
-                  <Card className="absolute z-10 w-full mt-1 max-h-48 overflow-y-auto shadow-lg">
-                    <CardContent className="p-2">
-                      <div className="space-y-1">
-                        {filteredSuggestions.map((tag) => (
-                          <button
+            {/* Tags */}
+            <section className="space-y-4 pt-4 border-t border-border">
+              <Label>Tags</Label>
+               <div className="bg-card/50 p-4 rounded-lg border border-border/50 space-y-3">
+                 <div className="flex flex-wrap gap-2">
+                    {tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="px-3 py-1 text-sm flex items-center gap-1">
+                        {tag}
+                        <button onClick={() => removeTag(tag)} className="ml-1 hover:text-red-500"><X className="w-3 h-3"/></button>
+                      </Badge>
+                    ))}
+                 </div>
+                 <div className="relative">
+                    <Input 
+                      value={tagInput}
+                      onChange={e => handleTagInputChange(e.target.value)}
+                      onKeyDown={handleTagKeyDown}
+                      placeholder="Type a tag and press Enter..."
+                      className="bg-transparent"
+                    />
+                    {showTagSuggestions && (
+                      <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {filteredSuggestions.map(tag => (
+                          <div 
                             key={tag}
-                            type="button"
+                            className="px-4 py-2 hover:bg-accent cursor-pointer text-sm"
                             onClick={() => addTag(tag)}
-                            className="w-full text-left px-3 py-2 hover:bg-accent rounded-md text-sm transition-colors"
                           >
                             {tag}
-                          </button>
+                          </div>
                         ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Press Enter to add a tag or select from suggestions
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Schedule & Teams Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Schedule & Teams</h2>
-                <p className="text-sm text-muted-foreground">
-                  Optional event logistics
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="schedule" className="text-sm font-medium">
-                    Event Schedule
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Format: YYYY-MM-DDTHH:MM | Title | Description (one per
-                    line)
-                  </p>
-                  <Textarea
-                    id="schedule"
-                    value={scheduleText}
-                    onChange={(e) => setScheduleText(e.target.value)}
-                    rows={5}
-                    placeholder="2025-03-15T09:00 | Opening Ceremony | Welcome address&#10;2025-03-15T10:00 | Event Kickoff | Rules and guidelines"
-                    className="resize-none font-mono text-sm"
-                  />
+                       </div>
+                     )}
+                  </div>
                 </div>
+             </section>
 
-                <div className="space-y-2">
-                  <Label htmlFor="teams" className="text-sm font-medium">
-                    Event Teams
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Format: Name | Description | Email (one per line)
-                  </p>
-                  <Textarea
-                    id="teams"
-                    value={teamsText}
-                    onChange={(e) => setTeamsText(e.target.value)}
-                    rows={4}
-                    placeholder="Organizers | Main event team | contact@example.com&#10;Volunteers | Helper team | volunteers@example.com"
-                    className="resize-none font-mono text-sm"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Participant Roles Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Participant Roles</h2>
-                <p className="text-sm text-muted-foreground">
-                  Optionally define roles attendees can choose when registering. One per line. Format: Role Name | capacity (optional)
-                </p>
-              </div>
-
-              <Textarea
-                id="roles"
-                value={rolesText}
-                onChange={(e) => setRolesText(e.target.value)}
-                rows={4}
-                placeholder="Participant | 200\nVolunteer | 50\nJudge | 10"
-                className="resize-none font-mono text-sm"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Links Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-6">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Links & Social</h2>
-                <p className="text-sm text-muted-foreground">
-                  Connect with attendees
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="registration_link"
-                    className="text-sm font-medium"
-                  >
-                    Registration Link
-                  </Label>
-                  <Input
-                    id="registration_link"
-                    value={form.registration_link}
-                    onChange={(e) =>
-                      onChange("registration_link", e.target.value)
-                    }
-                    placeholder="https://forms.example.com/register"
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="discord_invite"
-                    className="text-sm font-medium"
-                  >
-                    Discord Invite
-                  </Label>
-                  <Input
-                    id="discord_invite"
-                    value={form.discord_invite}
-                    onChange={(e) => onChange("discord_invite", e.target.value)}
-                    placeholder="https://discord.gg/yourserver"
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="instagram_handle"
-                    className="text-sm font-medium"
-                  >
-                    Instagram Handle
-                  </Label>
-                  <Input
-                    id="instagram_handle"
-                    value={form.instagram_handle}
-                    onChange={(e) =>
-                      onChange("instagram_handle", e.target.value)
-                    }
-                    placeholder="@yourevent"
-                    className="h-11"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Images & Media Card */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="space-y-2">
-                <h2 className="text-xl font-semibold">Images & Media</h2>
-                <p className="text-sm text-muted-foreground">
-                  Upload event images or banners
-                </p>
-              </div>
-
-              <div>
-                <FileUpload
-                  maxFiles={1}
-                  maxSizeMB={10}
-                  onFilesChange={(files) => {
-                    const arr = files as Array<{ file: File; preview?: string }>;
-                    // If the hook provides a preview (blob URL), use it for immediate preview
-                    if (arr.length > 0 && arr[0].preview) {
-                      setCoverUrl(arr[0].preview);
-                    } else if (arr.length === 0) {
-                      setCoverUrl(null);
-                    }
-
-                    // Map hook files to the shape expected by eventService
-                    const mapped = arr.map((f) => ({
-                      file: f.file,
-                      name: f.file.name,
-                    }));
-                    setUploadedFiles(mapped);
-                  }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Submit Button */}
-          <div className="flex gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={() => window.history.back()}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={loading || loadingEvent}
-              className="flex-1 h-12 text-base"
-              onClick={handleSubmit}
-            >
-              {loading
-                ? isEditMode
-                  ? "Updating Event..."
-                  : "Creating Event..."
-                : isEditMode
-                ? "Update Event"
-                : "Create Event"}
-            </Button>
-          </div>
-          </div>
-
-          {/* Mobile-only preview pane (toggled) */}
-          <div className={`${mobilePane === 'preview' ? 'block' : 'hidden'} lg:hidden mt-4`}>
-            <LivePreview draft={draft} />
-          </div>
-
-          <aside className={`${showPreview ? 'hidden lg:block' : 'hidden'} sticky top-24 self-start h-[calc(100vh-6rem)] overflow-auto`}>
-            <Card>
-              <CardContent>
-                <div className="text-sm text-muted-foreground font-medium mb-3">Preview</div>
-                <LivePreview draft={draft} />
-              </CardContent>
-            </Card>
-          </aside>
         </div>
+
       </div>
     </div>
   );

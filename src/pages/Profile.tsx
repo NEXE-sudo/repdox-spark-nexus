@@ -544,7 +544,7 @@ useEffect(() => {
                     onClick={() => setActiveSection(section.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                       activeSection === section.id
-                        ? "bg-accent/10 text-accent font-medium"
+                        ? "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium"
                         : "text-muted-foreground hover:bg-muted"
                     }`}
                   >
@@ -1455,7 +1455,7 @@ useEffect(() => {
                     <Button
                       onClick={handleSave}
                       disabled={isLoading}
-                      className="w-full sm:w-auto gap-2 bg-accent hover:bg-accent/90"
+                      className="w-full sm:w-auto gap-2 bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       <Save className="w-4 h-4" />
                       {isLoading ? "Saving..." : "Save Changes"}
