@@ -65,31 +65,32 @@ export default function EventDetail() {
     role: "",
   });
 
-  const { data: event, isLoading } = useQuery({
+  const { data: event, isLoading, error } = useQuery({
     queryKey: ["event", slug],
     queryFn: async () => {
-      // First try to get the event (active or not)
-      const { data, error } = await supabase
-        .from("events")
-        .select("*")
-        .eq("slug", slug)
-        .single();
+      const { data, error } = await eventService.getEventBySlug(slug);
+      if (error || !data) throw new Error("Event not found");
 
-      if (error) throw error;
+      // --- LOGIC START: EXPIRED ACCESS CONTROL ---
+      const now = new Date();
+      const isExpired = new Date(data.end_at) < now;
+      
+      // Check if the current user is the owner
+      const { data: { user } } = await supabase.auth.getUser();
+      const isOwner = user && data.created_by === user.id;
 
-      // If event is inactive, check if user is the owner
-      if (!data.is_active) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user || data.created_by !== user.id) {
-          throw new Error("Event not found");
-        }
+      // If expired and NOT the owner, block access
+      if (isExpired && !isOwner) {
+        throw new Error("This event has ended and is no longer public.");
       }
-
+      
+      // Block inactive events for non-owners (keep your existing logic)
+      if (!data.is_active && !isOwner) {
+        throw new Error("Event not found");
+      }
       return data;
     },
-    enabled: !!slug,
+    retry: false,
   });
 
   const countdown = useCountdown(event?.start_at || "");
@@ -129,6 +130,15 @@ export default function EventDetail() {
       mounted = false;
     };
   }, [event?.id]);
+
+  useEffect(() => {
+    if (window.location.hash === '#register') {
+      const element = document.getElementById('register');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [event, isLoading]);
 
   const handleDeleteClick = () => {
     setDeleteDialogOpen(true);

@@ -54,7 +54,6 @@ interface UserProfile {
   bio: string | null;
   avatar_url: string | null;
   phone: string | null;
-  location: string | null;
   website: string | null;
   company: string | null;
   job_title: string | null;
@@ -82,7 +81,6 @@ const sections = [
 
 export default function Profile() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { userId } = useParams();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -98,7 +96,6 @@ export default function Profile() {
       { key: 'bio', label: 'Bio', value: profile.bio },
       { key: 'avatar_url', label: 'Profile Picture', value: profile.avatar_url },
       { key: 'phone', label: 'Phone Number', value: profile.phone },
-      { key: 'location', label: 'Location', value: profile.location },
       { key: 'website', label: 'Website', value: profile.website },
       { key: 'company', label: 'Company', value: profile.company },
       { key: 'job_title', label: 'Job Title', value: profile.job_title },
@@ -145,7 +142,6 @@ useEffect(() => {
   const [company, setCompany] = useState("");
   const [website, setWebsite] = useState("");
   const [phone, setPhone] = useState("");
-  const [locationInput, setLocationInput] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState<string>("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
 const [githubUrl, setGithubUrl] = useState("");
@@ -218,7 +214,6 @@ const [preferences, setPreferences] = useState({
         setCompany(profileData.company || "");
         setWebsite(profileData.website || "");
         setPhone(profileData.phone || "");
-        setLocationInput(profileData.location || "");
         setDateOfBirth(profileData["Date of Birth"] || "");
         setLinkedinUrl(profileData.linkedin_url || "");
         setGithubUrl(profileData.github_url || "");
@@ -278,7 +273,6 @@ const [preferences, setPreferences] = useState({
       setCompany(profileData.company || "");
       setWebsite(profileData.website || "");
       setPhone(profileData.phone || "");
-      setLocationInput(profileData.location || "");
       setDateOfBirth(profileData["Date of Birth"] || "");
       setLinkedinUrl(profileData.linkedin_url || "");
       setGithubUrl(profileData.github_url || "");
@@ -430,7 +424,6 @@ useEffect(() => {
           company: company || null,
           website: website || null,
           phone: phone || null,
-          location: locationInput || null,
           "Date of Birth": dateOfBirth || null,
           avatar_url: avatarPath,
           linkedin_url: linkedinUrl || null,
@@ -977,7 +970,7 @@ useEffect(() => {
                         </label>
                         <div className="flex items-center gap-3 px-4 py-3 bg-muted rounded-lg border border-border">
                           <Mail className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                          <span className="flex-1 text-foreground">{user?.email || 'Not set'}</span>
+                          <span className="flex-1 text-foreground">{isOwnProfile ? (user?.email || 'Not set') : 'Email Hidden'}</span>
                           
                           {/* Verification Status Badge */}
                           {user?.email_confirmed_at ? (
@@ -1233,34 +1226,6 @@ useEffect(() => {
                         )}
                       </div>
 
-                      {/* Location Field */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Location
-                        </label>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                          <input
-                            type="text"
-                            value={locationInput}
-                            onChange={(e) => setLocationInput(e.target.value)}
-                            placeholder="City, Country"
-                            disabled={!isOwnProfile}
-                            className={`w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition ${
-                              !isOwnProfile ? 'opacity-60 cursor-not-allowed bg-muted' : ''
-                            }`}
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {isOwnProfile 
-                            ? "Your general location (e.g., San Francisco, CA)" 
-                            : locationInput 
-                              ? "Current location" 
-                              : "No location provided"
-                          }
-                        </p>
-                      </div>
-
                       {/* Privacy Notice */}
                       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg">
                         <div className="flex items-start gap-3">
@@ -1272,7 +1237,6 @@ useEffect(() => {
                             <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                               <li>• Your email is private and never shared publicly</li>
                               <li>• Phone number is optional and used for verification only</li>
-                              <li>• Location helps connect you with nearby events and users</li>
                               {isOwnProfile && <li>• You control what information is visible on your profile</li>}
                             </ul>
                           </div>
@@ -1360,7 +1324,6 @@ useEffect(() => {
           email: user.email || null,
           job_title: jobTitle,
           company: company,
-          location: locationInput,
           socials: {
             linkedin_url: linkedinUrl || null,
             github_url: githubUrl || null,

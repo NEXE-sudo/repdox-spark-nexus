@@ -112,7 +112,6 @@ export type Database = {
           bio: string | null;
           avatar_url: string | null;
           phone: string | null;
-          location: string | null;
           website: string | null;
           company: string | null;
           job_title: string | null;
@@ -126,7 +125,6 @@ export type Database = {
           bio?: string | null;
           avatar_url?: string | null;
           phone?: string | null;
-          location?: string | null;
           website?: string | null;
           company?: string | null;
           job_title?: string | null;
@@ -140,7 +138,6 @@ export type Database = {
           bio?: string | null;
           avatar_url?: string | null;
           phone?: string | null;
-          location?: string | null;
           website?: string | null;
           company?: string | null;
           job_title?: string | null;

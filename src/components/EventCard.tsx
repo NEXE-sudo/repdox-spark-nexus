@@ -157,17 +157,15 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
       </CardContent>
 
       <CardFooter className="gap-2">
-        <Link to={`/events/${event.slug}`} className="flex-1">
-          <Button variant="default" className="w-full">
-            Details
-          </Button>
-        </Link>
-        <Link to={`/events/${event.slug}#register`} className="flex-1">
-          <Button variant="outline" className="w-full border-accent/30 hover:bg-accent/10">
-            Register
-          </Button>
-        </Link>
-      </CardFooter>
+  <Button variant="default" className="flex-1" asChild>
+    {/* Ensure there is a leading / before events */}
+    <Link to={`/events/${event.slug}`}>Details</Link>
+  </Button>
+  <Button variant="outline" className="flex-1 border-accent/30 hover:bg-accent/10" asChild>
+    {/* This will navigate to the page AND scroll to the register ID section */}
+    <Link to={`/events/${event.slug}#register`}>Register</Link>
+  </Button>
+</CardFooter>
     </Card>
   );
 }

@@ -73,7 +73,6 @@ interface UserProfile {
   bio: string | null;
   avatar_url: string | null;
   phone: string | null;
-  location: string | null;
   website: string | null;
   company: string | null;
   job_title: string | null;
@@ -677,34 +676,32 @@ export default function Community() {
   };
 
   const loadFeedPosts = async () => {
-    try {
-      const now = new Date().toISOString();
+  try {
+    const now = new Date().toISOString();
 
-      // First, get posts with user profiles
-      const { data: posts, error: postsError } = await supabase
-        .from("community_posts")
-        .select(`
-          *,
-          user_profiles!community_posts_user_id_fkey (
-            id,
-            user_id,
-            full_name,
-            handle,
-            bio,
-            avatar_url,
-            job_title,
-            location,
-            phone,
-            website,
-            company,
-            "Date of Birth",
-            created_at,
-            updated_at
-          )
-        `)
-        .or(`is_scheduled.is.false,scheduled_at.lte.${now}`)
-        .order("created_at", { ascending: false })
-        .limit(50);
+    const { data: posts, error: postsError } = await supabase
+      .from("community_posts")
+      .select(`
+        *,
+        user_profiles!community_posts_user_id_fkey (
+          id,
+          user_id,
+          full_name,
+          handle,
+          bio,
+          avatar_url,
+          job_title,
+          phone,
+          website,
+          company,
+          "Date of Birth",
+          created_at,
+          updated_at
+        )
+      `) // Ensure no comments like // are inside this string
+      .or(`is_scheduled.is.false,scheduled_at.lte."${now}"`)
+      .order("created_at", { ascending: false })
+      .limit(50);
 
       if (postsError) {
         console.error("Feed query error:", postsError);

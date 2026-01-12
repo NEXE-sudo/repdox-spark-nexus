@@ -34,6 +34,36 @@ export default function MyEvents() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
 
+  const { data: userEvents = [], isLoading: isEventsLoading, refetch } = useQuery({
+    queryKey: ['my-events', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('created_by', user.id);
+      
+      if (error) throw error;
+
+      const now = new Date();
+      
+      return (data || []).sort((a, b) => {
+        const isAExpired = new Date(a.end_at) < now;
+        const isBExpired = new Date(b.end_at) < now;
+
+        if (isAExpired !== isBExpired) {
+          return isAExpired ? 1 : -1;
+        }
+
+        if (isAExpired && isBExpired) {
+          return new Date(b.end_at).getTime() - new Date(a.end_at).getTime();
+        }
+
+        return new Date(a.start_at).getTime() - new Date(b.start_at).getTime();
+      });
+    },
+  });
+
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
@@ -53,16 +83,6 @@ export default function MyEvents() {
     };
     checkAuth();
   }, [navigate]);
-
-  const {
-    data: events = [],
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["my-events"],
-    queryFn: () => eventService.getMyEvents(),
-    enabled: !!user,
-  });
 
   const handleDeleteClick = (eventId: string) => {
     setEventToDelete(eventId);
@@ -104,172 +124,140 @@ export default function MyEvents() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative py-20 px-6 bg-gradient-to-b from-accent/10 to-background border-b border-border/50">
+    <div className="min-h-screen bg-background flex flex-col">
+      <main className="flex-grow py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <Link to="/events">
-            <Button variant="ghost" size="sm" className="mb-6">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Events
-            </Button>
-          </Link>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-4">
-              My Events
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mb-6">
-              Manage all the events you've created
-            </p>
-            <Link to="/events/new">
-              <Button size="lg">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Event
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+            <div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="mb-2 -ml-2 text-muted-foreground"
+                onClick={() => navigate(-1)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Events Grid */}
-      <section className="py-12 px-6">
-        <div className="max-w-7xl mx-auto">
-          {events.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-lg text-muted-foreground mb-6">
-                You haven't created any events yet
+              <h1 className="text-4xl font-bold tracking-tight">My Events</h1>
+              <p className="text-muted-foreground mt-2">
+                Manage your events. Past events are hidden from the public.
               </p>
-              <Link to="/events/new">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Event
-                </Button>
-              </Link>
             </div>
+            <Button asChild className="bg-accent hover:bg-accent/90">
+              <Link to="/create-event">
+                <Plus className="w-4 h-4 mr-2" /> Create New Event
+              </Link>
+            </Button>
+          </div>
+
+          {/* Events Grid */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-80 bg-muted animate-pulse rounded-xl" />
+              ))}
+            </div>
+          ) : userEvents.length === 0 ? (
+            <Card className="p-12 text-center border-dashed bg-muted/20">
+              <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold">No events yet</h3>
+              <p className="text-muted-foreground mb-6">Start by creating your first event!</p>
+              <Button asChild><Link to="/create-event">Create Event</Link></Button>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event, index) => (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, duration: 0.4 }}
-                >
-                  <Card className="overflow-hidden h-full flex flex-col group border-border/50 hover:border-accent/50 transition-all duration-300">
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={getEventImage(event.image_url) || event.image_url}
-                        alt={event.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <Badge
-                        variant="secondary"
-                        className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm border-accent/30"
-                      >
-                        {event.type}
-                      </Badge>
-                      {!event.is_active && (
-                        <Badge
-                          variant="destructive"
-                          className="absolute top-4 left-4 bg-destructive/90 backdrop-blur-sm"
-                        >
-                          Deleted
-                        </Badge>
-                      )}
-                    </div>
+              {userEvents.map((event) => {
+                const isExpired = new Date(event.end_at) < new Date();
 
-                    <CardHeader>
-                      <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                        {event.title}
-                      </CardTitle>
-                    </CardHeader>
-
-                    <CardContent className="flex-1">
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {new Date(event.start_at).toLocaleDateString(
-                              "en-IN",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              }
-                            )}
-                          </span>
+                return (
+                  <motion.div key={event.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <Card className={`h-full flex flex-col transition-all duration-300 ${
+                      isExpired ? 'opacity-50 grayscale bg-muted/30 border-dashed ring-0 shadow-none' : 'hover:shadow-md'
+                    }`}>
+                      <CardHeader className="p-0 relative">
+                        {isExpired && (
+                          <div className="absolute inset-0 z-10 bg-background/20 backdrop-blur-[1px] flex items-center justify-center">
+                            <Badge variant="secondary" className="font-bold border-muted-foreground/50">
+                              <Clock className="w-3 h-3 mr-1" /> EXPIRED
+                            </Badge>
+                          </div>
+                        )}
+                        <div className="aspect-video w-full overflow-hidden rounded-t-xl">
+                          <img
+                            src={getEventImage(event.image_url) || event.image_url || '/placeholder.png'}
+                            alt={event.title}
+                            className="object-cover w-full h-full"
+                          />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
-                          <span className="line-clamp-1">{event.location}</span>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          {event.format}
-                        </Badge>
-                      </div>
-                    </CardContent>
+                      </CardHeader>
 
-                    <CardFooter className="gap-2">
-                      <Link to={`/events/${event.slug}`} className="flex-1">
-                        <Button variant="outline" className="w-full" size="sm">
-                          View
+                      <CardContent className="p-5 flex-grow">
+                        <div className="flex justify-between items-start mb-3">
+                          <CardTitle className="text-xl line-clamp-1">{event.title}</CardTitle>
+                          {!event.is_active && <Badge variant="destructive">Inactive</Badge>}
+                        </div>
+                        <div className="space-y-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>{new Date(event.start_at).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            <span className="line-clamp-1">{event.location}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+
+                      <CardFooter className="p-5 pt-0 flex flex-col gap-3">
+                        <div className="w-full flex gap-2">
+                          {isExpired ? (
+                            <div className="w-full p-2 bg-muted/50 rounded-md">
+                              <p className="text-[10px] text-muted-foreground italic text-center">
+                                Hidden from public view. Permanent deletion in 3 months.
+                              </p>
+                            </div>
+                          ) : (
+                            <>
+                              <Button variant="outline" size="sm" className="flex-1" asChild>
+                                <Link to={`/events/${event.slug}/edit`}>
+                                  <Edit className="h-3.5 w-3.5 mr-2" /> Edit
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteClick(event.id)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="sm" className="w-full text-xs" asChild>
+                          <Link to={`/events/${event.slug}`}>View Event Page</Link>
                         </Button>
-                      </Link>
-                      {event.is_active && (
-                        <>
-                          <Link
-                            to={`/events/${event.slug}/edit`}
-                            className="flex-1"
-                          >
-                            <Button
-                              variant="default"
-                              className="w-full"
-                              size="sm"
-                            >
-                              <Edit className="mr-1 h-3 w-3" />
-                              Edit
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteClick(event.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </>
-                      )}
-                    </CardFooter>
-                  </Card>
-                </motion.div>
-              ))}
+                      </CardFooter>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
-      </section>
+      </main>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Deactivate Event?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will deactivate your event. It will no longer be visible to
-              other users. This action cannot be undone.
+              This will hide the event from everyone else. This action is permanent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete Event
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-white">
+              Deactivate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -25,6 +25,7 @@ export default function EventsList() {
         .from('events')
         .select('*')
         .eq('is_active', true)
+        .gte('end_at', new Date().toISOString())
         .order('start_at', { ascending: true });
       
       if (error) throw error;

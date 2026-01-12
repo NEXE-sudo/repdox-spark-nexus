@@ -64,16 +64,10 @@ const ProfileCardComponent = ({
   innerGradient = DEFAULT_INNER_GRADIENT,
   behindGlowColor = undefined,
   behindGlowSize = undefined,
-  idCardName = 'ALEXANDER DOE',
-  idCardRole = 'SENIOR DEVELOPER',
-  idNumber = '8901-2345-6789',
   showIdCard = false,
   mode = 'personal',
   userData = {
     user_id: null,
-    full_name: 'John Doe',
-    handle: 'johndoe',
-    bio: 'Software Engineer',
     avatar_url: null,
     phone: null,
     email: null,
@@ -421,14 +415,32 @@ const renderEventCard = () => (
         <div className="inner-line" />
 
         <div className="card-body">
-          
-            {userData.avatar_url && (
+          {/* MODIFIED AVATAR LOGIC START */}
+          {userData.avatar_url ? (
             <img 
               src={userData.avatar_url} 
               alt={userData.full_name}
               className="personal-avatar"
             />
+          ) : (
+            <div 
+              className="personal-avatar" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                fontSize: '1.5rem',
+                fontWeight: 'bold',
+                border: `1px solid ${roleTheme.border}`
+              }}
+            >
+              {getInitials(userData.full_name)}
+            </div>
           )}
+          {/* MODIFIED AVATAR LOGIC END */}
+
           <div className="user-info-personal">
             <h2 className="user-name">{userData.full_name}</h2>
           </div>
@@ -473,23 +485,37 @@ const renderPersonalCard = () => (
         <div className="inner-line" />
 
         <div className="card-body">
-          {userData.avatar_url && (
+          {/* MODIFIED AVATAR LOGIC START */}
+          {userData.avatar_url ? (
             <img 
               src={userData.avatar_url} 
               alt={userData.full_name}
               className="personal-avatar"
             />
+          ) : (
+            <div 
+              className="personal-avatar" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: 'white',
+                fontSize: '1.5rem',
+                fontWeight: 'bold'
+              }}
+            >
+              {getInitials(userData.full_name)}
+            </div>
           )}
+          {/* MODIFIED AVATAR LOGIC END */}
+
           <div className="user-info-personal">
             <h2 className="user-name">{userData.full_name}</h2>
           </div>
             {userData.job_title && (
               <p className="user-role">{userData.job_title}</p>
             )}
-            {/* {userData.company && (
-              <p className="user-company">{userData.company}</p>
-            )} */}
-          
 
           <div className="social-links">
             {userData.socials?.linkedin_url && (
@@ -530,6 +556,12 @@ const renderPersonalCard = () => (
 </div>
   </div>
 );
+
+const getInitials = (name: string) => {
+  return name
+    ? name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()
+    : 'U';
+};
 
   return (
     <div ref={wrapRef} className={`pc-card-wrapper ${className}`.trim()} style={cardStyle}>
