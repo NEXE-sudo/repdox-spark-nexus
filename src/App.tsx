@@ -30,6 +30,7 @@ import Bookmarks from "./pages/Bookmarks";
 import Groups from "./pages/Groups";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import CommandPalette from '@/components/CommandPalette';
+import GroupDetail from './pages/GroupDetail';
 
 // NEW: Email Verification imports
 import VerifyEmail from "./pages/VerifyEmail";
@@ -208,7 +209,8 @@ const App = () => {
                   <Route path="/about" element={<About />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                   <Route path="/signin" element={<SignIn />} />
-                  
+                  <Route path="/groups/:groupId" element={<GroupDetail />} />
+
                   {/* NEW: Email Verification Routes (Public - No Auth Required) */}
                   <Route path="/verify-email" element={<VerifyEmail />} />
                   <Route path="/auth/callback" element={<AuthCallback />} />

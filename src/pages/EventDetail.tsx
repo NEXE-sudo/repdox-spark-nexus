@@ -47,7 +47,7 @@ import eventService from "@/lib/eventService";
 import OrganizerRegistrations from "@/components/OrganizerRegistrations";
 import { getSignedUrl } from "@/lib/storageService";
 import { getEventImage } from "@/lib/eventImages";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database } from "@/lib/supabase/types";
 import { toast } from "@/hooks/use-toast";
 import Footer from "@/components/Footer";
 import AddToCalendar from "@/components/AddToCalendar";

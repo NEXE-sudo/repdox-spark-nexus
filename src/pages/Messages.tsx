@@ -75,6 +75,15 @@ export default function Messages() {
 
       setUser(currentUser);
       await loadConversations(currentUser.id);
+      
+      // Check if navigated from another page with selected user
+      const state = (window.history.state as any)?.usr;
+      if (state?.selectedUserId) {
+        const conv = conversations.find(c => c.user.user_id === state.selectedUserId);
+        if (conv) {
+          handleSelectConversation(conv);
+        }
+      }
     };
 
     initializeMessages();

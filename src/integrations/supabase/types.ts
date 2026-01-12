@@ -109,6 +109,7 @@ export type Database = {
           id: string;
           user_id: string;
           full_name: string | null;
+          handle: string | null;
           bio: string | null;
           avatar_url: string | null;
           phone: string | null;
@@ -117,11 +118,19 @@ export type Database = {
           job_title: string | null;
           created_at: string;
           updated_at: string;
+          date_of_birth: string | null;
+          linkedin_url: string | null;
+          github_url: string | null;
+          twitter_url: string | null;
+          instagram_url: string | null;
+          portfolio_url: string | null;
+          custom_links: Json | null;
         };
         Insert: {
           id?: string;
           user_id: string;
           full_name?: string | null;
+          handle?: string | null;
           bio?: string | null;
           avatar_url?: string | null;
           phone?: string | null;
@@ -130,11 +139,19 @@ export type Database = {
           job_title?: string | null;
           created_at?: string;
           updated_at?: string;
+          date_of_birth?: string | null;
+          linkedin_url?: string | null;
+          github_url?: string | null;
+          twitter_url?: string | null;
+          instagram_url?: string | null;
+          portfolio_url?: string | null;
+          custom_links?: Json | null;
         };
         Update: {
           id?: string;
           user_id?: string;
           full_name?: string | null;
+          handle?: string | null;
           bio?: string | null;
           avatar_url?: string | null;
           phone?: string | null;
@@ -143,6 +160,13 @@ export type Database = {
           job_title?: string | null;
           created_at?: string;
           updated_at?: string;
+          date_of_birth?: string | null;
+          linkedin_url?: string | null;
+          github_url?: string | null;
+          twitter_url?: string | null;
+          instagram_url?: string | null;
+          portfolio_url?: string | null;
+          custom_links?: Json | null;
         };
         Relationships: [];
       };
@@ -157,6 +181,16 @@ export type Database = {
           phone: string | null;
           message: string | null;
           status: string | null;
+          role: string | null;
+          registration_id: string | null;
+          qr_code_data: string | null;
+          check_in_status: string | null;
+          checked_in_at: string | null;
+          checked_in_by: string | null;
+          committee: string | null;
+          position: string | null;
+          country: string | null;
+          session_name: string | null;
         };
         Insert: {
           id?: string;
@@ -168,6 +202,16 @@ export type Database = {
           phone?: string | null;
           message?: string | null;
           status?: string | null;
+          role?: string | null;
+          registration_id?: string | null;
+          qr_code_data?: string | null;
+          check_in_status?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by?: string | null;
+          committee?: string | null;
+          position?: string | null;
+          country?: string | null;
+          session_name?: string | null;
         };
         Update: {
           id?: string;
@@ -179,6 +223,16 @@ export type Database = {
           phone?: string | null;
           message?: string | null;
           status?: string | null;
+          role?: string | null;
+          registration_id?: string | null;
+          qr_code_data?: string | null;
+          check_in_status?: string | null;
+          checked_in_at?: string | null;
+          checked_in_by?: string | null;
+          committee?: string | null;
+          position?: string | null;
+          country?: string | null;
+          session_name?: string | null;
         };
         Relationships: [
           {
@@ -257,6 +311,580 @@ export type Database = {
           }
         ];
       };
+
+      community_posts: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          content: string;
+          encrypted_content: string | null;
+          images_urls: string[] | null;
+          gif_url: string | null;
+          location: Json | null;
+          poll_id: string | null;
+          scheduled_at: string | null;
+          is_scheduled: boolean | null;
+          likes_count: number | null;
+          comments_count: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+          repost_count: number | null;
+          views_count: number | null;
+          bookmark_count: number | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          content?: string;
+          encrypted_content?: string | null;
+          images_urls?: string[] | null;
+          gif_url?: string | null;
+          location?: Json | null;
+          poll_id?: string | null;
+          scheduled_at?: string | null;
+          is_scheduled?: boolean | null;
+          likes_count?: number | null;
+          comments_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          repost_count?: number | null;
+          views_count?: number | null;
+          bookmark_count?: number | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string;
+          content?: string;
+          encrypted_content?: string | null;
+          images_urls?: string[] | null;
+          gif_url?: string | null;
+          location?: Json | null;
+          poll_id?: string | null;
+          scheduled_at?: string | null;
+          is_scheduled?: boolean | null;
+          likes_count?: number | null;
+          comments_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          repost_count?: number | null;
+          views_count?: number | null;
+          bookmark_count?: number | null;
+        };
+        Relationships: [];
+      };
+
+      posts_comments: {
+        Row: {
+          id: string;
+          post_id: string;
+          user_id: string;
+          content: string;
+          images_urls: string[] | null;
+          gif_url: string | null;
+          location: Json | null;
+          likes_count: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+          parent_comment_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          content: string;
+          images_urls?: string[] | null;
+          gif_url?: string | null;
+          location?: Json | null;
+          likes_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          parent_comment_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+          content?: string;
+          images_urls?: string[] | null;
+          gif_url?: string | null;
+          location?: Json | null;
+          likes_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          parent_comment_id?: string | null;
+        };
+        Relationships: [];
+      };
+
+      post_views: {
+        Row: {
+          id: string;
+          post_id: string;
+          user_id: string;
+          viewed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          viewed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+          viewed_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      polls: {
+        Row: {
+          id: string;
+          post_id: string;
+          question: string;
+          options: string[];
+          duration_days: number | null;
+          duration_hours: number | null;
+          duration_minutes: number | null;
+          expires_at: string | null;
+          votes_count: number | null;
+          created_by_id: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          question: string;
+          options: string[];
+          duration_days?: number | null;
+          duration_hours?: number | null;
+          duration_minutes?: number | null;
+          expires_at?: string | null;
+          votes_count?: number | null;
+          created_by_id?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          question?: string;
+          options?: string[];
+          duration_days?: number | null;
+          duration_hours?: number | null;
+          duration_minutes?: number | null;
+          expires_at?: string | null;
+          votes_count?: number | null;
+          created_by_id?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      user_post_bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          post_id: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          post_id: string;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          post_id?: string;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      user_post_likes: {
+        Row: {
+          id: string;
+          user_id: string;
+          post_id: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          post_id: string;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          post_id?: string;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      user_post_reposts: {
+        Row: {
+          id: string;
+          user_id: string;
+          post_id: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          post_id: string;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          post_id?: string;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      user_comment_likes: {
+        Row: {
+          id: string;
+          user_id: string;
+          comment_id: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          comment_id: string;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          comment_id?: string;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      profile_verifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: string;
+          contact: string;
+          token: string;
+          expires_at: string;
+          verified: boolean | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: string;
+          contact: string;
+          token: string;
+          expires_at: string;
+          verified?: boolean | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: string;
+          contact?: string;
+          token?: string;
+          expires_at?: string;
+          verified?: boolean | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      friendships: {
+        Row: {
+          id: string;
+          user_id: string;
+          friend_id: string;
+          status: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          friend_id: string;
+          status: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          friend_id?: string;
+          status?: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      media_audit_log: {
+        Row: {
+          id: string;
+          user_id: string;
+          content_type: string;
+          content_id: string;
+          media_url: string;
+          media_type: string;
+          file_size_bytes: number | null;
+          uploaded_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          content_type: string;
+          content_id: string;
+          media_url: string;
+          media_type: string;
+          file_size_bytes?: number | null;
+          uploaded_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          content_type?: string;
+          content_id?: string;
+          media_url?: string;
+          media_type?: string;
+          file_size_bytes?: number | null;
+          uploaded_at?: string | null;
+        };
+        Relationships: [];
+      };
+
+      conversations: {
+        Row: {
+          id: string;
+          title: string | null;
+          is_group: boolean | null;
+          community_id: string | null;
+          created_by: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          title?: string | null;
+          is_group?: boolean | null;
+          community_id?: string | null;
+          created_by?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          title?: string | null;
+          is_group?: boolean | null;
+          community_id?: string | null;
+          created_by?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [
+          { foreignKeyName: "fk_conversation_community"; columns: ["community_id"]; referencedRelation: "communities"; referencedColumns: ["id"]; }
+        ];
+      };
+
+      conversation_members: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          role: string | null;
+          joined_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id: string;
+          role?: string | null;
+          joined_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string;
+          role?: string | null;
+          joined_at?: string | null;
+        };
+        Relationships: [
+          { foreignKeyName: "fk_conv_member_conv"; columns: ["conversation_id"]; referencedRelation: "conversations"; referencedColumns: ["id"]; }
+        ];
+      };
+
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          encrypted_body: string;
+          encryption_version: string;
+          metadata: Json | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          encrypted_body: string;
+          encryption_version?: string;
+          metadata?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          sender_id?: string;
+          encrypted_body?: string;
+          encryption_version?: string;
+          metadata?: Json | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          { foreignKeyName: "fk_message_conv"; columns: ["conversation_id"]; referencedRelation: "conversations"; referencedColumns: ["id"]; }
+        ];
+      };
+
+      message_attachments: {
+        Row: {
+          id: string;
+          message_id: string;
+          storage_path: string;
+          content_type: string | null;
+          file_size_bytes: number | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          message_id: string;
+          storage_path: string;
+          content_type?: string | null;
+          file_size_bytes?: number | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          message_id?: string;
+          storage_path?: string;
+          content_type?: string | null;
+          file_size_bytes?: number | null;
+          created_at?: string | null;
+        };
+        Relationships: [
+          { foreignKeyName: "fk_attachment_message"; columns: ["message_id"]; referencedRelation: "messages"; referencedColumns: ["id"]; }
+        ];
+      };
+
+      communities: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          short_blurb: string | null;
+          description: string | null;
+          image_url: string | null;
+          is_private: boolean | null;
+          created_by: string | null;
+          created_at: string | null;
+          rules: Json | null;
+          settings: Json | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          slug: string;
+          short_blurb?: string | null;
+          description?: string | null;
+          image_url?: string | null;
+          is_private?: boolean | null;
+          created_by?: string | null;
+          created_at?: string | null;
+          rules?: Json | null;
+          settings?: Json | null;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          slug?: string;
+          short_blurb?: string | null;
+          description?: string | null;
+          image_url?: string | null;
+          is_private?: boolean | null;
+          created_by?: string | null;
+          created_at?: string | null;
+          rules?: Json | null;
+          settings?: Json | null;
+        };
+        Relationships: [];
+      };
+
+      community_memberships: {
+        Row: {
+          id: string;
+          community_id: string;
+          user_id: string;
+          role: string | null;
+          joined_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          community_id: string;
+          user_id: string;
+          role?: string | null;
+          joined_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          community_id?: string;
+          user_id?: string;
+          role?: string | null;
+          joined_at?: string | null;
+        };
+        Relationships: [
+          { foreignKeyName: "fk_community_membership"; columns: ["community_id"]; referencedRelation: "communities"; referencedColumns: ["id"]; }
+        ];
+      };
+
+      community_settings: {
+        Row: {
+          id: string;
+          community_id: string;
+          key: string;
+          value: Json | null;
+        };
+        Insert: {
+          id?: string;
+          community_id: string;
+          key: string;
+          value?: Json | null;
+        };
+        Update: {
+          id?: string;
+          community_id?: string;
+          key?: string;
+          value?: Json | null;
+        };
+        Relationships: [
+          { foreignKeyName: "fk_community_settings"; columns: ["community_id"]; referencedRelation: "communities"; referencedColumns: ["id"]; }
+        ];
+      };
+
     };
     Views: {
       [_ in never]: never;

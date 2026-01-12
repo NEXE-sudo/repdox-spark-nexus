@@ -470,7 +470,7 @@ export default function Groups() {
                           </Button>
                         ) : (
                           <Button
-                            onClick={() => navigate(`/community`)}
+                            onClick={() => navigate(`/groups/${community.id}`)}
                             size="sm"
                             variant="outline"
                             className="rounded-full"

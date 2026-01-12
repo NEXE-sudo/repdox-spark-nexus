@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -53,14 +53,29 @@ import {
   type LocationData,
 } from "@/lib/geolocationUtils";
 
-// Add this after the imports and before the component
-const heartPopVariants = {
+const buttonVariants = {
+  tap: { scale: 0.9 },
+  hover: { scale: 1.05 },
+};
+
+const likeAnimation = {
   initial: { scale: 1 },
   liked: {
-    scale: [1, 1.25, 1],
+    scale: [1, 1.3, 1],
     transition: {
       duration: 0.3,
       times: [0, 0.5, 1],
+    },
+  },
+};
+
+const heartBurst = {
+  initial: { scale: 0, opacity: 0 },
+  animate: {
+    scale: [0, 1.5, 0],
+    opacity: [0, 1, 0],
+    transition: {
+      duration: 0.5,
     },
   },
 };
@@ -276,6 +291,8 @@ export default function Community() {
 
     return () => clearInterval(trendingInterval);
   }, [navigate]);
+
+  // community init effect moved below after loader function declarations
 
   const getAvatarUrl = (
     avatarPath: string | null | undefined
@@ -655,6 +672,57 @@ export default function Community() {
     }
   };
 
+  const handleFollowUser = async (targetUserId: string) => {
+    if (!user) return;
+
+    setLoadingFollowId(targetUserId);
+    try {
+      // Check if already following
+      const { data: existing } = await supabase
+        .from("friendships")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("friend_id", targetUserId)
+        .single();
+
+      if (existing) {
+        // Unfollow
+        await supabase
+          .from("friendships")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("friend_id", targetUserId);
+        
+        setSuccess("Unfollowed!");
+      } else {
+        // Follow
+        await supabase
+          .from("friendships")
+          .insert({
+            user_id: user.id,
+            friend_id: targetUserId,
+            status: "accepted", // Auto-accept for Twitter-like behavior
+          });
+        
+        setSuccess("Following!");
+      }
+      
+      setTimeout(() => {
+        setSuccess(null);
+        setLoadingFollowId(null);
+      }, 1000);
+    } catch (err) {
+      console.error("Error following user:", err);
+      setError("Failed to follow user");
+      setLoadingFollowId(null);
+    }
+  };
+
+const handleSendDM = (userId: string) => {
+  // Navigate to messages with selected user
+  navigate("/messages", { state: { selectedUserId: userId } });
+};
+
   const renderContentWithMentions = (text: string) => {
     if (!text) return text;
     const parts: Array<string> = text.split(/(@[A-Za-z0-9-]+)/g);
@@ -719,7 +787,7 @@ export default function Community() {
         .filter((id) => id !== null);
 
       // Fetch polls separately if any exist
-      let pollsMap = new Map();
+      const pollsMap = new Map();
       if (pollIds.length > 0) {
         const { data: polls, error: pollsError } = await supabase
           .from("polls")
@@ -1958,7 +2026,7 @@ export default function Community() {
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="border-b border-border px-4 py-3 hover:bg-muted/30 transition-base cursor-pointer card-lift rounded-lg my-2 glass-hover"
+                className="border-b border-border px-4 hover:bg-muted/30 transition-base cursor-pointer card-lift my-2 glass-hover"
                 onClick={() => {
                   incrementPostViews(post.id);
                   navigate(`/community/${post.id}`);
@@ -2193,10 +2261,10 @@ export default function Community() {
                             </button>
                           ))}
                         </div>
-                        {post.poll.expires_at && (
+                        {(post.poll as any)?.expires_at && (
                           <div className="text-xs text-muted-foreground text-center">
                             Poll expires:{" "}
-                            {new Date(post.poll.expires_at).toLocaleString()}
+                            {new Date((post.poll as any).expires_at).toLocaleString()}
                           </div>
                         )}
                       </div>
@@ -2217,133 +2285,179 @@ export default function Community() {
                     <div className="flex items-center justify-between mt-3 text-muted-foreground text-sm">
                       <div className="flex items-center w-full max-w-[425px] justify-between">
                         {/* Comment Button */}
-                        <button
-                          onClick={() => navigate(`/community/${post.id}`)}
-                          className="flex items-center gap-1 -ml-2 text-muted-foreground hover:text-blue-500 transition-colors"
+                        <motion.button
+                          whileHover="hover"
+                          whileTap="tap"
+                          variants={buttonVariants}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/community/${post.id}`);
+                          }}
+                          className="flex items-center gap-1 -ml-2 group"
                         >
-                          <div className="p-2 rounded-full transition-colors hover:bg-blue-500/10">
-                            <MessageCircle className="w-[18px] h-[18px]" />
+                          <div className="p-2 rounded-full transition-colors group-hover:bg-blue-500/10">
+                            <MessageCircle className="w-[18px] h-[18px] group-hover:text-blue-500 transition-colors" />
                           </div>
-                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                          <span className="text-[13px] tabular-nums ml-1 group-hover:text-blue-500 transition-colors">
                             {post.comments_count >= 0
                               ? post.comments_count >= 1000
                                 ? `${(post.comments_count / 1000).toFixed(1)}K`
                                 : post.comments_count
                               : ""}
                           </span>
-                        </button>
+                        </motion.button>
 
                         {/* Repost Button */}
-                        <button
+                        <motion.button
+                          whileHover="hover"
+                          whileTap="tap"
+                          variants={buttonVariants}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRepostPost(post.id);
                           }}
-                          className="flex items-center gap-1 text-muted-foreground hover:text-green-500 transition-colors"
+                          className="flex items-center gap-1 group"
                         >
                           <motion.div
-                            whileTap={{ scale: 0.9 }}
+                            animate={repostedPosts.includes(post.id) ? { rotate: [0, -15, 15, 0] } : {}}
+                            transition={{ duration: 0.5 }}
                             className={`p-2 rounded-full transition-colors ${
                               repostedPosts.includes(post.id)
                                 ? "bg-green-500/10 text-green-500"
-                                : "hover:bg-green-500/10"
+                                : "group-hover:bg-green-500/10"
                             }`}
                           >
-                            <Repeat2 className="w-[18px] h-[18px]" />
+                            <Repeat2 className={`w-[18px] h-[18px] transition-colors ${
+                              repostedPosts.includes(post.id) ? "text-green-500" : "group-hover:text-green-500"
+                            }`} />
                           </motion.div>
-                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                          <span className={`text-[13px] tabular-nums ml-1 transition-colors ${
+                            repostedPosts.includes(post.id) ? "text-green-500" : "group-hover:text-green-500"
+                          }`}>
                             {(post.repost_count || 0) >= 0
                               ? (post.repost_count || 0) >= 1000
-                                ? `${((post.repost_count || 0) / 1000).toFixed(
-                                    1
-                                  )}K`
+                                ? `${((post.repost_count || 0) / 1000).toFixed(1)}K`
                                 : post.repost_count
                               : ""}
                           </span>
-                        </button>
+                        </motion.button>
 
                         {/* Like Button */}
-                        <button
+                        <motion.button
+                          whileHover="hover"
+                          whileTap="tap"
+                          variants={buttonVariants}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleLikePost(post.id);
                           }}
-                          className="flex items-center gap-1 text-muted-foreground hover:text-pink-500 transition-colors"
+                          className="flex items-center gap-1 group relative"
                         >
                           <motion.div
-                            whileTap={{ scale: 0.9 }}
+                            animate={likedPosts.includes(post.id) ? "liked" : "initial"}
+                            variants={likeAnimation}
                             className={`p-2 rounded-full transition-colors ${
                               likedPosts.includes(post.id)
                                 ? "bg-pink-500/10 text-pink-500"
-                                : "hover:bg-pink-500/10"
+                                : "group-hover:bg-pink-500/10"
                             }`}
                           >
                             <Heart
-                              className="w-[18px] h-[18px]"
-                              fill={
-                                likedPosts.includes(post.id)
-                                  ? "currentColor"
-                                  : "none"
-                              }
+                              className={`w-[18px] h-[18px] transition-all ${
+                                likedPosts.includes(post.id) ? "text-pink-500" : "group-hover:text-pink-500"
+                              }`}
+                              fill={likedPosts.includes(post.id) ? "currentColor" : "none"}
                             />
                           </motion.div>
-                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                          {/* Heart burst effect */}
+                          <AnimatePresence>
+                            {likedPosts.includes(post.id) && (
+                              <motion.div
+                                key={`burst-${post.id}`}
+                                variants={heartBurst}
+                                initial="initial"
+                                animate="animate"
+                                exit="initial"
+                                className="absolute inset-0 pointer-events-none"
+                              >
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <div className="w-12 h-12 rounded-full bg-pink-500/20" />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                          <span className={`text-[13px] tabular-nums ml-1 transition-colors ${
+                            likedPosts.includes(post.id) ? "text-pink-500" : "group-hover:text-pink-500"
+                          }`}>
                             {post.likes_count >= 0
                               ? post.likes_count >= 1000
                                 ? `${(post.likes_count / 1000).toFixed(1)}K`
                                 : post.likes_count
                               : ""}
                           </span>
-                        </button>
+                        </motion.button>
 
                         {/* Views Count */}
-                        <button className="flex items-center gap-1 cursor-default text-muted-foreground hover:text-blue-500 transition-colors">
-                          <div className="p-2 rounded-full transition-colors hover:bg-blue-500/10">
-                            <BarChart3 className="w-[18px] h-[18px]" />
+                        <motion.button
+                          whileHover="hover"
+                          whileTap="tap"
+                          variants={buttonVariants}
+                          className="flex items-center gap-1 cursor-default group"
+                        >
+                          <div className="p-2 rounded-full transition-colors group-hover:bg-blue-500/10">
+                            <BarChart3 className="w-[18px] h-[18px] group-hover:text-blue-500 transition-colors" />
                           </div>
-                          <span className="text-[13px] tabular-nums ml-1 transition-colors">
+                          <span className="text-[13px] tabular-nums ml-1 group-hover:text-blue-500 transition-colors">
                             {(post.views_count || 0) >= 1000
-                              ? `${((post.views_count || 0) / 1000).toFixed(
-                                  1
-                                )}K`
+                              ? `${((post.views_count || 0) / 1000).toFixed(1)}K`
                               : post.views_count || 0}
                           </span>
-                        </button>
+                        </motion.button>
                       </div>
 
                       {/* Right side actions */}
                       <div className="flex items-center -mr-2">
                         {/* Bookmark Button */}
-                        <button
+                        <motion.button
+                          whileHover="hover"
+                          whileTap="tap"
+                          variants={buttonVariants}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleBookmarkPost(post.id);
                           }}
+                          className="group"
                         >
                           <motion.div
-                            whileTap={{ scale: 0.9 }}
+                            animate={bookmarkedPosts.includes(post.id) ? { rotate: [0, -10, 10, 0] } : {}}
+                            transition={{ duration: 0.5 }}
                             className={`p-2 rounded-full transition-colors ${
                               bookmarkedPosts.includes(post.id)
-                                ? "fill-blue-500 text-blue-500"
-                                : "text-muted-foreground hover:bg-blue-500/10 hover:text-blue-500"
+                                ? "text-blue-500"
+                                : "text-muted-foreground group-hover:bg-blue-500/10 group-hover:text-blue-500"
                             }`}
                           >
-                            <Bookmark className="w-[18px] h-[18px]" />
+                            <Bookmark
+                              className="w-[18px] h-[18px]"
+                              fill={bookmarkedPosts.includes(post.id) ? "currentColor" : "none"}
+                            />
                           </motion.div>
-                        </button>
+                        </motion.button>
 
-                        {/* Share Dropdown */}
+                        {/* Share Button */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                              }}
+                            <motion.button
+                              whileHover="hover"
+                              whileTap="tap"
+                              variants={buttonVariants}
+                              onClick={(e) => e.stopPropagation()}
+                              className="group"
                             >
                               <div className="p-2 rounded-full text-muted-foreground hover:bg-blue-500/10 hover:text-blue-500 transition-colors">
                                 <Upload className="w-[18px] h-[18px]" />
                               </div>
-                            </button>
+                            </motion.button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
@@ -2363,9 +2477,7 @@ export default function Community() {
                                 e.stopPropagation();
                                 const postUrl = `${window.location.origin}/community/${post.id}`;
                                 window.open(
-                                  `mailto:?subject=Check out this post&body=${encodeURIComponent(
-                                    postUrl
-                                  )}`,
+                                  `mailto:?subject=Check out this post&body=${encodeURIComponent(postUrl)}`,
                                   "_blank"
                                 );
                               }}
