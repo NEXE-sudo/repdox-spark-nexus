@@ -610,8 +610,15 @@ export default function Messages() {
                     setShowNewMessageModal(false);
                     // We might need to select it after reload, but loadConversations is async. 
                     // For now, user will see it appear at top.
-                  } catch (err) {
-                    console.error("Failed to start chat", err);
+                  } catch (err: any) {
+                    console.error("Critical: Failed to start chat", {
+                       error: err,
+                       message: err?.message,
+                       selectedUser_id: selectedUser?.id,
+                       selectedUser_userId: selectedUser?.user_id,
+                       currentUser_id: user?.id
+                    });
+                    alert(`Failed to start chat: ${err?.message || 'Unknown error'}`);
                   }
                }} />
             </div>
