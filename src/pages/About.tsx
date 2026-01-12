@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Zap, Target, Heart, Lightbulb } from "lucide-react";
 import { useRef } from "react";
 import { useInView } from "react-intersection-observer";
+import Particles from "@/components/Particles";
 
 const features = [
   {
@@ -51,6 +52,20 @@ export default function About() {
         style={{ y }}
         className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(120,119,198,0.1),transparent_50%)]"
       />
+      
+      <div className="absolute inset-0 z-0 opacity-50">
+        <Particles
+          particleColors={['#ffffff', '#ffffff']}
+          particleCount={200}
+          particleSpread={10}
+          speed={0.1}
+          particleBaseSize={100}
+          moveParticlesOnHover={true}
+          alphaParticles={false}
+          disableRotation={false}
+          className="h-full w-full"
+        />
+      </div>
       
       <div ref={ref} className="max-w-6xl mx-auto relative z-10">
         <motion.div

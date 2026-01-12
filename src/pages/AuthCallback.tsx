@@ -68,7 +68,7 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
+      <div className="bg-card rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-purple-600 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           {message}

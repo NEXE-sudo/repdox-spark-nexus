@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { User } from "@supabase/supabase-js";
+import { slugify, generateRandomString } from "@/lib/utils";
 
 type UploadedFile = { file: File; name: string };
 type FAQ = { question: string; answer: string };
@@ -167,7 +168,7 @@ export async function createEvent(payload: CreateEventPayload) {
   // Try to insert with unique slug
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const candidateSlug =
-      attempt === 0 ? requestedSlug : `${requestedSlug}-${generateSuffix(4)}`;
+      attempt === 0 ? requestedSlug : `${requestedSlug}-${generateRandomString(4, "abcdefghijklmnopqrstuvwxyz0123456789")}`;
     
     const eventPayload = {
       ...baseEvent,
@@ -276,23 +277,8 @@ export async function createEvent(payload: CreateEventPayload) {
 
   return createdEvent;
 }
-function slugify(text: string) {
-  return text
-    .toString()
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "")
-    .replace(/-+/g, "-");
-}
+// Local helpers removed in favor of @/lib/utils
 
-function generateSuffix(len = 4) {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let out = "";
-  for (let i = 0; i < len; i++)
-    out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
 
 /**
  * Update an existing event

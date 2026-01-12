@@ -1,6 +1,7 @@
 // profileService.ts - For PRIVATE buckets with authentication
 
 import { supabase } from "@/integrations/supabase/client";
+import { generateRandomString } from "@/lib/utils";
 
 /**
  * Upload avatar to Supabase Storage (private bucket)
@@ -323,7 +324,7 @@ export async function createVerification(
   contact: string,
   ttlSeconds = 60 * 60
 ) {
-  const token = type === "phone" ? String(Math.floor(100000 + Math.random() * 900000)) : cryptoRandomString();
+  const token = type === "phone" ? String(Math.floor(100000 + Math.random() * 900000)) : generateRandomString(32);
   const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
 
   const { data, error } = await supabase
@@ -405,13 +406,8 @@ export async function verifyToken(
   return true;
 }
 
-function cryptoRandomString(len = 32) {
-  // fallback random string generator (not cryptographically strong in older browsers)
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let out = "";
-  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
+// Local helpers removed in favor of @/lib/utils
+
 
 /**
  * Helper: Get URL for any storage file in private bucket
