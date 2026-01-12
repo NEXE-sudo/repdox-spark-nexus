@@ -72,8 +72,8 @@ export default function CurrentEventsStrip() {
       <section className="py-20 px-6 relative overflow-hidden">
         <div className="max-w-[95vw] mx-auto">
           <div className="animate-pulse space-y-8">
-            <div className="h-12 bg-white/5 rounded-xl w-1/3 mx-auto" />
-            <div className="h-96 bg-white/5 rounded-2xl" />
+            <div className="h-12 bg-muted rounded-xl w-1/3 mx-auto" />
+            <div className="h-96 bg-muted rounded-2xl" />
           </div>
         </div>
       </section>
@@ -88,10 +88,10 @@ export default function CurrentEventsStrip() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+            <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
               Upcoming Events
             </h2>
-            <p className="text-white/60">
+            <p className="text-muted-foreground">
               No events available at the moment. Check back soon!
             </p>
           </motion.div>
@@ -133,10 +133,10 @@ export default function CurrentEventsStrip() {
           >
             Featured Events
           </motion.span>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
             Upcoming Events
           </h2>
-          <p className="text-white/60 text-lg">
+          <p className="text-muted-foreground text-lg">
             Don't miss out on our next events
           </p>
         </motion.div>
@@ -202,7 +202,7 @@ export default function CurrentEventsStrip() {
                 className={`h-2 rounded-full transition-all duration-300 ${
                   index === currentIndex 
                     ? 'w-8 bg-gradient-to-r from-purple-500 to-pink-500' 
-                    : 'w-2 bg-white/20 hover:bg-white/40'
+                    : 'w-2 bg-muted hover:bg-muted-foreground/40'
                 }`}
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
@@ -256,7 +256,7 @@ function MagneticButton({
       onClick={onClick}
       disabled={disabled}
       style={{ x: springX, y: springY }}
-      className={`p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${className}`}
+      className={`p-3 rounded-full bg-accent/10 backdrop-blur-md border border-border hover:bg-accent/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${className}`}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
     >

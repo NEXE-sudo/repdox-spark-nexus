@@ -37,9 +37,9 @@ export default function Hero() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
       {/* Gradient mesh background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.03),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--foreground),0.03),transparent_50%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(120,119,198,0.1),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(255,255,255,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(var(--foreground),0.05),transparent_50%)]" />
 
       <motion.div 
         style={{ y, opacity, scale }}
@@ -58,17 +58,17 @@ export default function Hero() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 backdrop-blur-sm border border-border mb-8"
           >
-            <Sparkles className="w-4 h-4 text-accent" />
-            <span className="text-sm">Next-Gen Event Platform</span>
+            <Sparkles className="w-4 h-4 text-purple-500" />
+            <span className="text-sm font-medium text-foreground">Next-Gen Event Platform</span>
           </motion.div>
 
           <motion.h1 
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-6xl md:text-8xl font-bold mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/40"
+            className="text-6xl md:text-8xl font-bold mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground via-foreground to-foreground/40"
           >
             Think. Build.
             <br />
@@ -81,7 +81,7 @@ export default function Hero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl md:text-2xl text-white/70 mb-12 max-w-2xl mx-auto leading-relaxed"
+            className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed"
           >
             Join hackathons, MUNs and workshops that spark change. Build. Compete. Connect.
           </motion.p>
@@ -94,7 +94,7 @@ export default function Hero() {
           >
             <Button 
               size="lg"
-              className="group relative overflow-hidden bg-white text-black hover:bg-white/90 px-8 py-6 text-lg rounded-2xl"
+              className="group relative overflow-hidden bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-lg rounded-2xl"
               onClick={() => window.location.href = '/events'}
             >
               <span className="relative z-10 flex items-center gap-2">
@@ -117,7 +117,7 @@ export default function Hero() {
               { label: "Partners", value: 30, suffix: "+" },
             ].map((stat, index) => (
               <div key={index} className="text-center group cursor-pointer">
-                <div className="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 group-hover:scale-110 transition-transform">
+                <div className="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60 group-hover:scale-110 transition-transform">
                   <CountUp
                     from={0}
                     to={stat.value}
@@ -127,7 +127,7 @@ export default function Hero() {
                     suffix={stat.suffix}
                   />
                 </div>
-                <div className="text-sm text-white/60">{stat.label}</div>
+                <div className="text-sm text-muted-foreground">{stat.label}</div>
               </div>
             ))}
           </motion.div>

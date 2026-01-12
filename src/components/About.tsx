@@ -58,9 +58,9 @@ export default function About() {
                 transition={{ delay: index * 0.1, duration: 0.5 }}
                 className="group"
               >
-                <div className="bg-card rounded-lg p-6 h-full border border-border/50 hover:border-accent/50 transition-all duration-300 hover:shadow-lg">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4 group-hover:bg-accent/20 transition-colors">
-                    <Icon className="h-8 w-8 text-accent" />
+                <div className="bg-card rounded-lg p-6 h-full border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10 mb-4 group-hover:bg-purple-500/20 transition-colors">
+                    <Icon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2 text-foreground">
                     {feature.title}

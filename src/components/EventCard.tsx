@@ -48,7 +48,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
     if (compact) {
     return (
       <div className="flex-shrink-0 w-[380px] snap-center">
-        <Card className="h-full border-accent/20 bg-card/80 backdrop-blur-sm hover:border-accent transition-all duration-300 hover:shadow-lg">
+        <Card className="h-full border-primary/20 bg-card/80 backdrop-blur-sm hover:border-primary transition-all duration-300 hover:shadow-lg">
           <div className="relative h-48 overflow-hidden rounded-t-lg">
             <img
               src={imgSrc}
@@ -57,7 +57,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
             />
             <Badge 
               variant="secondary" 
-              className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm border-accent/30"
+              className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm border-primary/30"
             >
               {event.type}
             </Badge>
@@ -80,8 +80,8 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
               <span className="line-clamp-1">{event.location}</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
-              <Clock className="h-3 w-3 text-accent" />
-              <span className="text-accent font-mono">
+              <Clock className="h-3 w-3 text-primary" />
+              <span className="text-primary font-mono">
                 {countdown.isExpired ? 'Started' : `Starts in ${countdown.compactFormatted}`}
               </span>
             </div>
@@ -100,7 +100,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
   }
 
   return (
-    <Card className="overflow-hidden h-full flex flex-col group border-border/50 hover:border-accent/50 transition-all duration-300">
+    <Card className="overflow-hidden h-full flex flex-col group border-border/50 hover:border-primary/50 transition-all duration-300">
       <div className="relative h-48 overflow-hidden">
         <img
           src={imgSrc}
@@ -109,12 +109,12 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
         />
         <Badge 
           variant="secondary" 
-          className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm border-accent/30"
+          className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm border-primary/30"
         >
           {event.type}
         </Badge>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 to-transparent p-4">
-          <div className="flex items-center gap-2 text-sm text-accent font-mono">
+          <div className="flex items-center gap-2 text-sm text-primary font-mono">
             <Clock className="h-4 w-4" />
             {countdown.isExpired ? 'Event Started' : `Starts in ${countdown.formatted}`}
           </div>
@@ -149,7 +149,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
 
         <div className="flex flex-wrap gap-2">
           {event.tags?.map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs border-accent/30">
+            <Badge key={tag} variant="outline" className="text-xs border-primary/30">
               {tag}
             </Badge>
           ))}
@@ -161,7 +161,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
     {/* Ensure there is a leading / before events */}
     <Link to={`/events/${event.slug}`}>Details</Link>
   </Button>
-  <Button variant="outline" className="flex-1 border-accent/30 hover:bg-accent/10" asChild>
+  <Button variant="outline" className="flex-1 border-primary/30 hover:bg-primary/10" asChild>
     {/* This will navigate to the page AND scroll to the register ID section */}
     <Link to={`/events/${event.slug}#register`}>Register</Link>
   </Button>

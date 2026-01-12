@@ -25,7 +25,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="relative overflow-hidden border-t border-white/10 bg-gradient-to-b from-transparent to-black/50">
+    <footer className="relative overflow-hidden border-t border-border bg-gradient-to-b from-transparent to-card/50">
       {/* Animated background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),transparent_70%)]" />
       
@@ -42,7 +42,7 @@ export default function Footer() {
               <h3 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
                 Repdox
               </h3>
-              <p className="text-white/60 mb-6 leading-relaxed">
+              <p className="text-muted-foreground mb-6 leading-relaxed">
                 Think. Build. Transform.<br />
                 Empowering the next generation of innovators.
               </p>
@@ -60,12 +60,12 @@ export default function Footer() {
                     <motion.a
                       key={index}
                       href={social.href}
-                      whileHover={{ y: -4, scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="group relative p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all"
-                      aria-label={social.label}
-                    >
-                      <Icon className="h-5 w-5 text-white/60 group-hover:text-white transition-colors" />
+                       whileHover={{ y: -4, scale: 1.1 }}
+                       whileTap={{ scale: 0.95 }}
+                       className="group relative p-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-border transition-all"
+                       aria-label={social.label}
+                     >
+                       <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       <motion.div
                         className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 bg-gradient-to-br ${social.color}`}
                         transition={{ duration: 0.3 }}
@@ -86,9 +86,9 @@ export default function Footer() {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: categoryIndex * 0.1 }}
             >
-              <h4 className="font-semibold mb-4 text-white capitalize">
-                {category}
-              </h4>
+               <h4 className="font-semibold mb-4 text-foreground capitalize">
+                 {category}
+               </h4>
               <ul className="space-y-3">
                 {links.map((link, linkIndex) => (
                   <motion.li
@@ -96,13 +96,13 @@ export default function Footer() {
                     whileHover={{ x: 4 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Link
-                      to={link.href}
-                      className="group inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors"
-                    >
-                      <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 -ml-5 group-hover:ml-0 transition-all" />
-                      {link.label}
-                    </Link>
+                     <Link
+                       to={link.href}
+                       className="group inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                     >
+                       <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 -ml-5 group-hover:ml-0 transition-all" />
+                       {link.label}
+                     </Link>
                   </motion.li>
                 ))}
               </ul>
@@ -118,20 +118,20 @@ export default function Footer() {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="pt-8 border-t border-white/10"
         >
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-white/40">
-            <p>© {currentYear} Repdox. All rights reserved.</p>
-            <div className="flex gap-6">
-              <Link to="#" className="hover:text-white/60 transition-colors">
-                Privacy Policy
-              </Link>
-              <Link to="#" className="hover:text-white/60 transition-colors">
-                Terms of Service
-              </Link>
-              <Link to="#" className="hover:text-white/60 transition-colors">
-                Cookie Policy
-              </Link>
-            </div>
-          </div>
+           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground/60">
+             <p>© {currentYear} Repdox. All rights reserved.</p>
+             <div className="flex gap-6">
+               <Link to="#" className="hover:text-foreground transition-colors">
+                 Privacy Policy
+               </Link>
+               <Link to="#" className="hover:text-foreground transition-colors">
+                 Terms of Service
+               </Link>
+               <Link to="#" className="hover:text-foreground transition-colors">
+                 Cookie Policy
+               </Link>
+             </div>
+           </div>
         </motion.div>
       </div>
     </footer>

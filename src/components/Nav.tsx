@@ -240,8 +240,8 @@ export default function Nav() {
   const items = [
     {
       label: "Events",
-      bgColor: "#0D0716",
-      textColor: "#fff",
+      bgColor: theme === 'dark' ? "#0D0716" : "#F3F4F6",
+      textColor: theme === 'dark' ? "#fff" : "#1F2937",
       links: [
         {
           label: "Hackathons",
@@ -267,8 +267,8 @@ export default function Nav() {
     },
     {
       label: "Company",
-      bgColor: "#170D27",
-      textColor: "#fff",
+      bgColor: theme === 'dark' ? "#170D27" : "#E5E7EB",
+      textColor: theme === 'dark' ? "#fff" : "#111827",
       links: [
         { label: "About Us", href: "/about", ariaLabel: "About Repdox" },
         { label: "Our Team", href: "/team", ariaLabel: "Meet Our Team" },
@@ -277,8 +277,8 @@ export default function Nav() {
     },
     {
       label: "Contact",
-      bgColor: "#271E37",
-      textColor: "#fff",
+      bgColor: theme === 'dark' ? "#271E37" : "#D1D5DB",
+      textColor: theme === 'dark' ? "#fff" : "#000",
       links: [
         { label: "Email", href: "/contact", ariaLabel: "Email us" },
         { label: "Discord", href: "#", ariaLabel: "Join Discord" },
@@ -292,8 +292,8 @@ export default function Nav() {
     const mobileItems = [
       {
         label: "Menu",
-        bgColor: "#0D0716",
-        textColor: "#fff",
+        bgColor: theme === 'dark' ? "#0D0716" : "#F3F4F6",
+        textColor: theme === 'dark' ? "#fff" : "#1F2937",
         links: [
           { label: "Events", href: "/events", ariaLabel: "Browse Events" },
           { label: "Community", href: "/community", ariaLabel: "Community" },
@@ -303,8 +303,8 @@ export default function Nav() {
       },
       {
         label: "Account",
-        bgColor: "#170D27",
-        textColor: "#fff",
+        bgColor: theme === 'dark' ? "#170D27" : "#E5E7EB",
+        textColor: theme === 'dark' ? "#fff" : "#111827",
         links: user 
           ? [
               { label: "Profile", href: "/profile", ariaLabel: "My Profile" },
@@ -320,10 +320,10 @@ export default function Nav() {
       <CardNav
         logo={logo}
         items={mobileItems}
-        baseColor="#fff"
-        menuColor="#000"
-        buttonBgColor="#111"
-        buttonTextColor="#fff"
+        baseColor={theme === 'dark' ? "#0D0716" : "#fff"}
+        menuColor={theme === 'dark' ? "#fff" : "#000"}
+        buttonBgColor={theme === 'dark' ? "#fff" : "#000"}
+        buttonTextColor={theme === 'dark' ? "#000" : "#fff"}
         ease="power3.out"
       />
     );
@@ -334,8 +334,8 @@ export default function Nav() {
     <motion.header
       initial={false}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scroll 
-          ? 'bg-black/80 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/50' 
+        scrolled 
+          ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-lg' 
           : 'bg-transparent'
       }`}
     >
@@ -359,7 +359,7 @@ export default function Nav() {
                   <NavigationMenuItem key={index}>
                     <NavigationMenuLink
                       href={link.href}
-                      className="relative px-4 py-2 text-sm font-medium text-white/70 hover:text-white transition-colors group"
+                      className="relative px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors group"
                     >
                       {link.label}
                       <motion.span
@@ -380,7 +380,7 @@ export default function Nav() {
               onClick={toggleTheme}
               whileHover={{ scale: 1.1, rotate: 180 }}
               whileTap={{ scale: 0.9 }}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+              className="p-2 rounded-xl bg-accent/10 hover:bg-accent/20 transition-colors"
               aria-label="Toggle theme"
             >
               {theme === "dark" ? (
@@ -422,19 +422,19 @@ export default function Nav() {
                 </motion.button>
 
                 {menuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-48 bg-black/90 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 py-2 z-60 overflow-hidden"
-                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-48 bg-popover/90 backdrop-blur-xl rounded-2xl shadow-xl border border-border py-2 z-60 overflow-hidden"
+                    >
                     <button
                       onClick={() => {
                         setMenuOpen(false);
                         navigate("/profile");
                       }}
-                      className="w-full text-left px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                      className="w-full text-left px-4 py-3 text-sm text-foreground/80 hover:text-foreground hover:bg-accent/10 transition-colors"
                     >
                       Profile
                     </button>
@@ -443,7 +443,7 @@ export default function Nav() {
                         setMenuOpen(false);
                         navigate("/my-events");
                       }}
-                      className="w-full text-left px-4 py-3 text-sm text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                      className="w-full text-left px-4 py-3 text-sm text-foreground/80 hover:text-foreground hover:bg-accent/10 transition-colors"
                     >
                       My Events
                     </button>

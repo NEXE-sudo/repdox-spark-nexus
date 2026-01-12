@@ -22,7 +22,7 @@ export default function EventCardPreview({
   type 
 }: EventCardPreviewProps) {
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-card border border-border hover:border-accent/50 transition-all duration-300 hover:shadow-lg hover:shadow-accent/5">
+    <div className="group relative overflow-hidden rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
       {/* Cover Image */}
       <div className="relative h-48 overflow-hidden bg-muted">
         {cover ? (
@@ -50,7 +50,7 @@ export default function EventCardPreview({
       {/* Content */}
       <div className="p-5 space-y-3">
         {/* Title */}
-        <h3 className="text-xl font-bold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+        <h3 className="text-xl font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
           {title || 'Untitled Event'}
         </h3>
 

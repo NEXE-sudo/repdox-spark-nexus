@@ -43,9 +43,12 @@ All colors MUST be HSL.
     --glass-bg: 255 255 255 / 0.7;
     --glass-border: 255 255 255 / 0.18;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1),
+      0 8px 10px -6px rgb(0 0 0 / 0.1);
     --shadow-glow: 0 0 20px rgb(139 92 246 / 0.3);
   }
 
@@ -83,9 +86,12 @@ All colors MUST be HSL.
     --glass-bg: 0 0 0 / 0.4;
     --glass-border: 255 255 255 / 0.1;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5),
+      0 2px 4px -2px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5),
+      0 4px 6px -4px rgb(0 0 0 / 0.5);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5),
+      0 8px 10px -6px rgb(0 0 0 / 0.5);
     --shadow-glow: 0 0 30px rgb(139 92 246 / 0.5);
   }
 }
@@ -100,7 +106,8 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
   }
 
   /* Smooth scrolling */
@@ -179,7 +186,15 @@ All colors MUST be HSL.
 
   /* Gradient backgrounds */
   .bg-gradient-radial {
-    background: radial-gradient(circle at center, rgba(120,119,198,0.15), transparent 70%);
+    background: radial-gradient(
+      circle at center,
+      rgba(120, 119, 198, 0.15),
+      transparent 70%
+    );
+  }
+
+  .bg-gradient-subtle {
+    @apply bg-gradient-to-b from-background to-muted/20;
   }
 
   /* Custom scrollbar */
@@ -223,9 +238,15 @@ All colors MUST be HSL.
   }
 
   @keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 
   /* Magnetic button effect */
@@ -273,8 +294,12 @@ All colors MUST be HSL.
   }
 
   @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
   }
 
   /* Smooth fade in */
@@ -317,7 +342,7 @@ All colors MUST be HSL.
 
   .underline-animation::after {
     @apply absolute bottom-0 left-0 h-[2px] w-0 bg-current transition-all duration-300;
-    content: '';
+    content: "";
   }
 
   .underline-animation:hover::after {
@@ -342,8 +367,9 @@ All colors MUST be HSL.
   .neon-border {
     position: relative;
     border: 2px solid transparent;
-    background: linear-gradient(var(--background), var(--background)) padding-box,
-                linear-gradient(135deg, #667eea 0%, #764ba2 100%) border-box;
+    background: linear-gradient(var(--background), var(--background))
+        padding-box,
+      linear-gradient(135deg, #667eea 0%, #764ba2 100%) border-box;
   }
 
   /* Pulse animation */

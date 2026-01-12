@@ -25,7 +25,7 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
         className={`
           relative h-full overflow-hidden border transition-all duration-300
           ${achievement.unlocked 
-            ? 'border-accent/50 bg-gradient-to-br from-card to-accent/5 shadow-sm hover:border-accent hover:shadow-md dark:from-card dark:to-accent/10' 
+            ? 'border-primary/50 bg-gradient-to-br from-card to-primary/5 shadow-sm hover:border-primary hover:shadow-md dark:from-card dark:to-primary/10' 
             : 'border-border/50 bg-muted/30 dark:bg-muted/10 hover:bg-muted/50 hover:border-border'
           }
         `}
@@ -37,7 +37,7 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
               className={`
                 relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl transition-all duration-300 shadow-sm
                 ${achievement.unlocked 
-                  ? 'bg-accent/10 text-accent ring-1 ring-accent/20' 
+                  ? 'bg-primary/10 text-primary ring-1 ring-primary/20' 
                   : 'bg-muted text-muted-foreground grayscale'
                 }
               `}
@@ -45,7 +45,7 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
               {achievement.icon}
               
               {/* Status Indicator Badge */}
-              <div className={`absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-background ${achievement.unlocked ? 'bg-accent text-accent-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>
+              <div className={`absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-background ${achievement.unlocked ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/30 text-muted-foreground'}`}>
                 {achievement.unlocked ? (
                   <CheckCircle2 className="h-3 w-3" />
                 ) : (
@@ -85,8 +85,8 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-accent">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                     Unlocked
                   </div>
                 )}
