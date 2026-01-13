@@ -34,13 +34,13 @@ interface Community {
   id: string;
   name: string;
   description: string | null;
-  image_url: string | null; // Database uses image_url
-  member_count?: number; // Fetched separately or count of join
+  image_url: string | null;
+  member_count?: number;
+  post_count?: number;
   is_private: boolean;
   created_by: string;
   created_at: string;
   slug: string;
-  // UI helpers
   is_member?: boolean;
 }
 
@@ -95,20 +95,14 @@ export default function Groups() {
 
       // Extract communities from memberships and format
       const groups: Community[] = (memberships || [])
-        .map((m: any) => m.community)
-        .filter((c: any) => c !== null) // Safety check
-        .map((c: any) => ({
-           id: c.id,
-           name: c.name,
-           description: c.description,
-           image_url: c.image_url,
-           is_private: c.is_private || false,
-           created_by: c.created_by,
-           created_at: c.created_at,
-           slug: c.slug,
+        .map((m: { community: Community }) => m.community)
+        .filter((c: Community | null) => c !== null) // Safety check
+        .map((c: Community) => ({
+           ...c,
            is_member: true,
-           member_count: 0 //TODO: fetch count if needed
-        }));
+           member_count: c.member_count || 0,
+           post_count: c.post_count || 0
+        } as Community));
 
       setJoinedGroups(groups);
     } catch (err) {
@@ -129,18 +123,12 @@ export default function Groups() {
 
       if (error) throw error;
 
-      const groups: Community[] = (data || []).map((c: any) => ({
-           id: c.id,
-           name: c.name,
-           description: c.description,
-           image_url: c.image_url,
-           is_private: c.is_private || false,
-           created_by: c.created_by,
-           created_at: c.created_at,
-           slug: c.slug,
+      const groups: Community[] = (data || []).map((c: Community) => ({
+           ...c,
            is_member: false,
-           member_count: 0
-      }));
+           member_count: c.member_count || 0,
+           post_count: c.post_count || 0
+      } as Community));
 
       setDiscoverGroups(groups);
     } catch (err) {
@@ -226,7 +214,7 @@ export default function Groups() {
       }
 
       // 2. Generate slug
-      let slug = slugify(newGroupData.name);
+      const slug = slugify(newGroupData.name);
       
       // 3. Create community
       const { data: community, error: createError } = await supabase
@@ -460,7 +448,7 @@ export default function Groups() {
                           </span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="w-4 h-4" />
-                            {community.post_count.toLocaleString()} posts
+                            {(community.post_count || 0).toLocaleString()} posts
                           </span>
                         </div>
 
@@ -509,7 +497,7 @@ export default function Groups() {
                     <span className="font-bold text-sm">{community.name}</span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {community.member_count.toLocaleString()} members
+                    {(community.member_count || 0).toLocaleString()} members
                   </div>
                 </div>
               ))}
@@ -538,7 +526,7 @@ export default function Groups() {
                   </span>
                   <span className="text-accent font-bold">
                     {joinedGroups
-                      .reduce((sum, c) => sum + c.member_count, 0)
+                      .reduce((sum, c) => sum + (c.member_count || 0), 0)
                       .toLocaleString()}
                   </span>
                 </div>

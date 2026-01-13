@@ -809,7 +809,7 @@ export default function CommentDetail() {
                     <Clock className="w-4 h-4" />
                     <span>
                       Scheduled for{" "}
-                      {new Date(post.scheduled_at || "").toLocaleString()}
+                      {post.scheduled_at ? new Date(post.scheduled_at).toLocaleString() : "N/A"}
                     </span>
                   </div>
                 )}

@@ -41,6 +41,15 @@ export function getEventImage(imageUrl?: string | null) {
 export async function getEventImageUrl(
   imageUrl?: string | null
 ): Promise<string | undefined> {
-  // Since event-images is now public, just use the sync version
-  return getEventImage(imageUrl);
+  if (!imageUrl) return undefined;
+  
+  // Try sync/public first
+  const publicUrl = getEventImage(imageUrl);
+  if (publicUrl && /^https?:\/\//i.test(publicUrl)) return publicUrl;
+
+  // Fallback to absolute check
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+
+  return publicUrl;
 }
+

@@ -483,6 +483,22 @@ export async function getMyEvents() {
   return data || [];
 }
 
+/**
+ * Get a single event by its slug
+ */
+export async function getEventBySlug(slug?: string) {
+  if (!slug) return { data: null, error: new Error("Slug is required") };
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+  return { data, error };
+}
+
+
 export type Role = { name: string; capacity?: number | null };
 
 export type RegistrationRow = {
@@ -660,7 +676,9 @@ export default {
   createEvent,
   updateEvent,
   deleteEvent,
+  getEventBySlug,
   getMyEvents,
+
   fetchEventRegistrations,
   countRegistrationsByRole,
   canRegister,

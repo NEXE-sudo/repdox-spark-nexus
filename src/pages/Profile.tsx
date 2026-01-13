@@ -46,6 +46,8 @@ import Dashboard from "./Dashboard";
 import EmailChangeModal from '@/components/EmailChangeModal';
 import AchievementCard from '@/components/AchievementCard';
 import { getUserAchievements, type Achievement } from '@/lib/achievementService';
+import { FollowButton } from "@/components/FollowButton";
+
 
 interface UserProfile {
   id: string;
@@ -179,6 +181,22 @@ const [preferences, setPreferences] = useState({
   const [emailToken, setEmailToken] = useState("");
   const [phoneVerificationSent, setPhoneVerificationSent] = useState(false);
   const [phoneToken, setPhoneToken] = useState("");
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  const loadFollowCounts = useCallback(async (targetId: string) => {
+    try {
+      const [followers, following] = await Promise.all([
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('followed_id', targetId),
+        supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', targetId)
+      ]);
+      setFollowersCount(followers.count || 0);
+      setFollowingCount(following.count || 0);
+    } catch (err) {
+      console.error('Error loading follow counts:', err);
+    }
+  }, []);
+
 
   const loadUserProfile = useCallback(async () => {
   try {
@@ -205,6 +223,8 @@ const [preferences, setPreferences] = useState({
       if (profileData) {
         console.log('[Profile] Loaded other user profile:', profileData);
         setProfile(profileData);
+        loadFollowCounts(userId);
+
         
         // Populate form fields with the viewed user's data
         setFullName(profileData.full_name || "");
@@ -279,7 +299,9 @@ const [preferences, setPreferences] = useState({
       setTwitterUrl(profileData.twitter_url || "");
       setInstagramUrl(profileData.instagram_url || "");
       setPortfolioUrl(profileData.portfolio_url || "");
+      loadFollowCounts(currentUser.id);
     }
+
 
     try {
       const stored = localStorage.getItem('userPreferences');
@@ -523,8 +545,30 @@ useEffect(() => {
               <p className="text-sm text-muted-foreground text-center">
                 {jobTitle || "Your Title"}
               </p>
+
+              <div className="flex gap-4 mt-4 text-sm">
+                <div className="flex flex-col items-center">
+                  <span className="font-bold text-foreground">{followingCount}</span>
+                  <span className="text-muted-foreground text-xs uppercase tracking-wider">Following</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="font-bold text-foreground">{followersCount}</span>
+                  <span className="text-muted-foreground text-xs uppercase tracking-wider">Followers</span>
+                </div>
+              </div>
+
+              {!isOwnProfile && profile && (
+                <div className="mt-6 w-full">
+                  <FollowButton 
+                    targetUserId={profile.user_id} 
+                    className="w-full"
+                    onStatusChange={() => loadFollowCounts(profile.user_id)}
+                  />
+                </div>
+              )}
             </div>
           </div>
+
 
           <nav className="flex-1 p-4">
             <div className="space-y-1">

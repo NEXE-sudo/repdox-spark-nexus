@@ -11,9 +11,10 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import IntroLoader from "@/components/IntroLoader";
 import Nav from "@/components/Nav";
 import CommandPalette from "@/components/CommandPalette";
+import { BackgroundProvider } from "@/components/BackgroundSystem/BackgroundContext";
+import CognitiveSignalBackground from "@/components/BackgroundSystem/CognitiveSignalBackground";
 import { GlobalListeners } from "@/components/GlobalListeners";
 // Implement code splitting
-import PageLoader from "@/components/PageLoader"; // Assuming this component exists or we'll create a simple fallback
 
 // Lazy load pages
 const Index = lazy(() => import("./pages/Index"));
@@ -181,10 +182,12 @@ const App = () => {
 
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+      <BackgroundProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <CognitiveSignalBackground />
 
           <BrowserRouter>
             <CommandPalette />
@@ -315,7 +318,8 @@ const App = () => {
             </div>
           </BrowserRouter>
         </TooltipProvider>
-      </QueryClientProvider>
+        </QueryClientProvider>
+      </BackgroundProvider>
     </ThemeProvider>
   );
 };

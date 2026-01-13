@@ -910,12 +910,18 @@ export default function AddEvent() {
                  <Label>Uploaded Files</Label>
                  <FileUpload 
                   onFilesSelected={(files) => {
+                    if (files && files.length > 0) {
+                      const file = files[0];
+                      const localUrl = URL.createObjectURL(file);
+                      setCoverUrl(localUrl);
+                    }
                     setUploadedFiles((prev) => [
                       ...prev,
                       ...files.map((file) => ({ file, name: file.name })),
                     ]);
                   }}
                  />
+
                  <p className="text-xs text-muted-foreground">
                    Recommended: 16:9 aspect ratio for cover images.
                  </p>

@@ -6,28 +6,33 @@ import { useSpring, animated } from '@react-spring/web';
 import CountUp from '@/components/ui/CountUp';
 
 export default function Hero() {
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"]
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
+  const scrollY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.8]);
 
   const [springs, api] = useSpring(() => ({
-    from: { rotateX: 0, rotateY: 0 },
+    rotateX: 0,
+    rotateY: 0,
+    config: { mass: 5, tension: 350, friction: 40 }
   }));
 
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (!e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
+    if (!rect.width || !rect.height) return;
+    
+    const mouseX = (e.clientX - rect.left) / rect.width;
+    const mouseY = (e.clientY - rect.top) / rect.height;
     
     api.start({
-      rotateX: (y - 0.5) * 10,
-      rotateY: (x - 0.5) * -10,
+      rotateX: (mouseY - 0.5) * 10,
+      rotateY: (mouseX - 0.5) * -10,
     });
   };
 
@@ -36,21 +41,18 @@ export default function Hero() {
       ref={containerRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Gradient mesh background */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--foreground),0.03),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(120,119,198,0.1),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(var(--foreground),0.05),transparent_50%)]" />
+      {/* Background is handled by AtmosphericBackground */}
 
       <motion.div 
-        style={{ y, opacity, scale }}
+        style={{ y: scrollY, opacity, scale }}
         className="relative z-10 max-w-6xl mx-auto px-6 text-center"
       >
         <animated.div
           onMouseMove={handleMouseMove}
           onMouseLeave={() => api.start({ rotateX: 0, rotateY: 0 })}
           style={{
-            transform: springs.rotateX.to((x) => 
-              springs.rotateY.to((y) => `perspective(1000px) rotateX(${x}deg) rotateY(${y}deg)`)
+            transform: springs.rotateX.to((rx) => 
+              springs.rotateY.to((ry) => `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`)
             ),
           }}
         >
@@ -133,32 +135,6 @@ export default function Hero() {
           </motion.div>
         </animated.div>
       </motion.div>
-
-      {/* Floating orbs */}
-      <motion.div
-        animate={{
-          y: [0, -20, 0],
-          scale: [1, 1.1, 1],
-        }}
-        transition={{
-          duration: 6,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute top-20 right-20 w-64 h-64 rounded-full bg-purple-500/10 blur-3xl"
-      />
-      <motion.div
-        animate={{
-          y: [0, 20, 0],
-          scale: [1, 1.2, 1],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl"
-      />
     </section>
   );
 }

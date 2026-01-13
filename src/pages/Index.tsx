@@ -2,33 +2,29 @@ import Hero from "@/components/Hero";
 import About from "@/components/About";
 import CurrentEventsStrip from "@/components/CurrentEventsStrip";
 import Footer from "@/components/Footer";
-import Particles from "@/components/Particles";
+import { BackgroundSection } from "@/components/BackgroundSystem/BackgroundSection";
+import { useBackground } from "@/components/BackgroundSystem/BackgroundContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const Index = () => {
   const { theme } = useTheme();
+  const { updateConfig } = useBackground();
 
   return (
-    <main className="min-h-screen relative">
-      <div className="absolute inset-0 z-0">
-        <Particles
-          particleColors={theme === 'dark' ? ['#ffffff', '#8B5CF6'] : ['#8B5CF6', '#EC4899']}
-          particleCount={200}
-          particleSpread={10}
-          speed={0.1}
-          particleBaseSize={100}
-          moveParticlesOnHover={true}
-          alphaParticles={false}
-          disableRotation={false}
-          className="h-full w-full"
-        />
-      </div>
-      <div className="relative z-10">
+    <main className="min-h-screen relative overflow-hidden">
+      <BackgroundSection semanticMode="scanning">
         <Hero />
+      </BackgroundSection>
+
+      <BackgroundSection semanticMode="thinking">
         <About />
+      </BackgroundSection>
+
+      <BackgroundSection semanticMode="executing">
         <CurrentEventsStrip />
-        <Footer />
-      </div>
+      </BackgroundSection>
+
+      <Footer />
     </main>
   );
 };

@@ -1835,7 +1835,7 @@ const handleSendDM = (userId: string) => {
                   <div className="flex items-center gap-2 p-2 bg-accent/10 rounded-lg mt-3 mb-3">
                     <Clock className="w-4 h-4 text-accent" />
                     <span className="text-sm text-foreground">
-                      Scheduled for: {new Date(scheduledTime).toLocaleString()}
+                      Scheduled for: {scheduledTime ? new Date(scheduledTime).toLocaleString() : "N/A"}
                     </span>
                     <button
                       onClick={() => setScheduledTime("")}
@@ -2209,7 +2209,7 @@ const handleSendDM = (userId: string) => {
                         {(post.poll as any)?.expires_at && (
                           <div className="text-xs text-muted-foreground text-center">
                             Poll expires:{" "}
-                            {new Date((post.poll as any).expires_at).toLocaleString()}
+                            {(post.poll as any).expires_at ? new Date((post.poll as any).expires_at).toLocaleString() : "N/A"}
                           </div>
                         )}
                       </div>
@@ -2221,7 +2221,7 @@ const handleSendDM = (userId: string) => {
                         <Clock className="w-4 h-4" />
                         <span>
                           Scheduled for:{" "}
-                          {new Date(post.scheduled_at || "").toLocaleString()}
+                          {post.scheduled_at ? new Date(post.scheduled_at).toLocaleString() : "N/A"}
                         </span>
                       </div>
                     )}

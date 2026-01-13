@@ -154,10 +154,11 @@ export default function EventDetail() {
         description: "Your event has been deleted successfully",
       });
       navigate("/my-events");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete event";
       toast({
         title: "Delete failed",
-        description: err.message || "Failed to delete event",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -231,10 +232,11 @@ useEffect(() => {
       // If image_url isn't an absolute URL, try to get a signed URL for private bucket
       if (!/^https?:\/\//i.test(event.image_url)) {
         try {
-          const signed = await getSignedUrl(event.image_url, "events");
+          const signed = await getSignedUrl(event.image_url, "event-images");
           if (mounted) setHeroImageSrc(signed);
           return;
         } catch (e) {
+
           // fallback to the raw path (may not load if private)
           if (mounted) setHeroImageSrc(event.image_url);
           return;
@@ -418,7 +420,7 @@ useEffect(() => {
     url: window.location.href,
   };
 
-  const roles = ((event as any).roles as unknown[] | undefined);
+  const roles = ((event as unknown as { roles: unknown[] }).roles as unknown[] | undefined);
 
   return (
     <div className="min-h-screen bg-background">
