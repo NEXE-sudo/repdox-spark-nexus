@@ -14,6 +14,7 @@ import CommandPalette from "@/components/CommandPalette";
 import { BackgroundProvider } from "@/components/BackgroundSystem/BackgroundContext";
 import CognitiveSignalBackground from "@/components/BackgroundSystem/CognitiveSignalBackground";
 import { GlobalListeners } from "@/components/GlobalListeners";
+import Footer from "@/components/Footer";
 // Implement code splitting
 
 // Lazy load pages
@@ -318,9 +319,10 @@ const App = () => {
                 </Suspense>
               </main>
             </div>
+            <Footer />
           </BrowserRouter>
         </TooltipProvider>
-        </QueryClientProvider>
+        </QueryClientProvider>  
       </BackgroundProvider>
     </ThemeProvider>
   );

@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import Footer from "@/components/Footer";
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
@@ -57,8 +56,6 @@ export default function Contact() {
           </aside>
         </form>
       </main>
-
-      <Footer />
     </div>
   );
 }

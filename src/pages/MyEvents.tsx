@@ -26,7 +26,6 @@ import {
 import { Calendar, MapPin, Edit, Trash2, Plus, ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getEventImage } from "@/lib/eventImages";
-import Footer from "@/components/Footer";
 
 export default function MyEvents() {
   const navigate = useNavigate();
@@ -261,9 +260,7 @@ export default function MyEvents() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
-
-      <Footer />
+      </AlertDialog>  
     </div>
   );
 }

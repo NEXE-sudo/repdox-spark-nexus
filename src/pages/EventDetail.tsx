@@ -49,7 +49,6 @@ import { getSignedUrl } from "@/lib/storageService";
 import { getEventImage } from "@/lib/eventImages";
 import type { Database } from "@/lib/supabase/types";
 import { toast } from "@/hooks/use-toast";
-import Footer from "@/components/Footer";
 import AddToCalendar from "@/components/AddToCalendar";
 import RecentlyViewedEvents from '@/components/RecentlyViewedEvents';
 
@@ -956,8 +955,6 @@ useEffect(() => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Footer />
     </div>
   );
 }

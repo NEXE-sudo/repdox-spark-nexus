@@ -1,7 +1,6 @@
 import Hero from "@/components/Hero";
 import About from "@/components/About";
 import CurrentEventsStrip from "@/components/CurrentEventsStrip";
-import Footer from "@/components/Footer";
 import { BackgroundSection } from "@/components/BackgroundSystem/BackgroundSection";
 import { useBackground } from "@/components/BackgroundSystem/BackgroundContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -23,8 +22,6 @@ const Index = () => {
       <BackgroundSection semanticMode="executing">
         <CurrentEventsStrip />
       </BackgroundSection>
-
-      <Footer />
     </main>
   );
 };

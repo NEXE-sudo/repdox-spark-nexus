@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSearchParams } from "react-router-dom";
 import EventCard from "@/components/EventCard";
 import EventFilters from "@/components/EventFilters";
-import Footer from "@/components/Footer";
 
 export default function EventsList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -151,7 +150,7 @@ export default function EventsList() {
         </div>
       </section>
 
-      <Footer />
+      
     </div>
   );
 }
