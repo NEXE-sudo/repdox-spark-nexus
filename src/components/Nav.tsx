@@ -329,14 +329,14 @@ export default function Nav() {
     );
   }
 
-  // Desktop view
-   return (
+  // Desktop view - solid at top, translucent when scrolled
+  return (
     <motion.header
       initial={false}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
           ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-lg' 
-          : 'bg-transparent'
+          : 'bg-background border-b border-border/50'
       }`}
     >
       <div className="max-w-7xl mx-auto px-6">
@@ -422,13 +422,13 @@ export default function Nav() {
                 </motion.button>
 
                 {menuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-2 w-48 bg-popover/90 backdrop-blur-xl rounded-2xl shadow-xl border border-border py-2 z-60 overflow-hidden"
-                    >
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-48 bg-popover/90 backdrop-blur-xl rounded-2xl shadow-xl border border-border py-2 z-60 overflow-hidden"
+                  >
                     <button
                       onClick={() => {
                         setMenuOpen(false);

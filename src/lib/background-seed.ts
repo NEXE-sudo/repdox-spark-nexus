@@ -2,28 +2,23 @@
 
 /**
  * Generates a deterministic seed string or number for a user.
- * It attempts to use a persistent identifier from localStorage.
+ * Uses in-memory storage instead of localStorage.
  */
 
-const SEED_KEY = 'app_background_seed';
+let cachedSeed: string | null = null;
 
 export function getBackgroundSeed(): string {
   if (typeof window === 'undefined') return 'default-seed';
 
-  let seed = localStorage.getItem(SEED_KEY);
-
-  if (!seed) {
-    // Generate a simple random seed if non-existent
-    seed = Math.random().toString(36).substring(2, 15);
-    try {
-      localStorage.setItem(SEED_KEY, seed);
-    } catch (e) {
-      // Storage might be full or disabled
-      console.warn('Failed to persist background seed:', e);
-    }
+  // Return cached seed if already generated
+  if (cachedSeed) {
+    return cachedSeed;
   }
 
-  return seed;
+  // Generate a simple random seed
+  cachedSeed = Math.random().toString(36).substring(2, 15);
+  
+  return cachedSeed;
 }
 
 /**
