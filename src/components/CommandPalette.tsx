@@ -46,27 +46,27 @@ export default function CommandPalette() {
       action: () => navigate('/my-events'),
       keywords: ['my', 'events']
     },
-    {
-      id: 'community',
-      label: 'Community Feed',
-      icon: MessageCircle,
-      action: () => navigate('/community'),
-      keywords: ['community', 'feed', 'posts']
-    },
-    {
-      id: 'create-post',
-      label: 'Create Post',
-      icon: Plus,
-      action: () => navigate('/community'),
-      keywords: ['create', 'post', 'new']
-    },
-    {
-      id: 'explore',
-      label: 'Explore',
-      icon: Compass,
-      action: () => navigate('/explore'),
-      keywords: ['explore', 'discover']
-    },
+    // {
+    //   id: 'community',
+    //   label: 'Community Feed',
+    //   icon: MessageCircle,
+    //   action: () => navigate('/community'),
+    //   keywords: ['community', 'feed', 'posts']
+    // },
+    // {
+    //   id: 'create-post',
+    //   label: 'Create Post',
+    //   icon: Plus,
+    //   action: () => navigate('/community'),
+    //   keywords: ['create', 'post', 'new']
+    // },
+    // {
+    //   id: 'explore',
+    //   label: 'Explore',
+    //   icon: Compass,
+    //   action: () => navigate('/explore'),
+    //   keywords: ['explore', 'discover']
+    // },
     {
       id: 'profile',
       label: 'My Profile',
@@ -74,13 +74,13 @@ export default function CommandPalette() {
       action: () => navigate('/profile'),
       keywords: ['profile', 'settings', 'account']
     },
-    {
-      id: 'bookmarks',
-      label: 'Bookmarks',
-      icon: Bookmark,
-      action: () => navigate('/bookmarks'),
-      keywords: ['bookmarks', 'saved']
-    }
+    // {
+    //   id: 'bookmarks',
+    //   label: 'Bookmarks',
+    //   icon: Bookmark,
+    //   action: () => navigate('/bookmarks'),
+    //   keywords: ['bookmarks', 'saved']
+    // }
   ];
 
   const filteredCommands = search

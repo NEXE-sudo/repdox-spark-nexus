@@ -12,7 +12,7 @@ const footerLinks = {
   company: [
     { label: "About Us", href: "/about" },
     { label: "Contact", href: "/contact" },
-    { label: "Community", href: "/community" },
+    // { label: "Community", href: "/community" },
   ],
   resources: [
     { label: "Event Guidelines", href: "#" },

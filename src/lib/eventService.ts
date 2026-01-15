@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { User } from "@supabase/supabase-js";
 import { slugify, generateRandomString } from "@/lib/utils";
+import { deleteFile } from "@/lib/storageService"; // ADDED: Import deleteFile
 
 type UploadedFile = { file: File; name: string };
 type FAQ = { question: string; answer: string };
@@ -12,8 +13,8 @@ export interface CreateEventPayload {
     slug?: string;
     type?: string;
     format?: string;
-    start_date: string; // YYYY-MM-DD
-    start_time: string; // HH:mm
+    start_date: string;
+    start_time: string;
     end_date?: string;
     end_time?: string;
     registration_deadline_date?: string;
@@ -33,15 +34,11 @@ export interface CreateEventPayload {
   prizeText?: string;
   faqs?: FAQ[];
   uploadedFiles?: UploadedFile[];
-  // Optional participant roles defined by organizer
   roles?: Array<{ name: string; capacity?: number | null }>;
 }
 
 /**
  * Create event and related records (schedules, teams).
- * - Enforces authenticated user (created_by)
- * - Retries slug on unique-violation
- * - Stores the storage path in image_url (not a signed URL)
  */
 export async function createEvent(payload: CreateEventPayload) {
   const {
@@ -55,13 +52,11 @@ export async function createEvent(payload: CreateEventPayload) {
     roles,
   } = payload;
 
-  // Basic validation
   if (!form?.title) throw new Error("Title is required");
   if (!form?.start_date || !form?.start_time)
     throw new Error("Start date and time are required");
   if (!form?.location) throw new Error("Location is required");
 
-  // Require authenticated user
   const userRes = await supabase.auth.getUser();
   const user = (userRes?.data?.user ?? null) as User | null;
   if (!user || !user.id) {
@@ -80,7 +75,6 @@ export async function createEvent(payload: CreateEventPayload) {
         )
       : new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
 
-  // Build base event object
   const baseEvent: Record<string, unknown> = {
     title: form.title,
     type: form.type || null,
@@ -111,7 +105,6 @@ export async function createEvent(payload: CreateEventPayload) {
     created_by: user.id,
   };
 
-  // Handle upload
   if (uploadedFiles && uploadedFiles.length > 0) {
     try {
       const file = uploadedFiles[0].file;
@@ -157,7 +150,6 @@ export async function createEvent(payload: CreateEventPayload) {
     }
   }
 
-  // FIX: Slug uniqueness with proper error handling
   const maxAttempts = 5;
   let createdEvent: Database["public"]["Tables"]["events"]["Row"] | null = null;
   const requestedSlug =
@@ -165,7 +157,6 @@ export async function createEvent(payload: CreateEventPayload) {
       ? form.slug.trim()
       : slugify(form.title || "");
 
-  // Try to insert with unique slug
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const candidateSlug =
       attempt === 0 ? requestedSlug : `${requestedSlug}-${generateRandomString(4, "abcdefghijklmnopqrstuvwxyz0123456789")}`;
@@ -184,35 +175,29 @@ export async function createEvent(payload: CreateEventPayload) {
       .single();
 
     if (!error && data) {
-      // SUCCESS - event created
       createdEvent = data as Database["public"]["Tables"]["events"]["Row"];
       console.log("[eventService] Event created successfully:", createdEvent.id);
       break;
     }
 
-    // Check if it's a unique constraint error
     const errorObj = error as unknown as { message?: string; code?: string };
     const message = String(errorObj?.message ?? "");
     const code = String(errorObj?.code ?? "");
     
-    // PostgreSQL unique violation codes: 23505, or message contains "duplicate"
     const isUniqueViolation =
       code === "23505" ||
       message.toLowerCase().includes("duplicate") ||
       message.toLowerCase().includes("unique");
 
     if (!isUniqueViolation) {
-      // Not a uniqueness issue - throw the error
       console.error("[eventService] Non-unique error:", error);
       throw new Error(`Failed to create event: ${message}`);
     }
 
-    // If this was the last attempt, throw error
     if (attempt === maxAttempts - 1) {
       throw new Error(`Failed to create event after ${maxAttempts} attempts. Please try a different title or slug.`);
     }
 
-    // Otherwise, continue to next attempt with different slug
     console.log(`[eventService] Slug "${candidateSlug}" already exists, trying another...`);
   }
 
@@ -222,7 +207,6 @@ export async function createEvent(payload: CreateEventPayload) {
 
   const eventId = createdEvent.id as string;
 
-  // Insert schedules if provided
   if (scheduleText && scheduleText.trim()) {
     const lines = scheduleText
       .split(/\r?\n/)
@@ -250,7 +234,6 @@ export async function createEvent(payload: CreateEventPayload) {
     }
   }
 
-  // Insert teams if provided
   if (teamsText && teamsText.trim()) {
     const lines = teamsText
       .split(/\r?\n/)
@@ -277,8 +260,6 @@ export async function createEvent(payload: CreateEventPayload) {
 
   return createdEvent;
 }
-// Local helpers removed in favor of @/lib/utils
-
 
 /**
  * Update an existing event
@@ -298,7 +279,6 @@ export async function updateEvent(
     roles,
   } = payload;
 
-  // Verify user owns this event
   const userRes = await supabase.auth.getUser();
   const user = userRes?.data?.user ?? null;
   if (!user) throw new Error("Authentication required");
@@ -355,7 +335,6 @@ export async function updateEvent(
     updated_at: new Date().toISOString(),
   };
 
-  // Handle new image upload
   if (uploadedFiles && uploadedFiles.length > 0) {
     try {
       const file = uploadedFiles[0].file;
@@ -385,7 +364,6 @@ export async function updateEvent(
     }
   }
 
-  // Update slug if provided
   if (form.slug && form.slug.trim() !== "") {
     updateData.slug = form.slug.trim();
   }
@@ -399,7 +377,6 @@ export async function updateEvent(
 
   if (error) throw error;
 
-  // Update schedules - delete old and insert new
   await supabase.from("event_schedules").delete().eq("event_id", eventId);
   if (scheduleText && scheduleText.trim()) {
     const lines = scheduleText
@@ -418,7 +395,6 @@ export async function updateEvent(
     await supabase.from("event_schedules").insert(scheduleInserts);
   }
 
-  // Update teams - delete old and insert new
   await supabase.from("event_teams").delete().eq("event_id", eventId);
   if (teamsText && teamsText.trim()) {
     const lines = teamsText
@@ -441,28 +417,72 @@ export async function updateEvent(
 }
 
 /**
- * Delete an event (soft delete by setting is_active to false)
+ * UPDATED: Delete an event and its associated image from storage
  */
-export async function deleteEvent(eventId: string) {
-  const userRes = await supabase.auth.getUser();
-  const user = userRes?.data?.user ?? null;
-  if (!user) throw new Error("Authentication required");
+export async function deleteEvent(eventId: string): Promise<void> {
+  try {
+    // First, get the event to find the image path
+    const { data: event, error: fetchError } = await supabase
+      .from("events")
+      .select("image_url")
+      .eq("id", eventId)
+      .single();
 
-  const { data: existingEvent } = await supabase
-    .from("events")
-    .select("created_by")
-    .eq("id", eventId)
-    .single();
+    if (fetchError) {
+      throw new Error(`Failed to fetch event: ${fetchError.message}`);
+    }
 
-  if (existingEvent?.created_by !== user.id) {
-    throw new Error("You don't have permission to delete this event");
+    // Delete the event image from storage if it exists and is a storage path
+    if (event?.image_url) {
+      // Only delete if it's a storage path (not an absolute URL or local asset)
+      const isStoragePath = 
+        event.image_url && 
+        !event.image_url.startsWith('http') && 
+        !event.image_url.startsWith('/assets/') &&
+        !event.image_url.includes('event-hackathon') &&
+        !event.image_url.includes('event-mun') &&
+        !event.image_url.includes('event-workshop') &&
+        !event.image_url.includes('event-gaming');
+
+      if (isStoragePath) {
+        try {
+          // Clean the path
+          let cleanPath = event.image_url;
+          
+          // Remove leading slash
+          if (cleanPath.startsWith("/")) {
+            cleanPath = cleanPath.substring(1);
+          }
+          
+          // Remove 'event-images/' prefix if accidentally included
+          if (cleanPath.startsWith("event-images/")) {
+            cleanPath = cleanPath.replace("event-images/", "");
+          }
+
+          await deleteFile(cleanPath, "event-images");
+          console.log(`[deleteEvent] Deleted image: ${cleanPath}`);
+        } catch (imageError) {
+          // Don't fail the entire deletion if image deletion fails
+          console.error("[deleteEvent] Failed to delete image:", imageError);
+        }
+      }
+    }
+
+    // Delete the event from database
+    const { error: deleteError } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", eventId);
+
+    if (deleteError) {
+      throw new Error(`Failed to delete event: ${deleteError.message}`);
+    }
+
+    console.log(`[deleteEvent] Successfully deleted event: ${eventId}`);
+  } catch (error) {
+    console.error("[deleteEvent] Error:", error);
+    throw error;
   }
-
-  // Hard delete - permanently removes from database
-  const { error } = await supabase.from("events").delete().eq("id", eventId);
-
-  if (error) throw error;
-  return true;
 }
 
 /**
@@ -497,7 +517,6 @@ export async function getEventBySlug(slug?: string) {
 
   return { data, error };
 }
-
 
 export type Role = { name: string; capacity?: number | null };
 
@@ -535,7 +554,6 @@ export async function countRegistrationsByRole(eventId: string) {
 }
 
 export async function canRegister(eventId: string, roleName?: string | null) {
-  // Fetch event's roles
   const { data: evt, error: evtErr } = await supabase
     .from("events")
     .select("roles")
@@ -544,12 +562,12 @@ export async function canRegister(eventId: string, roleName?: string | null) {
   if (evtErr) throw evtErr;
   const roles = (evt as any)?.roles as Role[] | undefined;
 
-  if (!roleName) return true; // if no role selected, allow registration (unless capacity global checks applied elsewhere)
+  if (!roleName) return true;
 
   if (!roles || !roles.length) return true;
 
   const target = roles.find((r) => r.name === roleName);
-  if (!target || target.capacity == null) return true; // no capacity constraint
+  if (!target || target.capacity == null) return true;
 
   const counts = await countRegistrationsByRole(eventId);
   const current = counts[roleName] || 0;
@@ -574,7 +592,6 @@ export async function registerForEvent(params: {
     p_phone: params.phone ?? null,
     p_message: params.message ?? null,
   };
-  // Use an explicit any cast for RPC name to avoid TS RPC typing limitations for custom functions
   const { data, error } = await (supabase as any).rpc("register_for_event", rpcParams);
   if (error) throw error;
   return data;
@@ -621,7 +638,6 @@ export function registrationsToMarkdown(rows: RegistrationRow[]) {
 }
 
 export async function exportRegistrationsXLSX(eventId: string) {
-  // Invoke Edge Function which returns either { filename, url, storagePath } or fallback { filename, data }
   const fnRes = await (supabase as any).functions.invoke("export-registrations-xlsx", {
     body: JSON.stringify({ eventId }),
   });
@@ -638,14 +654,12 @@ export async function exportRegistrationsXLSX(eventId: string) {
   const filename = parsed?.filename || `registrations-${eventId}.xlsx`;
 
   if (parsed?.url) {
-    // Server uploaded to storage and returned a signed URL
     return { filename, url: parsed.url, storagePath: parsed.storagePath } as { filename: string; url: string; storagePath?: string };
   }
 
   const b64 = parsed?.data;
   if (!b64) throw new Error('No XLSX returned from server');
 
-  // Decode base64 to binary
   const binStr = atob(b64);
   const len = binStr.length;
   const u8 = new Uint8Array(len);
@@ -655,9 +669,7 @@ export async function exportRegistrationsXLSX(eventId: string) {
 }
 
 export async function registrationsToXLSX(rows: RegistrationRow[]) {
-  // Try to generate an .xlsx file using sheetjs (optional dependency)
   try {
-    // Use @vite-ignore so Vite does not attempt to resolve this at build-time for optional deps
     const xlsx = await import(/* @vite-ignore */ "xlsx");
     const ws = xlsx.utils.json_to_sheet(rows);
     const wb = xlsx.utils.book_new();
@@ -665,7 +677,6 @@ export async function registrationsToXLSX(rows: RegistrationRow[]) {
     const wbout = xlsx.write(wb, { bookType: "xlsx", type: "array" });
     return new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   } catch (err) {
-    // Provide a clear actionable message
     throw new Error(
       "XLSX export requires the 'xlsx' package. Install it with 'pnpm add xlsx' (or 'npm i xlsx') or use CSV/MD export instead."
     );
@@ -678,7 +689,6 @@ export default {
   deleteEvent,
   getEventBySlug,
   getMyEvents,
-
   fetchEventRegistrations,
   countRegistrationsByRole,
   canRegister,

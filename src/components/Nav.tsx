@@ -232,7 +232,7 @@ export default function Nav() {
 
   const navigationLinks = [
     { href: "/events", label: "Events" },
-    { href: "/community", label: "Community" },
+    // { href: "/community", label: "Community" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
   ];
@@ -296,7 +296,7 @@ export default function Nav() {
         textColor: theme === 'dark' ? "#fff" : "#1F2937",
         links: [
           { label: "Events", href: "/events", ariaLabel: "Browse Events" },
-          { label: "Community", href: "/community", ariaLabel: "Community" },
+          // { label: "Community", href: "/community", ariaLabel: "Community" },
           { label: "About", href: "/about", ariaLabel: "About Us" },
           { label: "Contact", href: "/contact", ariaLabel: "Contact Us" },
         ],

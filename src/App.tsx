@@ -27,8 +27,9 @@ const SignIn = lazy(() => import("./pages/SignIn"));
 const About = lazy(() => import("./pages/About"));
 const PrivacyPolicy = lazy(() => import("./pages/Privacy_policy"));
 const Profile = lazy(() => import("./pages/Profile"));
-const Community = lazy(() => import("./pages/Community"));
-const CommentDetail = lazy(() => import("./pages/CommentDetail"));
+// COMMUNITY FEATURE COMMENTED OUT FOR RELEASE
+// const Community = lazy(() => import("./pages/Community"));
+// const CommentDetail = lazy(() => import("./pages/CommentDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Explore = lazy(() => import("./pages/Explore"));
 const Notifications = lazy(() => import("./pages/Notifications"));
@@ -253,7 +254,8 @@ const App = () => {
                         </ProtectedRoute>
                       }
                     />
-                    <Route
+                    {/* COMMUNITY FEATURE COMMENTED OUT FOR RELEASE */}
+                    {/* <Route
                       path="/community"
                       element={
                         <ProtectedRoute>
@@ -268,7 +270,7 @@ const App = () => {
                           <CommentDetail />
                         </ProtectedRoute>
                       }
-                    />
+                    /> */}
                     <Route
                       path="/explore"
                       element={

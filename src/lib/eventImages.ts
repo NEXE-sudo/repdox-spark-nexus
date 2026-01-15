@@ -21,7 +21,11 @@ const filenameMap: Record<string, string> = {
   "event-gaming.jpg": eventGaming,
 };
 
-export function getEventImage(imageUrl?: string | null) {
+/**
+ * Synchronous function to get event image URL
+ * First checks local assets, then constructs Supabase URL
+ */
+export function getEventImage(imageUrl?: string | null): string | undefined {
   if (!imageUrl) return undefined;
 
   // If it's already an absolute URL (http/https), just return it
@@ -33,23 +37,97 @@ export function getEventImage(imageUrl?: string | null) {
   const mapped = filenameMap[filename];
   if (mapped) return mapped;
 
-  // Otherwise, treat it as a path in the public 'event-images' bucket
-  const { data } = supabase.storage.from("event-images").getPublicUrl(imageUrl);
+  // Clean the path for Supabase
+  let cleanPath = imageUrl;
+  
+  // Remove leading slash
+  if (cleanPath.startsWith("/")) {
+    cleanPath = cleanPath.substring(1);
+  }
+  
+  // Remove 'event-images/' prefix if accidentally included
+  if (cleanPath.startsWith("event-images/")) {
+    cleanPath = cleanPath.replace("event-images/", "");
+  }
+
+  // Get public URL from Supabase storage
+  const { data } = supabase.storage.from("event-images").getPublicUrl(cleanPath);
+  
+  // Log for debugging
+  console.log('[getEventImage] Input:', imageUrl, '→ Output:', data.publicUrl);
+  
   return data.publicUrl;
 }
 
+/**
+ * Async function to get event image URL with fallback to signed URLs
+ * Use this when you need to handle private buckets
+ */
 export async function getEventImageUrl(
   imageUrl?: string | null
 ): Promise<string | undefined> {
   if (!imageUrl) return undefined;
   
-  // Try sync/public first
-  const publicUrl = getEventImage(imageUrl);
-  if (publicUrl && /^https?:\/\//i.test(publicUrl)) return publicUrl;
-
-  // Fallback to absolute check
+  // If it's already an absolute URL (http/https), just return it
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
 
-  return publicUrl;
+  // Extract filename and try to map to local assets first
+  const parts = imageUrl.split("/");
+  const filename = parts[parts.length - 1].toLowerCase();
+  const mapped = filenameMap[filename];
+  if (mapped) return mapped;
+
+  // Clean the path for Supabase
+  let cleanPath = imageUrl;
+  
+  // Remove leading slash
+  if (cleanPath.startsWith("/")) {
+    cleanPath = cleanPath.substring(1);
+  }
+  
+  // Remove 'event-images/' prefix if accidentally included
+  if (cleanPath.startsWith("event-images/")) {
+    cleanPath = cleanPath.replace("event-images/", "");
+  }
+
+  try {
+    // First, try to get public URL (works if bucket is public or has RLS allowing SELECT)
+    const { data: publicData } = supabase.storage
+      .from("event-images")
+      .getPublicUrl(cleanPath);
+    
+    if (publicData?.publicUrl) {
+      console.log('[getEventImageUrl] Public URL:', publicData.publicUrl);
+      return publicData.publicUrl;
+    }
+
+    // If public URL doesn't work, try signed URL (for private buckets)
+    const { data: signedData, error } = await supabase.storage
+      .from("event-images")
+      .createSignedUrl(cleanPath, 3600); // 1 hour expiry
+
+    if (error) {
+      console.error('[getEventImageUrl] Error creating signed URL:', error);
+      return undefined;
+    }
+
+    console.log('[getEventImageUrl] Signed URL:', signedData?.signedUrl);
+    return signedData?.signedUrl;
+  } catch (error) {
+    console.error('[getEventImageUrl] Exception:', error);
+    return undefined;
+  }
 }
 
+/**
+ * Helper to validate if an image URL is accessible
+ * Useful for debugging
+ */
+export async function validateImageUrl(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
