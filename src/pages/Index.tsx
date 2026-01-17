@@ -2,12 +2,10 @@ import Hero from "@/components/Hero";
 import About from "@/components/About";
 import CurrentEventsStrip from "@/components/CurrentEventsStrip";
 import { BackgroundSection } from "@/components/BackgroundSystem/BackgroundSection";
-import { useBackground } from "@/components/BackgroundSystem/BackgroundContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const Index = () => {
   const { theme } = useTheme();
-  const { updateConfig } = useBackground();
 
   return (
     <main className="min-h-screen relative overflow-hidden">

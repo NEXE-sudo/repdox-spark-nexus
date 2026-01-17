@@ -208,6 +208,8 @@ export default function AddEvent() {
           start_time: startDate.toTimeString().slice(0, 5),
           end_date: endDate.toISOString().split("T")[0],
           end_time: endDate.toTimeString().slice(0, 5),
+          registration_start_date: "",
+          registration_start_time: "00:00",
           registration_deadline_date: regDeadline.toISOString().split("T")[0],
           registration_deadline_time: regDeadline.toTimeString().slice(0, 5),
           location: event.location || "",
@@ -909,7 +911,7 @@ export default function AddEvent() {
               <div className="space-y-4">
                  <Label>Uploaded Files</Label>
                  <FileUpload 
-                  onFilesSelected={(files) => {
+                  onFilesChange={(files) => {
                     if (files && files.length > 0) {
                       const file = files[0];
                       const localUrl = URL.createObjectURL(file);

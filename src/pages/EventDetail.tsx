@@ -47,7 +47,7 @@ import eventService from "@/lib/eventService";
 import OrganizerRegistrations from "@/components/OrganizerRegistrations";
 import { getSignedUrl } from "@/lib/storageService";
 import { getEventImage } from "@/lib/eventImages";
-import type { Database } from "@/lib/supabase/types";
+import type { Database } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
 import AddToCalendar from "@/components/AddToCalendar";
 import RecentlyViewedEvents from '@/components/RecentlyViewedEvents';
@@ -191,7 +191,7 @@ useEffect(() => {
       let recent: unknown[] = stored ? JSON.parse(stored) : [];
       
       // Remove if already exists
-      recent = recent.filter(e => e.id !== event.id);
+      recent = recent.filter((e: any) => e.id !== event.id);
       
       // Add to front
       recent.unshift({

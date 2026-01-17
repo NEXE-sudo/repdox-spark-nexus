@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, MapPin, Edit, Trash2, Plus, ArrowLeft } from "lucide-react";
+import { Calendar, MapPin, Edit, Trash2, Plus, ArrowLeft, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getEventImage } from "@/lib/eventImages";
 
@@ -110,7 +110,7 @@ export default function MyEvents() {
     }
   };
 
-  if (isLoading) {
+  if (isEventsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse space-y-4 w-full max-w-4xl px-6">
@@ -150,7 +150,7 @@ export default function MyEvents() {
           </div>
 
           {/* Events Grid */}
-          {isLoading ? (
+          {isEventsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="h-80 bg-muted animate-pulse rounded-xl" />

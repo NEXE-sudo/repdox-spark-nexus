@@ -134,6 +134,7 @@ const App = () => {
       // For now, keeping semantic navigation logic but simplifying
 
       try {
+        const url = new URL(href);
         const path = url.pathname + url.search + url.hash;
         window.history.pushState({}, "", path);
         window.dispatchEvent(new PopStateEvent("popstate"));

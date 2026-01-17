@@ -43,10 +43,12 @@ import {
   Award,
 } from "lucide-react";
 import Dashboard from "./Dashboard";
-import EmailChangeModal from '@/components/EmailChangeModal';
-import AchievementCard from '@/components/AchievementCard';
-import { getUserAchievements, type Achievement } from '@/lib/achievementService';
-
+import EmailChangeModal from "@/components/EmailChangeModal";
+import AchievementCard from "@/components/AchievementCard";
+import {
+  getUserAchievements,
+  type Achievement,
+} from "@/lib/achievementService";
 
 interface UserProfile {
   id: string;
@@ -90,34 +92,47 @@ export default function Profile() {
 
   const calculateProfileCompletion = () => {
     if (!profile) return { percentage: 0, missing: [] };
-    
+
     const fields = [
-      { key: 'full_name', label: 'Full Name', value: profile.full_name },
-      { key: 'date_of_birth', label: 'Date of Birth', value: profile['Date of Birth'] },
-      { key: 'bio', label: 'Bio', value: profile.bio },
-      { key: 'avatar_url', label: 'Profile Picture', value: profile.avatar_url },
-      { key: 'phone', label: 'Phone Number', value: profile.phone },
-      { key: 'website', label: 'Website', value: profile.website },
-      { key: 'company', label: 'Company', value: profile.company },
-      { key: 'job_title', label: 'Job Title', value: profile.job_title },
+      { key: "full_name", label: "Full Name", value: profile.full_name },
+      {
+        key: "date_of_birth",
+        label: "Date of Birth",
+        value: profile["Date of Birth"],
+      },
+      { key: "bio", label: "Bio", value: profile.bio },
+      {
+        key: "avatar_url",
+        label: "Profile Picture",
+        value: profile.avatar_url,
+      },
+      { key: "phone", label: "Phone Number", value: profile.phone },
+      { key: "website", label: "Website", value: profile.website },
+      { key: "company", label: "Company", value: profile.company },
+      { key: "job_title", label: "Job Title", value: profile.job_title },
     ];
-    
-    const completed = fields.filter(field => field.value && field.value.toString().trim() !== '');
-    const missing = fields.filter(field => !field.value || field.value.toString().trim() === '');
+
+    const completed = fields.filter(
+      (field) => field.value && field.value.toString().trim() !== "",
+    );
+    const missing = fields.filter(
+      (field) => !field.value || field.value.toString().trim() === "",
+    );
     const percentage = Math.round((completed.length / fields.length) * 100);
-    
-    return { percentage, missing: missing.map(f => f.label) };
+
+    return { percentage, missing: missing.map((f) => f.label) };
   };
 
-const { percentage: completionPercentage, missing: missingFields } = calculateProfileCompletion();
+  const { percentage: completionPercentage, missing: missingFields } =
+    calculateProfileCompletion();
 
-const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
-useEffect(() => {
-  if (user?.id) {
-    getUserAchievements(user.id).then(setAchievements);
-  }
-}, [user?.id, profile]);
+  useEffect(() => {
+    if (user?.id) {
+      getUserAchievements(user.id).then(setAchievements);
+    }
+  }, [user?.id, profile]);
 
   // if a ?section= parameter is present, switch to it (dashboard only when viewing own profile)
   useEffect(() => {
@@ -145,25 +160,25 @@ useEffect(() => {
   const [phone, setPhone] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState<string>("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
-const [githubUrl, setGithubUrl] = useState("");
-const [twitterUrl, setTwitterUrl] = useState("");
-const [instagramUrl, setInstagramUrl] = useState("");
-const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [cardMode, setCardMode] = useState<'personal' | 'event'>('personal');
-const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-const [userEvents, setUserEvents] = useState<any[]>([]);
-const [selectedEventReg, setSelectedEventReg] = useState<any>(null);
+  const [cardMode, setCardMode] = useState<"personal" | "event">("personal");
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [userEvents, setUserEvents] = useState<any[]>([]);
+  const [selectedEventReg, setSelectedEventReg] = useState<any>(null);
 
-const isOwnProfile = !userId || (user && profile && user.id === profile.user_id);
+  const isOwnProfile =
+    !userId || (user && profile && user.id === profile.user_id);
 
-
-const [preferences, setPreferences] = useState({
-  theme: 'auto',
-  emailNotifications: true,
-  eventReminders: true
-});
+  const [preferences, setPreferences] = useState({
+    theme: "auto",
+    emailNotifications: true,
+    eventReminders: true,
+  });
 
   // Avatar states
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -182,33 +197,94 @@ const [preferences, setPreferences] = useState({
   const [phoneToken, setPhoneToken] = useState("");
 
   const loadUserProfile = useCallback(async () => {
-  try {
-    const {
-      data: { user: currentUser },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user: currentUser },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    // VIEWING ANOTHER USER'S PROFILE
-    if (userId) {
-      console.log('[Profile] Loading profile for userId:', userId);
-      
+      // VIEWING ANOTHER USER'S PROFILE
+      if (userId) {
+        console.log("[Profile] Loading profile for userId:", userId);
+
+        const { data: profileData, error: profileError } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
+
+        if (profileError && profileError.code !== "PGRST116") {
+          console.error(
+            "[Profile] Error loading other user profile:",
+            profileError,
+          );
+          throw profileError;
+        }
+
+        if (profileData) {
+          console.log("[Profile] Loaded other user profile:", profileData);
+          setProfile(profileData);
+
+          // Populate form fields with the viewed user's data
+          setFullName(profileData.full_name || "");
+          setHandle(profileData.handle || "");
+          setBio(profileData.bio || "");
+          setJobTitle(profileData.job_title || "");
+          setCompany(profileData.company || "");
+          setWebsite(profileData.website || "");
+          setPhone(profileData.phone || "");
+          setDateOfBirth(profileData["Date of Birth"] || "");
+          setLinkedinUrl(profileData.linkedin_url || "");
+          setGithubUrl(profileData.github_url || "");
+          setTwitterUrl(profileData.twitter_url || "");
+          setInstagramUrl(profileData.instagram_url || "");
+          setPortfolioUrl(profileData.portfolio_url || "");
+        } else {
+          console.log("[Profile] No profile found for userId:", userId);
+          setError("Profile not found");
+        }
+
+        // Set current user if available
+        if (!userError && currentUser) {
+          setUser(currentUser);
+        }
+
+        // Load preferences
+        try {
+          const stored = localStorage.getItem("userPreferences");
+          if (stored) {
+            setPreferences(JSON.parse(stored));
+          }
+        } catch (err) {
+          console.error("Error loading preferences:", err);
+        }
+
+        return; // Exit early - don't load own profile
+      }
+
+      // VIEWING OWN PROFILE
+      if (userError) throw userError;
+      if (!currentUser) {
+        navigate("/signin");
+        return;
+      }
+
+      console.log("[Profile] Loading own profile for user:", currentUser.id);
+      setUser(currentUser);
+
       const { data: profileData, error: profileError } = await supabase
         .from("user_profiles")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", currentUser.id)
         .single();
 
       if (profileError && profileError.code !== "PGRST116") {
-        console.error('[Profile] Error loading other user profile:', profileError);
         throw profileError;
       }
 
       if (profileData) {
-        console.log('[Profile] Loaded other user profile:', profileData);
+        console.log("[Profile] Loaded own profile:", profileData);
         setProfile(profileData);
-
-        
-        // Populate form fields with the viewed user's data
         setFullName(profileData.full_name || "");
         setHandle(profileData.handle || "");
         setBio(profileData.bio || "");
@@ -222,114 +298,53 @@ const [preferences, setPreferences] = useState({
         setTwitterUrl(profileData.twitter_url || "");
         setInstagramUrl(profileData.instagram_url || "");
         setPortfolioUrl(profileData.portfolio_url || "");
-      } else {
-        console.log('[Profile] No profile found for userId:', userId);
-        setError("Profile not found");
       }
 
-      // Set current user if available
-      if (!userError && currentUser) {
-        setUser(currentUser);
-      }
-      
-      // Load preferences
       try {
-        const stored = localStorage.getItem('userPreferences');
+        const stored = localStorage.getItem("userPreferences");
         if (stored) {
           setPreferences(JSON.parse(stored));
         }
       } catch (err) {
-        console.error('Error loading preferences:', err);
-      }
-      
-      return; // Exit early - don't load own profile
-    }
-
-    // VIEWING OWN PROFILE
-    if (userError) throw userError;
-    if (!currentUser) {
-      navigate("/signin");
-      return;
-    }
-
-    console.log('[Profile] Loading own profile for user:', currentUser.id);
-    setUser(currentUser);
-
-    const { data: profileData, error: profileError } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("user_id", currentUser.id)
-      .single();
-
-    if (profileError && profileError.code !== "PGRST116") {
-      throw profileError;
-    }
-
-    if (profileData) {
-      console.log('[Profile] Loaded own profile:', profileData);
-      setProfile(profileData);
-      setFullName(profileData.full_name || "");
-      setHandle(profileData.handle || "");
-      setBio(profileData.bio || "");
-      setJobTitle(profileData.job_title || "");
-      setCompany(profileData.company || "");
-      setWebsite(profileData.website || "");
-      setPhone(profileData.phone || "");
-      setDateOfBirth(profileData["Date of Birth"] || "");
-      setLinkedinUrl(profileData.linkedin_url || "");
-      setGithubUrl(profileData.github_url || "");
-      setTwitterUrl(profileData.twitter_url || "");
-      setInstagramUrl(profileData.instagram_url || "");
-      setPortfolioUrl(profileData.portfolio_url || "");
-    }
-
-
-    try {
-      const stored = localStorage.getItem('userPreferences');
-      if (stored) {
-        setPreferences(JSON.parse(stored));
+        console.error("Error loading preferences:", err);
       }
     } catch (err) {
-      console.error('Error loading preferences:', err);
+      console.error("Error loading profile:", err);
+      setError("Failed to load profile data");
     }
+  }, [navigate, userId]);
 
-  } catch (err) {
-    console.error("Error loading profile:", err);
-    setError("Failed to load profile data");
-  }
-}, [navigate, userId]);
+  useEffect(() => {
+    if (selectedEventId) {
+      const reg = userEvents.find((e) => e.event_id === selectedEventId);
+      setSelectedEventReg(reg);
+    } else {
+      setSelectedEventReg(null);
+    }
+  }, [selectedEventId, userEvents]);
 
-useEffect(() => {
-  if (selectedEventId) {
-    const reg = userEvents.find(e => e.event_id === selectedEventId);
-    setSelectedEventReg(reg);
-  } else {
-    setSelectedEventReg(null);
-  }
-}, [selectedEventId, userEvents]);
+  const loadUserEvents = useCallback(async () => {
+    try {
+      const userIdToQuery = user?.id;
+      if (!userIdToQuery) return;
+      const { data, error } = await supabase
+        .from("event_registrations")
+        .select("*, events(*)")
+        .eq("user_id", userIdToQuery)
+        .order("created_at", { ascending: false });
 
-const loadUserEvents = useCallback(async () => {
-  try {
-    const userIdToQuery = user?.id;
-    if (!userIdToQuery) return;
-    const { data, error } = await supabase
-      .from('event_registrations')
-      .select('*, events(*)')
-      .eq('user_id', userIdToQuery)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    setUserEvents(data || []);
-  } catch (err) {
-    console.error('Error loading events:', err);
-  }
-}, [user?.id]);
+      if (error) throw error;
+      setUserEvents(data || []);
+    } catch (err) {
+      console.error("Error loading events:", err);
+    }
+  }, [user?.id]);
 
-useEffect(() => {
-  if (user) {
-    loadUserEvents();
-  }
-}, [user, loadUserEvents]);
+  useEffect(() => {
+    if (user) {
+      loadUserEvents();
+    }
+  }, [user, loadUserEvents]);
 
   // Load user and profile on mount
   useEffect(() => {
@@ -391,74 +406,74 @@ useEffect(() => {
   };
 
   const handleSave = async () => {
-  if (!user) return;
-  
-  // Prevent saving when viewing another user's profile
-  if (userId && userId !== user.id) {
-    setError("You cannot edit another user's profile");
-    setTimeout(() => setError(null), 3000);
-    return;
-  }
+    if (!user) return;
 
-  setIsLoading(true);
-  setError(null);
-  setSuccess(null);
-
-  try {
-    let avatarPath = profile?.avatar_url;
-
-    if (avatarFile) {
-      console.log("[Profile] Uploading new avatar...");
-      avatarPath = await uploadAvatarService(user.id, avatarFile);
-      console.log("[Profile] Avatar uploaded, path:", avatarPath);
+    // Prevent saving when viewing another user's profile
+    if (userId && userId !== user.id) {
+      setError("You cannot edit another user's profile");
+      setTimeout(() => setError(null), 3000);
+      return;
     }
 
-    console.log("[Profile] Saving profile with avatar path:", avatarPath);
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
 
-    const { error: upsertError } = await supabase
-      .from("user_profiles")
-      .upsert(
-        {
-          user_id: user.id,
-          full_name: fullName || null,
-          handle: handle || null,
-          bio: bio || null,
-          job_title: jobTitle || null,
-          company: company || null,
-          website: website || null,
-          phone: phone || null,
-          "Date of Birth": dateOfBirth || null,
-          avatar_url: avatarPath,
-          linkedin_url: linkedinUrl || null,
-          github_url: githubUrl || null,
-          twitter_url: twitterUrl || null,
-          instagram_url: instagramUrl || null,
-          portfolio_url: portfolioUrl || null,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "user_id",
-        }
-      );
+    try {
+      let avatarPath = profile?.avatar_url;
 
-    if (upsertError) throw upsertError;
+      if (avatarFile) {
+        console.log("[Profile] Uploading new avatar...");
+        avatarPath = await uploadAvatarService(user.id, avatarFile);
+        console.log("[Profile] Avatar uploaded, path:", avatarPath);
+      }
 
-    setSuccess("Profile updated successfully!");
-    setAvatarFile(null);
-    setAvatarPreview(null);
+      console.log("[Profile] Saving profile with avatar path:", avatarPath);
 
-    await loadUserProfile();
+      const { error: upsertError } = await supabase
+        .from("user_profiles")
+        .upsert(
+          {
+            user_id: user.id,
+            full_name: fullName || null,
+            handle: handle || null,
+            bio: bio || null,
+            job_title: jobTitle || null,
+            company: company || null,
+            website: website || null,
+            phone: phone || null,
+            "Date of Birth": dateOfBirth || null,
+            avatar_url: avatarPath,
+            linkedin_url: linkedinUrl || null,
+            github_url: githubUrl || null,
+            twitter_url: twitterUrl || null,
+            instagram_url: instagramUrl || null,
+            portfolio_url: portfolioUrl || null,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "user_id",
+          },
+        );
 
-    setTimeout(() => setSuccess(null), 3000);
-  } catch (err: unknown) {
-    console.error("Error saving profile:", err);
-    const message =
-      err instanceof Error ? err.message : "Failed to save profile";
-    setError(message);
-  } finally {
-    setIsLoading(false);
-  }
-};
+      if (upsertError) throw upsertError;
+
+      setSuccess("Profile updated successfully!");
+      setAvatarFile(null);
+      setAvatarPreview(null);
+
+      await loadUserProfile();
+
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: unknown) {
+      console.error("Error saving profile:", err);
+      const message =
+        err instanceof Error ? err.message : "Failed to save profile";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -526,18 +541,21 @@ useEffect(() => {
               <p className="text-sm text-muted-foreground text-center">
                 {jobTitle || "Your Title"}
               </p>
-
-              </div>
             </div>
           </div>
+        </aside>
 
-
-          <nav className="flex-1 p-4">
-            <div className="space-y-1">
-              {sections
+        <nav className="flex-1 p-4">
+          <div className="space-y-1">
+            {sections
               .filter((s) => {
                 // Hide dashboard and security sections when viewing other profiles
-                if (!isOwnProfile && (s.id === 'dashboard' || s.id === 'security' || s.id === 'preferences')) {
+                if (
+                  !isOwnProfile &&
+                  (s.id === "dashboard" ||
+                    s.id === "security" ||
+                    s.id === "preferences")
+                ) {
                   return false;
                 }
                 return true;
@@ -559,20 +577,19 @@ useEffect(() => {
                   </button>
                 );
               })}
-            </div>
-          </nav>
-
-          <div className="p-4 border-t border-border">
-            <Button
-              onClick={handleSignOut}
-              variant="outline"
-              className="w-full gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </Button>
           </div>
-        </aside>
+        </nav>
+
+        <div className="p-4 border-t border-border">
+          <Button
+            onClick={handleSignOut}
+            variant="outline"
+            className="w-full gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </Button>
+        </div>
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
@@ -584,21 +601,27 @@ useEffect(() => {
             >
               <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-cyan-50 rounded-lg border border-purple-200">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">Profile Completion</span>
-                  <span className="text-sm font-bold text-purple-600">{completionPercentage}%</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Profile Completion
+                  </span>
+                  <span className="text-sm font-bold text-purple-600">
+                    {completionPercentage}%
+                  </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-purple-600 to-cyan-600 h-2.5 rounded-full transition-all duration-500"
                     style={{ width: `${completionPercentage}%` }}
                   ></div>
                 </div>
                 {completionPercentage < 100 && missingFields.length > 0 && (
                   <div className="mt-3">
-                    <p className="text- xs text-gray-600 mb-2">Missing fields:</p>
+                    <p className="text- xs text-gray-600 mb-2">
+                      Missing fields:
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {missingFields.map((field) => (
-                        <span 
+                        <span
                           key={field}
                           className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full border border-amber-200"
                         >
@@ -822,7 +845,7 @@ useEffect(() => {
                       </div>
                     </div>
 
-<div className="mt-8 pt-6 border-t border-border">
+                    <div className="mt-8 pt-6 border-t border-border">
                       <h3 className="text-lg font-semibold text-foreground mb-4">
                         Social Links
                       </h3>
@@ -922,7 +945,6 @@ useEffect(() => {
                         </div>
                       </div>
                     </div>
-
                   </div>
                 )}
 
@@ -939,17 +961,22 @@ useEffect(() => {
                           return a.unlocked ? -1 : 1;
                         })
                         .map((achievement) => (
-                          <AchievementCard key={achievement.id} achievement={achievement} />
+                          <AchievementCard
+                            key={achievement.id}
+                            achievement={achievement}
+                          />
                         ))}
                     </div>
 
                     <div className="mt-6 p-4 bg-accent/5 rounded-lg border border-accent/20">
-                      <h3 className="font-semibold text-sm mb-2">Achievement Stats</h3>
+                      <h3 className="font-semibold text-sm mb-2">
+                        Achievement Stats
+                      </h3>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Unlocked</p>
                           <p className="text-2xl font-bold text-accent">
-                            {achievements.filter(a => a.unlocked).length}
+                            {achievements.filter((a) => a.unlocked).length}
                           </p>
                         </div>
                         <div>
@@ -964,412 +991,487 @@ useEffect(() => {
                 )}
 
                 {activeSection === "contact" && (
-                    <div className="space-y-6">
-                      <h2 className="text-2xl font-bold text-foreground mb-6">
-                        Contact Information
-                      </h2>
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Contact Information
+                    </h2>
 
-                      {/* Email Field with Verification Status */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Email
-                        </label>
-                        <div className="flex items-center gap-3 px-4 py-3 bg-muted rounded-lg border border-border">
-                          <Mail className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                          <span className="flex-1 text-foreground">{isOwnProfile ? (user?.email || 'Not set') : 'Email Hidden'}</span>
-                          
-                          {/* Verification Status Badge */}
-                          {user?.email_confirmed_at ? (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full">
-                              <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                              <span className="text-xs font-medium text-green-700 dark:text-green-300">
-                                Verified
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full">
-                              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                                Not Verified
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                    {/* Email Field with Verification Status */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Email
+                      </label>
+                      <div className="flex items-center gap-3 px-4 py-3 bg-muted rounded-lg border border-border">
+                        <Mail className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                        <span className="flex-1 text-foreground">
+                          {isOwnProfile
+                            ? user?.email || "Not set"
+                            : "Email Hidden"}
+                        </span>
 
-                        {/* Email Change Option (Only for own profile) */}
-                        {isOwnProfile && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <button
-                              onClick={() => setShowEmailChangeModal(true)}
-                              className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors"
-                            >
-                              Change email address
-                            </button>
+                        {/* Verification Status Badge */}
+                        {user?.email_confirmed_at ? (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-full">
+                            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <span className="text-xs font-medium text-green-700 dark:text-green-300">
+                              Verified
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full">
+                            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                              Not Verified
+                            </span>
                           </div>
                         )}
+                      </div>
 
-                        {/* Verification Actions (Only if not verified and own profile) */}
-                        {isOwnProfile && !user?.email_confirmed_at && (
-                          <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg">
-                            <div className="flex items-start gap-3 mb-3">
-                              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                              <div className="flex-1">
-                                <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                                  Email Not Verified
-                                </h4>
-                                <p className="text-sm text-amber-800 dark:text-amber-200">
-                                  Please verify your email to access all features and ensure account security.
-                                </p>
-                              </div>
+                      {/* Email Change Option (Only for own profile) */}
+                      {isOwnProfile && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            onClick={() => setShowEmailChangeModal(true)}
+                            className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium transition-colors"
+                          >
+                            Change email address
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Verification Actions (Only if not verified and own profile) */}
+                      {isOwnProfile && !user?.email_confirmed_at && (
+                        <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg">
+                          <div className="flex items-start gap-3 mb-3">
+                            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                                Email Not Verified
+                              </h4>
+                              <p className="text-sm text-amber-800 dark:text-amber-200">
+                                Please verify your email to access all features
+                                and ensure account security.
+                              </p>
                             </div>
+                          </div>
 
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => navigate(`/verify-email?email=${encodeURIComponent(user?.email || '')}`)}
-                                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
-                              >
-                                Verify Email
-                              </button>
-                              
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() =>
+                                navigate(
+                                  `/verify-email?email=${encodeURIComponent(user?.email || "")}`,
+                                )
+                              }
+                              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                              Verify Email
+                            </button>
+
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (!user?.id || !user.email) return;
+                                  const res = await createVerification(
+                                    user.id,
+                                    "email",
+                                    user.email,
+                                  );
+                                  const desc =
+                                    res?.token && import.meta.env.DEV
+                                      ? `Token: ${res.token} (dev only)`
+                                      : `Verification email sent to ${user.email}`;
+                                  toast({
+                                    title: "Verification sent",
+                                    description: desc,
+                                  });
+                                  setEmailVerificationSent(true);
+                                } catch (err: unknown) {
+                                  console.error(
+                                    "Send email verification failed",
+                                    err,
+                                  );
+                                  const message =
+                                    err instanceof Error
+                                      ? err.message
+                                      : String(err);
+                                  toast({
+                                    title: "Failed",
+                                    description: message,
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              className="px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 text-sm font-medium rounded-lg transition-colors"
+                            >
+                              Resend Verification Email
+                            </button>
+                          </div>
+
+                          {/* Manual Token Entry (Development/Testing) */}
+                          {emailVerificationSent && (
+                            <div className="mt-3 flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={emailToken}
+                                onChange={(e) => setEmailToken(e.target.value)}
+                                placeholder="Enter verification token"
+                                className="flex-1 px-3 py-2 border border-amber-300 dark:border-amber-700 rounded-lg bg-white dark:bg-gray-800 text-foreground text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                              />
                               <button
                                 onClick={async () => {
                                   try {
-                                    if (!user?.id || !user.email) return;
-                                    const res = await createVerification(user.id, "email", user.email);
-                                    const desc = res?.token && import.meta.env.DEV 
-                                      ? `Token: ${res.token} (dev only)` 
-                                      : `Verification email sent to ${user.email}`;
-                                    toast({ 
-                                      title: "Verification sent", 
-                                      description: desc 
-                                    });
-                                    setEmailVerificationSent(true);
+                                    if (!user?.id) return;
+                                    const ok = await verifyToken(
+                                      user.id,
+                                      "email",
+                                      emailToken,
+                                    );
+                                    if (ok) {
+                                      toast({
+                                        title: "Verified",
+                                        description:
+                                          "Email verified successfully",
+                                      });
+                                      // Reload user
+                                      const {
+                                        data: { user: updated },
+                                      } = await supabase.auth.getUser();
+                                      setUser(updated as any);
+                                      setEmailVerificationSent(false);
+                                      setEmailToken("");
+                                    } else {
+                                      toast({
+                                        title: "Invalid token",
+                                        description:
+                                          "Token expired or incorrect",
+                                        variant: "destructive",
+                                      });
+                                    }
                                   } catch (err: unknown) {
-                                    console.error("Send email verification failed", err);
-                                    const message = err instanceof Error ? err.message : String(err);
-                                    toast({ 
-                                      title: "Failed", 
-                                      description: message, 
-                                      variant: "destructive" 
+                                    toast({
+                                      title: "Verification failed",
+                                      description:
+                                        err instanceof Error
+                                          ? err.message
+                                          : String(err),
+                                      variant: "destructive",
                                     });
                                   }
                                 }}
-                                className="px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 text-sm font-medium rounded-lg transition-colors"
+                                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
                               >
-                                Resend Verification Email
+                                Verify
                               </button>
                             </div>
+                          )}
+                        </div>
+                      )}
 
-                            {/* Manual Token Entry (Development/Testing) */}
-                            {emailVerificationSent && (
-                              <div className="mt-3 flex items-center gap-2">
+                      {/* Read-only notice for viewing other profiles */}
+                      {!isOwnProfile && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Email is private and only visible to the account owner
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Phone Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Phone Number
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+1 (555) 123-4567"
+                          disabled={!isOwnProfile}
+                          className={`w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition ${
+                            !isOwnProfile
+                              ? "opacity-60 cursor-not-allowed bg-muted"
+                              : ""
+                          }`}
+                        />
+                      </div>
+
+                      {/* Phone Verification (Only for own profile) */}
+                      {isOwnProfile && phone && (
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  if (!user?.id || !phone) {
+                                    toast({
+                                      title: "Error",
+                                      description:
+                                        "Please enter a phone number first",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  const res = await createVerification(
+                                    user.id,
+                                    "phone",
+                                    phone,
+                                  );
+                                  const descPhone =
+                                    res?.token && import.meta.env.DEV
+                                      ? `Code: ${res.token} (dev only)`
+                                      : `OTP sent to ${phone}`;
+                                  toast({
+                                    title: "OTP sent",
+                                    description: descPhone,
+                                  });
+                                  setPhoneVerificationSent(true);
+                                } catch (err: unknown) {
+                                  toast({
+                                    title: "Failed to send OTP",
+                                    description:
+                                      err instanceof Error
+                                        ? err.message
+                                        : String(err),
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              className="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
+                            >
+                              Verify Phone Number
+                            </button>
+
+                            {phoneVerificationSent && (
+                              <div className="flex items-center gap-2 flex-1">
                                 <input
                                   type="text"
-                                  value={emailToken}
-                                  onChange={(e) => setEmailToken(e.target.value)}
-                                  placeholder="Enter verification token"
-                                  className="flex-1 px-3 py-2 border border-amber-300 dark:border-amber-700 rounded-lg bg-white dark:bg-gray-800 text-foreground text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+                                  value={phoneToken}
+                                  onChange={(e) =>
+                                    setPhoneToken(e.target.value)
+                                  }
+                                  placeholder="Enter 6-digit code"
+                                  maxLength={6}
+                                  className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
                                 />
                                 <button
                                   onClick={async () => {
                                     try {
                                       if (!user?.id) return;
-                                      const ok = await verifyToken(user.id, "email", emailToken);
+                                      const ok = await verifyToken(
+                                        user.id,
+                                        "phone",
+                                        phoneToken,
+                                      );
                                       if (ok) {
-                                        toast({ 
-                                          title: "Verified", 
-                                          description: "Email verified successfully" 
+                                        toast({
+                                          title: "Verified",
+                                          description:
+                                            "Phone number verified successfully",
                                         });
-                                        // Reload user
-                                        const { data: { user: updated } } = await supabase.auth.getUser();
-                                        setUser(updated as any);
-                                        setEmailVerificationSent(false);
-                                        setEmailToken('');
+                                        await loadUserProfile();
+                                        setPhoneVerificationSent(false);
+                                        setPhoneToken("");
                                       } else {
-                                        toast({ 
-                                          title: "Invalid token", 
-                                          description: "Token expired or incorrect", 
-                                          variant: "destructive" 
+                                        toast({
+                                          title: "Invalid code",
+                                          description:
+                                            "Code expired or incorrect",
+                                          variant: "destructive",
                                         });
                                       }
                                     } catch (err: unknown) {
-                                      toast({ 
-                                        title: "Verification failed", 
-                                        description: err instanceof Error ? err.message : String(err), 
-                                        variant: "destructive" 
+                                      toast({
+                                        title: "Verification failed",
+                                        description:
+                                          err instanceof Error
+                                            ? err.message
+                                            : String(err),
+                                        variant: "destructive",
                                       });
                                     }
                                   }}
-                                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                  className="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
                                 >
                                   Verify
                                 </button>
                               </div>
                             )}
                           </div>
-                        )}
 
-                        {/* Read-only notice for viewing other profiles */}
-                        {!isOwnProfile && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Email is private and only visible to the account owner
+                          <p className="text-xs text-muted-foreground">
+                            We'll send a verification code to this number
                           </p>
-                        )}
-                      </div>
-
-                      {/* Phone Field */}
-                      <div>
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Phone Number
-                        </label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                          <input
-                            type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="+1 (555) 123-4567"
-                            disabled={!isOwnProfile}
-                            className={`w-full pl-11 pr-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition ${
-                              !isOwnProfile ? 'opacity-60 cursor-not-allowed bg-muted' : ''
-                            }`}
-                          />
                         </div>
+                      )}
 
-                        {/* Phone Verification (Only for own profile) */}
-                        {isOwnProfile && phone && (
-                          <div className="mt-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    if (!user?.id || !phone) {
-                                      toast({
-                                        title: "Error",
-                                        description: "Please enter a phone number first",
-                                        variant: "destructive"
-                                      });
-                                      return;
-                                    }
-                                    const res = await createVerification(user.id, "phone", phone);
-                                    const descPhone = res?.token && import.meta.env.DEV 
-                                      ? `Code: ${res.token} (dev only)` 
-                                      : `OTP sent to ${phone}`;
-                                    toast({ 
-                                      title: "OTP sent", 
-                                      description: descPhone 
-                                    });
-                                    setPhoneVerificationSent(true);
-                                  } catch (err: unknown) {
-                                    toast({ 
-                                      title: "Failed to send OTP", 
-                                      description: err instanceof Error ? err.message : String(err), 
-                                      variant: "destructive" 
-                                    });
-                                  }
-                                }}
-                                className="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
-                              >
-                                Verify Phone Number
-                              </button>
+                      {!isOwnProfile && !phone && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          No phone number provided
+                        </p>
+                      )}
+                    </div>
 
-                              {phoneVerificationSent && (
-                                <div className="flex items-center gap-2 flex-1">
-                                  <input
-                                    type="text"
-                                    value={phoneToken}
-                                    onChange={(e) => setPhoneToken(e.target.value)}
-                                    placeholder="Enter 6-digit code"
-                                    maxLength={6}
-                                    className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground text-sm focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
-                                  />
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        if (!user?.id) return;
-                                        const ok = await verifyToken(user.id, "phone", phoneToken);
-                                        if (ok) {
-                                          toast({ 
-                                            title: "Verified", 
-                                            description: "Phone number verified successfully" 
-                                          });
-                                          await loadUserProfile();
-                                          setPhoneVerificationSent(false);
-                                          setPhoneToken('');
-                                        } else {
-                                          toast({ 
-                                            title: "Invalid code", 
-                                            description: "Code expired or incorrect", 
-                                            variant: "destructive" 
-                                          });
-                                        }
-                                      } catch (err: unknown) {
-                                        toast({ 
-                                          title: "Verification failed", 
-                                          description: err instanceof Error ? err.message : String(err), 
-                                          variant: "destructive" 
-                                        });
-                                      }
-                                    }}
-                                    className="px-4 py-2 bg-accent text-accent-foreground text-sm font-medium rounded-lg hover:bg-accent/90 transition-colors"
-                                  >
-                                    Verify
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-
-                            <p className="text-xs text-muted-foreground">
-                              We'll send a verification code to this number
-                            </p>
-                          </div>
-                        )}
-
-                        {!isOwnProfile && !phone && (
-                          <p className="text-xs text-muted-foreground mt-2">
-                            No phone number provided
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Privacy Notice */}
-                      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                              Privacy & Security
-                            </h4>
-                            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                              <li>• Your email is private and never shared publicly</li>
-                              <li>• Phone number is optional and used for verification only</li>
-                              {isOwnProfile && <li>• You control what information is visible on your profile</li>}
-                            </ul>
-                          </div>
+                    {/* Privacy Notice */}
+                    <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                            Privacy & Security
+                          </h4>
+                          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                            <li>
+                              • Your email is private and never shared publicly
+                            </li>
+                            <li>
+                              • Phone number is optional and used for
+                              verification only
+                            </li>
+                            {isOwnProfile && (
+                              <li>
+                                • You control what information is visible on
+                                your profile
+                              </li>
+                            )}
+                          </ul>
                         </div>
                       </div>
                     </div>
+                  </div>
                 )}
 
                 {activeSection === "card" && (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-foreground mb-6">
-      Your Digital Card
-    </h2>
-    
-    <p className="text-sm text-muted-foreground mb-6">
-      Your personal digital card displays your profile information and social links. 
-      Use the QR code for networking or event check-ins.
-    </p>
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Your Digital Card
+                    </h2>
 
-    {/* Mode Toggle - Only show if user has events */}
-    {userEvents.length > 0 && (
-      <>
-        <div className="flex gap-2 mb-6">
-      <button 
-        onClick={() => setCardMode('personal')}
-        className={`px-4 py-2 rounded-lg transition ${
-          cardMode === 'personal' 
-            ? 'bg-accent text-accent-foreground' 
-            : 'bg-muted hover:bg-muted/80'
-        }`}
-      >
-        Personal Mode
-      </button>
-      <button 
-        onClick={() => setCardMode('event')}
-        className={`px-4 py-2 rounded-lg transition ${
-          cardMode === 'event' 
-            ? 'bg-accent text-accent-foreground' 
-            : 'bg-muted hover:bg-muted/80'
-        }`}
-      >
-        Event Mode
-      </button>
-    </div>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      Your personal digital card displays your profile
+                      information and social links. Use the QR code for
+                      networking or event check-ins.
+                    </p>
 
-    {/* Event Selector (only in event mode) */}
-    {cardMode === 'event' && (
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Select Event
-        </label>
-        <select 
-          value={selectedEventId || ''}
-          onChange={(e) => setSelectedEventId(e.target.value || null)}
-          className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
-        >
-          <option value="">Choose an event...</option>
-          {userEvents.map((evt) => (
-            <option key={evt.id} value={evt.event_id}>
-              {evt.events?.title} - {evt.role?.replace('_', ' ').toUpperCase()}
-            </option>
-          ))}
-        </select>
-        {userEvents.length === 0 && (
-          <p className="text-sm text-muted-foreground mt-2">
-            You haven't registered for any events yet.
-          </p>
-        )}
-      </div>
-    )}
-      </>
-    )}
-    
-    {/* Profile Card Display */}
-    <div className="flex justify-center items-center min-h-[600px] bg-gradient-to-br from-background to-muted/30 rounded-xl p-8">
-      <ProfileCard
-        mode={cardMode}
-        userData={{
-          user_id: user.id,
-          full_name: fullName || "Your Name",
-          handle: handle || "yourhandle",
-          bio: bio || "Your bio",
-          avatar_url: avatarUrl,
-          phone: phone,
-          email: user.email || null,
-          job_title: jobTitle,
-          company: company,
-          socials: {
-            linkedin_url: linkedinUrl || null,
-            github_url: githubUrl || null,
-            twitter_url: twitterUrl || null,
-            instagram_url: instagramUrl || null,
-            portfolio_url: portfolioUrl || null,
-          }
-        }}
-        eventData={cardMode === 'event' && selectedEventReg ? selectedEventReg.events : null}
-        eventRegistration={cardMode === 'event' ? selectedEventReg : null}
-        enableTilt={true}
-        behindGlowEnabled={true}
-      />
-    </div>
+                    {/* Mode Toggle - Only show if user has events */}
+                    {userEvents.length > 0 && (
+                      <>
+                        <div className="flex gap-2 mb-6">
+                          <button
+                            onClick={() => setCardMode("personal")}
+                            className={`px-4 py-2 rounded-lg transition ${
+                              cardMode === "personal"
+                                ? "bg-accent text-accent-foreground"
+                                : "bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            Personal Mode
+                          </button>
+                          <button
+                            onClick={() => setCardMode("event")}
+                            className={`px-4 py-2 rounded-lg transition ${
+                              cardMode === "event"
+                                ? "bg-accent text-accent-foreground"
+                                : "bg-muted hover:bg-muted/80"
+                            }`}
+                          >
+                            Event Mode
+                          </button>
+                        </div>
 
-    <div className="grid md:grid-cols-2 gap-4 mt-8">
-      <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
-        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-          <Globe className="w-4 h-4" />
-          Networking
-        </h4>
-        <p className="text-sm text-muted-foreground">
-          Anyone can scan your QR code to view your public profile and connect with you via social links.
-        </p>
-      </div>
-      
-      {userEvents.length > 0 && (
-        <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
-        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-          <QrCode className="w-4 h-4" />
-          Event Check-in
-        </h4>
-        <p className="text-sm text-muted-foreground">
-          Event volunteers use the same QR to check you in. Your card shows your role automatically.
-        </p>
-      </div>
-      )}
-    </div>
-  </div>
-)}
+                        {/* Event Selector (only in event mode) */}
+                        {cardMode === "event" && (
+                          <div className="mb-6">
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Select Event
+                            </label>
+                            <select
+                              value={selectedEventId || ""}
+                              onChange={(e) =>
+                                setSelectedEventId(e.target.value || null)
+                              }
+                              className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
+                            >
+                              <option value="">Choose an event...</option>
+                              {userEvents.map((evt) => (
+                                <option key={evt.id} value={evt.event_id}>
+                                  {evt.events?.title} -{" "}
+                                  {evt.role?.replace("_", " ").toUpperCase()}
+                                </option>
+                              ))}
+                            </select>
+                            {userEvents.length === 0 && (
+                              <p className="text-sm text-muted-foreground mt-2">
+                                You haven't registered for any events yet.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Profile Card Display */}
+                    <div className="flex justify-center items-center min-h-[600px] bg-gradient-to-br from-background to-muted/30 rounded-xl p-8">
+                      <ProfileCard
+                        mode={cardMode}
+                        userData={{
+                          user_id: user.id,
+                          full_name: fullName || "Your Name",
+                          handle: handle || "yourhandle",
+                          bio: bio || "Your bio",
+                          avatar_url: avatarUrl,
+                          phone: phone,
+                          email: user.email || null,
+                          job_title: jobTitle,
+                          company: company,
+                          socials: {
+                            linkedin_url: linkedinUrl || null,
+                            github_url: githubUrl || null,
+                            twitter_url: twitterUrl || null,
+                            instagram_url: instagramUrl || null,
+                            portfolio_url: portfolioUrl || null,
+                          },
+                        }}
+                        eventData={
+                          cardMode === "event" && selectedEventReg
+                            ? selectedEventReg.events
+                            : null
+                        }
+                        eventRegistration={
+                          cardMode === "event" ? selectedEventReg : null
+                        }
+                        enableTilt={true}
+                        behindGlowEnabled={true}
+                      />
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-4 mt-8">
+                      <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <Globe className="w-4 h-4" />
+                          Networking
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          Anyone can scan your QR code to view your public
+                          profile and connect with you via social links.
+                        </p>
+                      </div>
+
+                      {userEvents.length > 0 && (
+                        <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
+                          <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                            <QrCode className="w-4 h-4" />
+                            Event Check-in
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            Event volunteers use the same QR to check you in.
+                            Your card shows your role automatically.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {activeSection === "security" && (
                   <div className="space-y-6">
@@ -1410,64 +1512,83 @@ useEffect(() => {
                   </div>
                 )}
 
-{activeSection === "preferences" && (
-  <div className="space-y-6">
-    <h2 className="text-2xl font-bold text-foreground mb-6">
-      Your Preferences
-    </h2>
+                {activeSection === "preferences" && (
+                  <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-6">
+                      Your Preferences
+                    </h2>
 
-    <div className="space-y-4">
-      <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-        <div>
-          <div className="font-medium">Email Notifications</div>
-          <div className="text-sm text-muted-foreground">Receive updates about your events</div>
-        </div>
-        <input 
-          type="checkbox" 
-          checked={preferences.emailNotifications}
-          onChange={(e) => {
-            const updated = { ...preferences, emailNotifications: e.target.checked };
-            setPreferences(updated);
-            localStorage.setItem('userPreferences', JSON.stringify(updated));
-          }}
-          disabled={!isOwnProfile}
-          className="w-4 h-4"
-        />
-      </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div>
+                          <div className="font-medium">Email Notifications</div>
+                          <div className="text-sm text-muted-foreground">
+                            Receive updates about your events
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={preferences.emailNotifications}
+                          onChange={(e) => {
+                            const updated = {
+                              ...preferences,
+                              emailNotifications: e.target.checked,
+                            };
+                            setPreferences(updated);
+                            localStorage.setItem(
+                              "userPreferences",
+                              JSON.stringify(updated),
+                            );
+                          }}
+                          disabled={!isOwnProfile}
+                          className="w-4 h-4"
+                        />
+                      </div>
 
-      <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-        <div>
-          <div className="font-medium">Event Reminders</div>
-          <div className="text-sm text-muted-foreground">Get reminded before events start</div>
-        </div>
-        <input 
-          type="checkbox" 
-          checked={preferences.eventReminders}
-          onChange={(e) => {
-            const updated = { ...preferences, eventReminders: e.target.checked };
-            setPreferences(updated);
-            localStorage.setItem('userPreferences', JSON.stringify(updated));
-          }}
-          disabled={!isOwnProfile}
-          className="w-4 h-4"
-        />
-      </div>
-    </div>
-  </div>
-)}
-                {/* Save Button - Only show for editable sections */}
-                {activeSection !== "card" && activeSection !== "security" && isOwnProfile && (
-                  <div className="mt-8 pt-6 border-t border-border">
-                    <Button
-                      onClick={handleSave}
-                      disabled={isLoading}
-                      className="w-full sm:w-auto gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      <Save className="w-4 h-4" />
-                      {isLoading ? "Saving..." : "Save Changes"}
-                    </Button>
+                      <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div>
+                          <div className="font-medium">Event Reminders</div>
+                          <div className="text-sm text-muted-foreground">
+                            Get reminded before events start
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={preferences.eventReminders}
+                          onChange={(e) => {
+                            const updated = {
+                              ...preferences,
+                              eventReminders: e.target.checked,
+                            };
+                            setPreferences(updated);
+                            localStorage.setItem(
+                              "userPreferences",
+                              JSON.stringify(updated),
+                            );
+                          }}
+                          disabled={!isOwnProfile}
+                          className="w-4 h-4"
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
+
+                {/* Save Button - Only show for editable sections */}
+                {activeSection !== "card" &&
+                  activeSection !== "security" &&
+                  isOwnProfile && (
+                    <div className="mt-8 pt-6 border-t border-border">
+                      <Button
+                        onClick={handleSave}
+                        disabled={isLoading}
+                        className="w-full sm:w-auto gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        <Save className="w-4 h-4" />
+                        {isLoading ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </div>
+                  )}
               </div>
             </motion.div>
           </div>
@@ -1499,21 +1620,21 @@ useEffect(() => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {showEmailChangeModal && (
-  <EmailChangeModal
-    currentEmail={user?.email || ''}
-    onClose={() => setShowEmailChangeModal(false)}
-    onSuccess={() => {
-      // Refresh user data
-      supabase.auth.getUser().then(({ data }) => {
-        if (data.user) {
-          // User state will update automatically
-        }
-      });
-    }}
-  />
-)}
+        <EmailChangeModal
+          currentEmail={user?.email || ""}
+          onClose={() => setShowEmailChangeModal(false)}
+          onSuccess={() => {
+            // Refresh user data
+            supabase.auth.getUser().then(({ data }) => {
+              if (data.user) {
+                // User state will update automatically
+              }
+            });
+          }}
+        />
+      )}
     </main>
   );
 }

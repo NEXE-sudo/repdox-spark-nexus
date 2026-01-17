@@ -11,10 +11,7 @@ export default function AuthCallback() {
   const [message, setMessage] = useState('Processing...');
 
   useEffect(() => {
-    handleAuthCallback();
-  }, []);
-
-  async function handleAuthCallback() {
+    async function handleAuthCallback() {
   try {
     // Get the session from the URL
     const { data: { session }, error } = await supabase.auth.getSession();
@@ -42,11 +39,11 @@ export default function AuthCallback() {
       // Check if profile exists
       const { data: profile } = await supabase
         .from('user_profiles')
-        .select('id, full_name, "Date of Birth"')
+        .select('id, full_name, date_of_birth')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!profile || !profile.full_name || !profile['Date of Birth']) {
+      if (!profile || !profile.full_name || !profile.date_of_birth) {
         // New user - go to onboarding
         setTimeout(() => navigate('/profile?onboard=true'), 1000);
       } else {
@@ -63,8 +60,9 @@ export default function AuthCallback() {
     setMessage('An error occurred. Redirecting...');
     setTimeout(() => navigate('/signin'), 2000);
   }
-}
-
+    }
+    handleAuthCallback();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
