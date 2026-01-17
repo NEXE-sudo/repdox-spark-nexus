@@ -13,7 +13,6 @@ import Nav from "@/components/Nav";
 import CommandPalette from "@/components/CommandPalette";
 import { BackgroundProvider } from "@/components/BackgroundSystem/BackgroundContext";
 import CognitiveSignalBackground from "@/components/BackgroundSystem/CognitiveSignalBackground";
-import { GlobalListeners } from "@/components/GlobalListeners";
 import Footer from "@/components/Footer";
 // Implement code splitting
 
@@ -32,12 +31,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 // const Community = lazy(() => import("./pages/Community"));
 // const CommentDetail = lazy(() => import("./pages/CommentDetail"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const Explore = lazy(() => import("./pages/Explore"));
 const Notifications = lazy(() => import("./pages/Notifications"));
-const Messages = lazy(() => import("./pages/Messages"));
-const Bookmarks = lazy(() => import("./pages/Bookmarks"));
-const Groups = lazy(() => import("./pages/Groups"));
-const GroupDetail = lazy(() => import("./pages/GroupDetail"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 
@@ -194,7 +188,6 @@ const App = () => {
           <BrowserRouter>
             <CommandPalette />
             <div className="flex flex-col min-h-screen">
-              <GlobalListeners />
               {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
               <Nav />
               <main className="flex-1 md:pt-16">
@@ -208,7 +201,6 @@ const App = () => {
                     <Route path="/about" element={<About />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
                     <Route path="/signin" element={<SignIn />} />
-                    <Route path="/groups/:groupId" element={<GroupDetail />} />
 
                     {/* NEW: Email Verification Routes (Public - No Auth Required) */}
                     <Route path="/verify-email" element={<VerifyEmail />} />
@@ -273,42 +265,10 @@ const App = () => {
                       }
                     /> */}
                     <Route
-                      path="/explore"
-                      element={
-                        <ProtectedRoute>
-                          <Explore />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
                       path="/notifications"
                       element={
                         <ProtectedRoute>
                           <Notifications />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/messages"
-                      element={
-                        <ProtectedRoute>
-                          <Messages />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/bookmarks"
-                      element={
-                        <ProtectedRoute>
-                          <Bookmarks />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/groups"
-                      element={
-                        <ProtectedRoute>
-                          <Groups />
                         </ProtectedRoute>
                       }
                     />
