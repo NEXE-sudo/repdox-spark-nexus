@@ -12,7 +12,6 @@ import IntroLoader from "@/components/IntroLoader";
 import Nav from "@/components/Nav";
 import CommandPalette from "@/components/CommandPalette";
 import { BackgroundProvider } from "@/components/BackgroundSystem/BackgroundContext";
-import CognitiveSignalBackground from "@/components/BackgroundSystem/CognitiveSignalBackground";
 import Footer from "@/components/Footer";
 // Implement code splitting
 
@@ -184,72 +183,71 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <CognitiveSignalBackground />
 
-          <BrowserRouter>
-            <CommandPalette />
-            <div className="flex flex-col min-h-screen">
-              {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
-              <Nav />
-              <main className="flex-1 md:pt-16">
-                <Suspense fallback={<LoadingFallback />}>
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<Index />} />
-                    <Route path="/events" element={<EventsList />} />
-                    <Route path="/events/:slug" element={<EventDetail />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/privacy" element={<PrivacyPolicy />} />
-                    <Route path="/signin" element={<SignIn />} />
+            <BrowserRouter>
+              <CommandPalette />
+              <div className="flex flex-col min-h-screen">
+                {showIntro && <IntroLoader onComplete={handleIntroComplete} />}
+                <Nav />
+                <main className="flex-1 md:pt-16">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<Index />} />
+                      <Route path="/events" element={<EventsList />} />
+                      <Route path="/events/:slug" element={<EventDetail />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/privacy" element={<PrivacyPolicy />} />
+                      <Route path="/signin" element={<SignIn />} />
 
-                    {/* NEW: Email Verification Routes (Public - No Auth Required) */}
-                    <Route path="/verify-email" element={<VerifyEmail />} />
-                    <Route path="/auth/callback" element={<AuthCallback />} />
+                      {/* NEW: Email Verification Routes (Public - No Auth Required) */}
+                      <Route path="/verify-email" element={<VerifyEmail />} />
+                      <Route path="/auth/callback" element={<AuthCallback />} />
 
-                    {/* Protected Routes - Require Authentication + Email Verification */}
-                    <Route
-                      path="/profile"
-                      element={
-                        <ProtectedRoute>
-                          <Profile />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/profile/:userId"
-                      element={
-                        <ProtectedRoute>
-                          <Profile />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/events/new"
-                      element={
-                        <ProtectedRoute>
-                          <AddEvent />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/events/:slug/edit"
-                      element={
-                        <ProtectedRoute>
-                          <AddEvent />
-                        </ProtectedRoute>
-                      }
-                    />
-                    <Route
-                      path="/my-events"
-                      element={
-                        <ProtectedRoute>
-                          <MyEvents />
-                        </ProtectedRoute>
-                      }
-                    />
-                    {/* COMMUNITY FEATURE COMMENTED OUT FOR RELEASE */}
-                    {/* <Route
+                      {/* Protected Routes - Require Authentication + Email Verification */}
+                      <Route
+                        path="/profile"
+                        element={
+                          <ProtectedRoute>
+                            <Profile />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/profile/:userId"
+                        element={
+                          <ProtectedRoute>
+                            <Profile />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/events/new"
+                        element={
+                          <ProtectedRoute>
+                            <AddEvent />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/events/:slug/edit"
+                        element={
+                          <ProtectedRoute>
+                            <AddEvent />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/my-events"
+                        element={
+                          <ProtectedRoute>
+                            <MyEvents />
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* COMMUNITY FEATURE COMMENTED OUT FOR RELEASE */}
+                      {/* <Route
                       path="/community"
                       element={
                         <ProtectedRoute>
@@ -265,25 +263,25 @@ const App = () => {
                         </ProtectedRoute>
                       }
                     /> */}
-                    <Route
-                      path="/notifications"
-                      element={
-                        <ProtectedRoute>
-                          <Notifications />
-                        </ProtectedRoute>
-                      }
-                    />
+                      <Route
+                        path="/notifications"
+                        element={
+                          <ProtectedRoute>
+                            <Notifications />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                    {/* 404 Route */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </Suspense>
-              </main>
-            </div>
-            <Footer />
-          </BrowserRouter>
-        </TooltipProvider>
-        </QueryClientProvider>  
+                      {/* 404 Route */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </main>
+              </div>
+              <Footer />
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
       </BackgroundProvider>
     </ThemeProvider>
   );

@@ -1,7 +1,6 @@
 import Hero from "@/components/Hero";
 import About from "@/components/About";
 import CurrentEventsStrip from "@/components/CurrentEventsStrip";
-import { BackgroundSection } from "@/components/BackgroundSystem/BackgroundSection";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const Index = () => {
@@ -9,17 +8,9 @@ const Index = () => {
 
   return (
     <main className="min-h-screen relative overflow-hidden">
-      <BackgroundSection semanticMode="scanning">
-        <Hero />
-      </BackgroundSection>
-
-      <BackgroundSection semanticMode="thinking">
-        <About />
-      </BackgroundSection>
-
-      <BackgroundSection semanticMode="executing">
-        <CurrentEventsStrip />
-      </BackgroundSection>
+      <Hero />
+      <About />
+      <CurrentEventsStrip />
     </main>
   );
 };
