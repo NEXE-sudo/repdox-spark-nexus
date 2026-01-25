@@ -48,21 +48,6 @@ export default function Footer() {
       {/* Animated background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),transparent_70%)]" />
 
-      {/* Animated gradient divider */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 via-pink-500 via-cyan-500 to-purple-500"
-        animate={{
-          backgroundPosition: ["0% 0%", "200% 0%", "0% 0%"],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-        style={{
-          backgroundSize: "200% 100%",
-        }}
-      />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
