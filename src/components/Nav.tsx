@@ -329,18 +329,29 @@ export default function Nav() {
     );
   }
 
-  // Desktop view - solid at top, translucent when scrolled
+  // Desktop view - glassmorphism with scroll enhancement
   return (
     <motion.header
       initial={false}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-lg' 
-          : 'bg-background border-b border-border/50'
-      }`}
+      animate={{
+        height: scrolled ? 56 : 64,
+      }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+      className="fixed top-0 left-0 right-0 z-50 border-b border-border/30"
+      style={{
+        background: scrolled
+          ? 'rgba(0, 0, 0, 0.4)'
+          : 'rgba(0, 0, 0, 0.2)',
+        backdropFilter: scrolled
+          ? 'blur(20px) saturate(200%)'
+          : 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: scrolled
+          ? 'blur(20px) saturate(200%)'
+          : 'blur(16px) saturate(180%)',
+      }}
     >
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex h-16 items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-6 h-full">
+        <div className="flex h-full items-center justify-between gap-4">
           {/* Left side */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex-shrink-0">
@@ -359,12 +370,12 @@ export default function Nav() {
                   <NavigationMenuItem key={index}>
                     <NavigationMenuLink
                       href={link.href}
-                      className="relative px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors group"
+                      className="relative px-4 py-2 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors group whitespace-nowrap"
                     >
                       {link.label}
                       <motion.span
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"
-                        transition={{ duration: 0.3 }}
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 w-0 group-hover:w-full transition-all origin-center"
+                    transition={{ duration: 0.4, ease: "easeOut" }}
                       />
                     </NavigationMenuLink>
                   </NavigationMenuItem>
