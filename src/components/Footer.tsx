@@ -60,10 +60,9 @@ export default function Footer() {
             >
               {/* Logo with glow effect */}
               <motion.h3
-                className="text-4xl md:text-5xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400"
+                className="text-4xl md:text-5xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400 transition-all duration-300 hover:drop-shadow-lg"
                 whileHover={{
-                  scale: 1.05,
-                  filter: "drop-shadow(0 0 20px rgba(168, 85, 247, 0.4))",
+                  scale: 1.02,
                 }}
                 transition={{ duration: 0.3 }}
               >
