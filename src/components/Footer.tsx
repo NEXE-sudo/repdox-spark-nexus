@@ -7,7 +7,6 @@ const footerLinks = {
   events: [
     { label: "Hackathons", href: "/events?type=Hackathon" },
     { label: "Model UN", href: "/events?type=MUN" },
-    { label: "Gaming Tournaments", href: "/events?type=Gaming" },
     { label: "Workshops", href: "/events?type=Workshop" },
   ],
   company: [
