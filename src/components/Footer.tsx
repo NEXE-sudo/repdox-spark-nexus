@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { MessageCircle, Instagram, Github, Mail, ArrowRight, CheckCircle } from "lucide-react";
+import { MessageCircle, Instagram, Mail, ArrowRight, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
@@ -121,7 +121,6 @@ export default function Footer() {
                 {[
                   { icon: MessageCircle, href: "https://discord.gg/tp3CM47tRM", label: "Discord", color: "from-indigo-500 to-blue-500", glow: "rgba(79, 70, 229, 0.5)" },
                   { icon: Instagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500", glow: "rgba(236, 72, 153, 0.5)" },
-                  { icon: Github, href: "#", label: "Github", color: "from-gray-400 to-gray-600", glow: "rgba(107, 114, 128, 0.5)" },
                 ].map((social, index) => {
                   const Icon = social.icon;
                   return (
