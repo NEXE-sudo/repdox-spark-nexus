@@ -81,7 +81,7 @@ export default function Hero() {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundImage: "linear-gradient(to bottom, hsl(var(--foreground)), hsl(var(--foreground)), hsl(var(--foreground) / 0.4))",
-              filter: "drop-shadow(0 0 8px rgba(168, 85, 247, 0.3))",
+              filter: "drop-shadow(0 0 4px rgba(168, 85, 247, 0.15))",
             }}
           >
             Think. Build.
