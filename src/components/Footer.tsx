@@ -8,7 +8,7 @@ const footerLinks = {
     { label: "Hackathons", href: "/events?type=Hackathon" },
     { label: "Workshops", href: "/events?type=Workshop" },
   ],
-  counpany: [
+  company: [
     { label: "About Us", href: "/about" },
     { label: "Contact", href: "/contact" },
     // { label: "Community", href: "/community" },
