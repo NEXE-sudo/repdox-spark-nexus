@@ -141,15 +141,6 @@ export default function Footer() {
                        whileTap={{ scale: 0.95 }}
                        className="group relative p-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-border transition-all"
                        aria-label={social.label}
-                       animate={{
-                         y: [0, -2, 0],
-                       }}
-                       transition={{
-                         repeat: Infinity,
-                         duration: 3,
-                         ease: "easeInOut",
-                         delay: index * 0.2,
-                       }}
                      >
                        <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       <motion.div
