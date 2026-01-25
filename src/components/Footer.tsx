@@ -24,9 +24,27 @@ const footerLinks = {
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const [email, setEmail] = useState("");
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleNewsletterSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) return;
+
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsSubscribed(true);
+      setEmail("");
+      setTimeout(() => setIsSubscribed(false), 3000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <footer className="relative overflow-hidden border-t border-border bg-background">
+    <footer className="relative overflow-hidden border-t border-border/30 bg-background/80 backdrop-blur-sm">
       {/* Animated background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),transparent_70%)]" />
       
