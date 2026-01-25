@@ -1,8 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
 
@@ -50,6 +52,17 @@ All colors MUST be HSL.
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1),
       0 8px 10px -6px rgb(0 0 0 / 0.1);
     --shadow-glow: 0 0 20px rgb(139 92 246 / 0.3);
+
+    /* Extended accent colors */
+    --accent-cyan: 200 100% 50%;
+    --accent-pink: 330 100% 60%;
+    --accent-yellow: 45 100% 50%;
+    --glow-purple: 270 60% 60%;
+
+    /* Glow shadows */
+    --shadow-glow-purple: 0 0 20px rgb(168 85 247 / 0.4);
+    --shadow-glow-cyan: 0 0 20px rgb(34 211 238 / 0.4);
+    --shadow-glow-pink: 0 0 20px rgb(236 72 153 / 0.4);
   }
 
   .dark {
@@ -93,6 +106,17 @@ All colors MUST be HSL.
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5),
       0 8px 10px -6px rgb(0 0 0 / 0.5);
     --shadow-glow: 0 0 30px rgb(139 92 246 / 0.5);
+
+    /* Extended accent colors */
+    --accent-cyan: 200 100% 50%;
+    --accent-pink: 330 100% 60%;
+    --accent-yellow: 45 100% 50%;
+    --glow-purple: 270 60% 60%;
+
+    /* Glow shadows */
+    --shadow-glow-purple: 0 0 30px rgb(168 85 247 / 0.6);
+    --shadow-glow-cyan: 0 0 30px rgb(34 211 238 / 0.6);
+    --shadow-glow-pink: 0 0 30px rgb(236 72 153 / 0.6);
   }
 }
 
