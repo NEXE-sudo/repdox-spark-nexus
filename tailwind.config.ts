@@ -61,6 +61,9 @@ export default {
         'card': 'var(--shadow-card)',
         'card-hover': 'var(--shadow-card-hover)',
         'glow': 'var(--shadow-glow)',
+        'glow-purple': 'var(--shadow-glow-purple)',
+        'glow-cyan': 'var(--shadow-glow-cyan)',
+        'glow-pink': 'var(--shadow-glow-pink)',
       },
       borderRadius: {
         lg: "var(--radius)",
