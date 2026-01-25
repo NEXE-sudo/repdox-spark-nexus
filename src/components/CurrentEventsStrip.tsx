@@ -87,22 +87,10 @@ export default function CurrentEventsStrip() {
   }
 
   return (
-    <section 
+    <section
       ref={ref}
       className="py-24 px-0 relative overflow-hidden"
     >
-      {/* Animated background gradient */}
-      <motion.div
-        animate={{
-          backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear"
-        }}
-        className="absolute inset-0"
-      />
 
       <div className="max-w-[95vw] mx-auto relative z-10">
         <motion.div 
