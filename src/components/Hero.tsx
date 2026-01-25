@@ -175,23 +175,35 @@ export default function Hero() {
             </motion.button>
 
             {/* Secondary CTA: Join Community */}
-            <motion.button
-              onClick={() => setShowDiscordModal(true)}
+            <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative overflow-hidden px-8 py-6 text-lg rounded-2xl font-semibold text-foreground bg-transparent border-2 border-transparent transition-all duration-300"
+              className="group relative"
               style={{
-                backgroundImage: "linear-gradient(to right, hsl(var(--foreground)), hsl(var(--foreground))), linear-gradient(135deg, hsl(200, 100%, 50%), hsl(330, 100%, 60%), hsl(45, 100%, 50%))",
-                backgroundClip: "padding-box, border-box",
-                backgroundOrigin: "padding-box, border-box",
                 boxShadow: "var(--shadow-glow-cyan)",
               }}
             >
-              <span className="relative z-10 flex items-center gap-2">
-                Join Community
-                <Share2 className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
-              </span>
-            </motion.button>
+              <button
+                onClick={() => setShowDiscordModal(true)}
+                className="relative px-8 py-6 text-lg rounded-2xl font-semibold text-foreground transition-all duration-300 border-2 border-transparent bg-background overflow-hidden"
+                style={{
+                  backgroundClip: "padding-box",
+                }}
+              >
+                {/* Gradient border */}
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-[2px]"
+                  style={{
+                    background: "linear-gradient(135deg, hsl(200, 100%, 50%), hsl(330, 100%, 60%), hsl(45, 100%, 50%))",
+                    zIndex: -1,
+                  }}
+                />
+                <span className="relative z-10 flex items-center gap-2">
+                  Join Community
+                  <Share2 className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
+                </span>
+              </button>
+            </motion.div>
           </motion.div>
 
           {/* Discord Modal Overlay */}
