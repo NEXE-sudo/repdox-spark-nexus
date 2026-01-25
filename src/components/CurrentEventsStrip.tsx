@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mail, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EventCard from "./EventCard";
 import { supabase } from "@/integrations/supabase/client";
