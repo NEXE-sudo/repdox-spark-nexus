@@ -116,11 +116,26 @@ export default function Hero() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-6xl md:text-8xl font-bold mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground via-foreground to-foreground/40"
+            className="text-6xl md:text-8xl font-display font-bold mb-6 leading-tight"
+            style={{
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundImage: "linear-gradient(to bottom, hsl(var(--foreground)), hsl(var(--foreground)), hsl(var(--foreground) / 0.4))",
+              filter: "drop-shadow(0 0 8px rgba(168, 85, 247, 0.3))",
+            }}
           >
             Think. Build.
             <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400">
+            <span
+              style={{
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundImage: "linear-gradient(to right, hsl(168, 83%, 41%), hsl(331, 85%, 55%), hsl(204, 89%, 51%))",
+                filter: "drop-shadow(0 0 12px rgba(168, 85, 247, 0.4))",
+              }}
+            >
               Transform.
             </span>
           </motion.h1>
