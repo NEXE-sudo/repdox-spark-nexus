@@ -120,10 +120,10 @@ export default function Hero() {
               onClick={() => (window.location.href = "/events")}
               whileHover={{
                 scale: 1.05,
-                boxShadow: "var(--shadow-glow-purple)",
               }}
               whileTap={{ scale: 0.95 }}
-              className="group relative overflow-hidden bg-primary text-primary-foreground px-8 py-6 text-lg rounded-2xl font-semibold transition-all duration-300"
+              onHoverStart={() => {}}
+              className="group relative overflow-hidden bg-primary text-primary-foreground px-8 py-6 text-lg rounded-2xl font-semibold transition-all duration-300 hover:shadow-glow-purple"
             >
               <span className="relative z-10 flex items-center gap-2">
                 View Events
