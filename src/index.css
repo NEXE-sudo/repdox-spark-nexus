@@ -558,3 +558,95 @@ html {
 kbd {
   @apply inline-flex items-center justify-center px-2 py-1 text-xs font-medium bg-muted border border-border rounded;
 }
+
+@layer utilities {
+  /* Enhanced button interactions */
+  .btn-glow-on-hover {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .btn-glow-on-hover:hover {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Smooth link underline */
+  .link-smooth {
+    @apply relative inline-block;
+  }
+
+  .link-smooth::after {
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-current transition-all duration-300;
+    content: "";
+  }
+
+  .link-smooth:hover::after {
+    @apply w-full;
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      @apply !transition-none !animate-none;
+    }
+  }
+
+  /* Focus visible consistency */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Smooth transitions for interactive elements */
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    @apply transition-colors duration-200;
+  }
+
+  /* Enhanced text selection */
+  ::selection {
+    @apply bg-purple-500/30 text-foreground;
+  }
+
+  /* Scroll behavior refinement */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
+    transition: background-color 0.3s ease;
+  }
+
+  /* Loading state animations */
+  .loading-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  /* Accessibility improvements */
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden clip-rect-0 whitespace-nowrap border-0;
+  }
+
+  /* Active state feedback */
+  button:active {
+    transform: scale(0.98);
+  }
+
+  /* Disabled state styling */
+  button:disabled,
+  input:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
+}
