@@ -132,8 +132,8 @@ export default function Hero() {
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
-                backgroundImage: "linear-gradient(to right, hsl(168, 83%, 41%), hsl(331, 85%, 55%), hsl(204, 89%, 51%))",
-                filter: "drop-shadow(0 0 12px rgba(168, 85, 247, 0.4))",
+                backgroundImage: "linear-gradient(to right, hsl(168, 70%, 55%), hsl(331, 70%, 65%), hsl(204, 70%, 60%))",
+                filter: "drop-shadow(0 0 8px rgba(168, 85, 247, 0.2))",
               }}
             >
               Transform.
