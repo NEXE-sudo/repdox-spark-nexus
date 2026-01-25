@@ -201,6 +201,155 @@ export default function CurrentEventsStrip() {
   );
 }
 
+// Empty Events State Component
+function EmptyEventsState() {
+  const [email, setEmail] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      // Store email subscription (can be replaced with actual API call)
+      // For now, we'll just simulate success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsSubmitted(true);
+      setEmail("");
+      setTimeout(() => setIsSubmitted(false), 3000);
+    } catch (err) {
+      setError("Failed to subscribe. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <section className="py-24 px-6 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          className="absolute -top-20 left-1/4 w-64 h-64 bg-gradient-to-b from-purple-500 to-transparent rounded-full blur-3xl opacity-10"
+          animate={{
+            y: [0, 30, 0],
+            opacity: [0.05, 0.1, 0.05],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -bottom-20 right-1/4 w-64 h-64 bg-gradient-to-t from-cyan-500 to-transparent rounded-full blur-3xl opacity-10"
+          animate={{
+            y: [0, -30, 0],
+            opacity: [0.05, 0.1, 0.05],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        />
+      </div>
+
+      <div className="max-w-2xl mx-auto text-center relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Decorative icon */}
+          <motion.div
+            className="mb-8 inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30"
+            animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Mail className="w-10 h-10 text-purple-400" />
+          </motion.div>
+
+          <h2 className="text-4xl md:text-5xl font-display font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
+            No events live yet
+          </h2>
+          <p className="text-lg text-muted-foreground mb-12 leading-relaxed">
+            Great things are coming! Subscribe to our newsletter to be notified
+            the moment we launch our next event.
+          </p>
+
+          {/* Email subscription form */}
+          <motion.form
+            onSubmit={handleSubscribe}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="space-y-4"
+          >
+            {/* Input field */}
+            <div className="relative flex flex-col sm:flex-row gap-3">
+              <motion.input
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError("");
+                }}
+                disabled={isSubmitted || isLoading}
+                whileFocus={{ scale: 1.02 }}
+                className="flex-1 px-6 py-3 rounded-2xl bg-card border border-border/50 text-foreground placeholder-muted-foreground focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-300 disabled:opacity-50"
+              />
+              <motion.button
+                type="submit"
+                disabled={isSubmitted || isLoading}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold whitespace-nowrap hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitted ? "Subscribed!" : isLoading ? "..." : "Subscribe"}
+              </motion.button>
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-red-500 text-sm"
+              >
+                {error}
+              </motion.p>
+            )}
+
+            {/* Success message */}
+            {isSubmitted && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-center justify-center gap-2 text-green-500 text-sm"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>Thanks for subscribing! We'll notify you soon.</span>
+              </motion.div>
+            )}
+          </motion.form>
+
+          {/* Secondary message */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="text-muted-foreground text-sm mt-8"
+          >
+            Check back soon for exciting hackathons, MUNs, workshops, and more!
+          </motion.p>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 // Magnetic Button Component
 function MagneticButton({ 
   children, 
