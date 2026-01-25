@@ -7,6 +7,7 @@ import CountUp from "@/components/ui/CountUp";
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showDiscordModal, setShowDiscordModal] = useState(false);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"],
