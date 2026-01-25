@@ -159,19 +159,17 @@ export default function Hero() {
             {/* Primary CTA: View Events */}
             <motion.button
               onClick={() => (window.location.href = "/events")}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="group relative overflow-hidden bg-primary text-primary-foreground px-8 py-6 text-lg rounded-2xl font-semibold transition-all duration-300"
-              style={{
+              whileHover={{
+                scale: 1.05,
                 boxShadow: "var(--shadow-glow-purple)",
               }}
-              onHoverStart={() => {}}
+              whileTap={{ scale: 0.95 }}
+              className="group relative overflow-hidden bg-primary text-primary-foreground px-8 py-6 text-lg rounded-2xl font-semibold transition-all duration-300"
             >
               <span className="relative z-10 flex items-center gap-2">
                 View Events
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
             </motion.button>
 
             {/* Secondary CTA: Join Community */}
