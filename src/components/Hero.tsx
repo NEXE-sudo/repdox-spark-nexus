@@ -156,18 +156,83 @@ export default function Hero() {
             transition={{ delay: 0.6, duration: 0.8 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
           >
-            <Button
-              size="lg"
-              className="group relative overflow-hidden bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-lg rounded-2xl"
+            {/* Primary CTA: View Events */}
+            <motion.button
               onClick={() => (window.location.href = "/events")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative overflow-hidden bg-primary text-primary-foreground px-8 py-6 text-lg rounded-2xl font-semibold transition-all duration-300"
+              style={{
+                boxShadow: "var(--shadow-glow-purple)",
+              }}
+              onHoverStart={() => {}}
             >
               <span className="relative z-10 flex items-center gap-2">
                 View Events
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity" />
-            </Button>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+            </motion.button>
+
+            {/* Secondary CTA: Join Community */}
+            <motion.button
+              onClick={() => setShowDiscordModal(true)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative overflow-hidden px-8 py-6 text-lg rounded-2xl font-semibold text-foreground bg-transparent border-2 border-transparent transition-all duration-300"
+              style={{
+                backgroundImage: "linear-gradient(to right, hsl(var(--foreground)), hsl(var(--foreground))), linear-gradient(135deg, hsl(200, 100%, 50%), hsl(330, 100%, 60%), hsl(45, 100%, 50%))",
+                backgroundClip: "padding-box, border-box",
+                backgroundOrigin: "padding-box, border-box",
+                boxShadow: "var(--shadow-glow-cyan)",
+              }}
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                Join Community
+                <Share2 className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
+              </span>
+            </motion.button>
           </motion.div>
+
+          {/* Discord Modal Overlay */}
+          {showDiscordModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDiscordModal(false)}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card rounded-2xl p-8 max-w-md w-full border border-border"
+              >
+                <h2 className="text-2xl font-display font-bold mb-4 text-foreground">
+                  Join Our Community
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Connect with innovators, builders, and creators on our Discord server.
+                </p>
+                <a
+                  href="https://discord.gg/repdox"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg text-center font-semibold hover:bg-primary/90 transition-colors duration-300"
+                >
+                  Open Discord Invite
+                </a>
+                <button
+                  onClick={() => setShowDiscordModal(false)}
+                  className="block w-full mt-3 text-muted-foreground hover:text-foreground transition-colors duration-300"
+                >
+                  Close
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
 
           {/* <motion.div
             initial={{ opacity: 0, y: 30 }}
