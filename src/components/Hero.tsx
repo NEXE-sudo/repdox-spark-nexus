@@ -175,35 +175,20 @@ export default function Hero() {
             </motion.button>
 
             {/* Secondary CTA: Join Community */}
-            <motion.div
+            <motion.button
+              onClick={() => setShowDiscordModal(true)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="group relative"
+              className="group relative px-8 py-6 text-lg rounded-2xl font-semibold text-foreground bg-background border-2 border-foreground/20 transition-all duration-300 hover:border-foreground/60"
               style={{
                 boxShadow: "var(--shadow-glow-cyan)",
               }}
             >
-              <button
-                onClick={() => setShowDiscordModal(true)}
-                className="relative px-8 py-6 text-lg rounded-2xl font-semibold text-foreground transition-all duration-300 border-2 border-transparent bg-background overflow-hidden"
-                style={{
-                  backgroundClip: "padding-box",
-                }}
-              >
-                {/* Gradient border */}
-                <div
-                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-[2px]"
-                  style={{
-                    background: "linear-gradient(135deg, hsl(200, 100%, 50%), hsl(330, 100%, 60%), hsl(45, 100%, 50%))",
-                    zIndex: -1,
-                  }}
-                />
-                <span className="relative z-10 flex items-center gap-2">
-                  Join Community
-                  <Share2 className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
-                </span>
-              </button>
-            </motion.div>
+              <span className="relative z-10 flex items-center gap-2">
+                Join Community
+                <Share2 className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
+              </span>
+            </motion.button>
           </motion.div>
 
           {/* Discord Modal Overlay */}
