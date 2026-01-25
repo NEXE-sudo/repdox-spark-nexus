@@ -48,6 +48,9 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        cyan: "hsl(var(--accent-cyan))",
+        pink: "hsl(var(--accent-pink))",
+        yellow: "hsl(var(--accent-yellow))",
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
