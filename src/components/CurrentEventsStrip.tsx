@@ -82,21 +82,7 @@ export default function CurrentEventsStrip() {
 
   if (events.length === 0) {
     return (
-      <section className="py-20 px-6 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/60">
-              Upcoming Events
-            </h2>
-            <p className="text-muted-foreground">
-              No events available at the moment. Check back soon!
-            </p>
-          </motion.div>
-        </div>
-      </section>
+      <EmptyEventsState />
     );
   }
 
