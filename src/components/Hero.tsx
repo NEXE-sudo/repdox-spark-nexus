@@ -175,12 +175,13 @@ export default function Hero() {
             {/* Secondary CTA: Join Community */}
             <motion.button
               onClick={() => setShowDiscordModal(true)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="group relative px-8 py-6 text-lg rounded-2xl font-semibold text-foreground bg-background border-2 border-foreground/20 transition-all duration-300 hover:border-foreground/60"
-              style={{
+              whileHover={{
+                scale: 1.05,
                 boxShadow: "var(--shadow-glow-cyan)",
+                borderColor: "hsl(var(--foreground))",
               }}
+              whileTap={{ scale: 0.95 }}
+              className="group relative px-8 py-6 text-lg rounded-2xl font-semibold text-foreground bg-background border-2 border-foreground/20 transition-all duration-300"
             >
               <span className="relative z-10 flex items-center gap-2">
                 Join Community
