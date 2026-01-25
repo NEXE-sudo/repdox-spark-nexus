@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Zap, Target, Heart, Lightbulb } from "lucide-react";
+import { useState } from "react";
 
 const features = [
   {
