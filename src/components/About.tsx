@@ -54,6 +54,17 @@ export default function About() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => {
             const Icon = feature.icon;
+            const [isHovered, setIsHovered] = useState(false);
+
+            // Determine glow color based on gradient
+            const glowColor = feature.gradient.includes("purple")
+              ? "rgba(168, 85, 247, 0.4)"
+              : feature.gradient.includes("cyan")
+              ? "rgba(34, 211, 238, 0.4)"
+              : feature.gradient.includes("pink")
+              ? "rgba(236, 72, 153, 0.4)"
+              : "rgba(251, 191, 36, 0.4)";
+
             return (
               <motion.div
                 key={index}
@@ -62,13 +73,18 @@ export default function About() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
                 whileHover={{ y: -12, scale: 1.03 }}
+                onHoverStart={() => setIsHovered(true)}
+                onHoverEnd={() => setIsHovered(false)}
                 className="group"
               >
-                <div
+                <motion.div
                   className="bg-card rounded-lg p-6 h-full border border-border/50 transition-all duration-300"
-                  style={{
-                    boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
+                  animate={{
+                    boxShadow: isHovered
+                      ? `0 0 20px ${glowColor}, 0 0 40px rgba(59, 130, 246, 0.2)`
+                      : "0 0 0 rgba(0, 0, 0, 0)",
                   }}
+                  transition={{ duration: 0.3 }}
                 >
                   <motion.div
                     className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br ${feature.gradient} mb-6 transition-all duration-300`}
@@ -86,7 +102,7 @@ export default function About() {
                   <p className="text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>
-                </div>
+                </motion.div>
               </motion.div>
             );
           })}
