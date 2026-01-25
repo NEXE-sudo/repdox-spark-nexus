@@ -133,10 +133,17 @@ export default function Footer() {
                          scale: 1.15,
                        }}
                        whileTap={{ scale: 0.95 }}
-                       className="group relative p-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-border transition-all hover:shadow-lg"
-                       style={{}}
+                       className="group relative p-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-border transition-all duration-300"
+                       style={{
+                         boxShadow: "0 0 0 rgba(0,0,0,0)",
+                       }}
+                       onMouseEnter={(e) => {
+                         e.currentTarget.style.boxShadow = `0 0 20px ${social.glow}`;
+                       }}
+                       onMouseLeave={(e) => {
+                         e.currentTarget.style.boxShadow = "0 0 0 rgba(0,0,0,0)";
+                       }}
                        aria-label={social.label}
-                       onHoverStart={() => {}}
                      >
                        <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       <motion.div
