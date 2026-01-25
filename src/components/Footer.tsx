@@ -136,24 +136,39 @@ export default function Footer() {
               {/* Social Links */}
               <div className="flex gap-3">
                 {[
-                  { icon: MessageCircle, href: "https://discord.gg/tp3CM47tRM", label: "Discord", color: "from-indigo-500 to-blue-500" },
-                  { icon: Instagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500" },
-                  { icon: Twitter, href: "#", label: "Twitter", color: "from-blue-400 to-cyan-400" },
-                  { icon: Github, href: "#", label: "Github", color: "from-gray-400 to-gray-600" },
+                  { icon: MessageCircle, href: "https://discord.gg/tp3CM47tRM", label: "Discord", color: "from-indigo-500 to-blue-500", glow: "rgba(79, 70, 229, 0.5)" },
+                  { icon: Instagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500", glow: "rgba(236, 72, 153, 0.5)" },
+                  { icon: Twitter, href: "#", label: "Twitter", color: "from-blue-400 to-cyan-400", glow: "rgba(34, 211, 238, 0.5)" },
+                  { icon: Github, href: "#", label: "Github", color: "from-gray-400 to-gray-600", glow: "rgba(107, 114, 128, 0.5)" },
                 ].map((social, index) => {
                   const Icon = social.icon;
                   return (
                     <motion.a
                       key={index}
                       href={social.href}
-                       whileHover={{ y: -4, scale: 1.1 }}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       whileHover={{
+                         y: -6,
+                         scale: 1.15,
+                         boxShadow: `0 0 20px ${social.glow}`,
+                       }}
                        whileTap={{ scale: 0.95 }}
                        className="group relative p-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-border transition-all"
                        aria-label={social.label}
+                       animate={{
+                         y: [0, -2, 0],
+                       }}
+                       transition={{
+                         repeat: Infinity,
+                         duration: 3,
+                         ease: "easeInOut",
+                         delay: index * 0.2,
+                       }}
                      >
                        <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       <motion.div
-                        className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-20 bg-gradient-to-br ${social.color}`}
+                        className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-30 bg-gradient-to-br ${social.color}`}
                         transition={{ duration: 0.3 }}
                       />
                     </motion.a>
