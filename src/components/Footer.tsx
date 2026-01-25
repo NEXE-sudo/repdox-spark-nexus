@@ -131,11 +131,12 @@ export default function Footer() {
                        whileHover={{
                          y: -6,
                          scale: 1.15,
-                         boxShadow: `0 0 20px ${social.glow}`,
                        }}
                        whileTap={{ scale: 0.95 }}
-                       className="group relative p-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-border transition-all"
+                       className="group relative p-3 rounded-xl bg-accent/10 hover:bg-accent/20 border border-border transition-all hover:shadow-lg"
+                       style={{}}
                        aria-label={social.label}
+                       onHoverStart={() => {}}
                      >
                        <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                       <motion.div
