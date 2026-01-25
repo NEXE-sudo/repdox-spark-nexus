@@ -73,14 +73,65 @@ export default function Footer() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
+              className="space-y-6"
             >
-              <h3 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+              {/* Logo with glow effect */}
+              <motion.h3
+                className="text-4xl md:text-5xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400"
+                whileHover={{
+                  scale: 1.05,
+                  filter: "drop-shadow(0 0 20px rgba(168, 85, 247, 0.4))",
+                }}
+                transition={{ duration: 0.3 }}
+              >
                 Repdox
-              </h3>
-              <p className="text-muted-foreground mb-6 leading-relaxed">
+              </motion.h3>
+              <p className="text-muted-foreground leading-relaxed">
                 Think. Build. Transform.<br />
                 Empowering the next generation of innovators.
               </p>
+
+              {/* Newsletter signup */}
+              <motion.form
+                onSubmit={handleNewsletterSubscribe}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="space-y-3"
+              >
+                <p className="text-sm font-semibold text-foreground/80">Subscribe to our newsletter</p>
+                <div className="flex gap-2">
+                  <motion.input
+                    type="email"
+                    placeholder="Your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubscribed || isLoading}
+                    whileFocus={{ scale: 1.02 }}
+                    className="flex-1 px-4 py-2 rounded-lg bg-card/50 border border-border/30 text-foreground placeholder-muted-foreground/60 text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all disabled:opacity-50"
+                  />
+                  <motion.button
+                    type="submit"
+                    disabled={isSubscribed || isLoading}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50"
+                  >
+                    {isSubscribed ? "✓" : isLoading ? "..." : "Subscribe"}
+                  </motion.button>
+                </div>
+                {isSubscribed && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-green-500 text-xs flex items-center gap-1"
+                  >
+                    <CheckCircle className="w-3 h-3" />
+                    Thanks for subscribing!
+                  </motion.p>
+                )}
+              </motion.form>
               
               {/* Social Links */}
               <div className="flex gap-3">
