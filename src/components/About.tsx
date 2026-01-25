@@ -60,13 +60,26 @@ export default function About() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
+                whileHover={{ y: -12, scale: 1.03 }}
                 className="group"
               >
-                <div className="bg-card rounded-lg p-6 h-full border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10 mb-4 group-hover:bg-purple-500/20 transition-colors">
-                    <Icon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 text-foreground">
+                <div
+                  className="bg-card rounded-lg p-6 h-full border border-border/50 transition-all duration-300"
+                  style={{
+                    boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
+                  }}
+                >
+                  <motion.div
+                    className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br ${feature.gradient} mb-6 transition-all duration-300`}
+                    whileHover={{
+                      scale: 1.15,
+                      rotate: 5,
+                    }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Icon className="h-9 w-9 text-white" />
+                  </motion.div>
+                  <h3 className="text-xl font-semibold font-display mb-2 text-foreground">
                     {feature.title}
                   </h3>
                   <p className="text-muted-foreground leading-relaxed">
