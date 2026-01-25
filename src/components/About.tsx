@@ -6,21 +6,25 @@ const features = [
     icon: Zap,
     title: "Energize Innovation",
     description: "Spark creativity through hands-on hackathons and collaborative workshops.",
+    gradient: "from-purple-500 to-pink-500",
   },
   {
     icon: Target,
     title: "Build Skills",
     description: "Develop technical and leadership abilities in real-world scenarios.",
+    gradient: "from-cyan-500 to-blue-500",
   },
   {
     icon: Heart,
     title: "Foster Community",
     description: "Connect with like-minded students, mentors, and industry leaders.",
+    gradient: "from-pink-500 to-purple-500",
   },
   {
     icon: Lightbulb,
     title: "Drive Impact",
     description: "Transform ideas into solutions that make a difference.",
+    gradient: "from-yellow-500 to-orange-500",
   },
 ];
 
