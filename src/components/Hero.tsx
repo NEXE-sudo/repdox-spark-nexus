@@ -42,47 +42,6 @@ export default function Hero() {
       ref={containerRef}
       className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background"
     >
-      {/* Animated aurora glow background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute -top-1/2 left-1/2 w-96 h-96 bg-gradient-to-b from-purple-500 via-pink-500 to-transparent rounded-full blur-3xl opacity-5"
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.05, 0.1, 0.05],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute top-1/3 -right-1/4 w-96 h-96 bg-gradient-to-l from-cyan-500 via-blue-500 to-transparent rounded-full blur-3xl opacity-5"
-          animate={{
-            y: [0, 30, 0],
-            opacity: [0.05, 0.1, 0.05],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1,
-          }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-1/4 w-96 h-96 bg-gradient-to-t from-pink-500 via-purple-500 to-transparent rounded-full blur-3xl opacity-5"
-          animate={{
-            y: [0, -20, 0],
-            opacity: [0.05, 0.08, 0.05],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2,
-          }}
-        />
-      </div>
 
       <motion.div
         style={{ y: scrollY, opacity, scale }}
