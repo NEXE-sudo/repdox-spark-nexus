@@ -6,10 +6,9 @@ import { useState } from "react";
 const footerLinks = {
   events: [
     { label: "Hackathons", href: "/events?type=Hackathon" },
-    { label: "Model UN", href: "/events?type=MUN" },
     { label: "Workshops", href: "/events?type=Workshop" },
   ],
-  company: [
+  counpany: [
     { label: "About Us", href: "/about" },
     { label: "Contact", href: "/contact" },
     // { label: "Community", href: "/community" },
