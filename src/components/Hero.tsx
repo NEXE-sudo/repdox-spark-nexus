@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Share2 } from "lucide-react";
 import { useSpring, animated } from "@react-spring/web";
 import CountUp from "@/components/ui/CountUp";
 
