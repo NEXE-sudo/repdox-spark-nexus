@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
-import { MessageCircle, Instagram, Twitter, Github, Mail, ArrowRight } from "lucide-react";
+import { MessageCircle, Instagram, Twitter, Github, Mail, ArrowRight, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const footerLinks = {
   events: [
