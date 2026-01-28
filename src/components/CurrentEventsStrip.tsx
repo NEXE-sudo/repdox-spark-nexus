@@ -222,26 +222,6 @@ function EmptyEventsState() {
 
   return (
     <section className="py-24 px-6 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          className="absolute -top-20 left-1/4 w-64 h-64 bg-gradient-to-b from-purple-500 to-transparent rounded-full blur-3xl opacity-10"
-          animate={{
-            y: [0, 30, 0],
-            opacity: [0.05, 0.1, 0.05],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute -bottom-20 right-1/4 w-64 h-64 bg-gradient-to-t from-cyan-500 to-transparent rounded-full blur-3xl opacity-10"
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.05, 0.1, 0.05],
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        />
-      </div>
-
       <div className="max-w-2xl mx-auto text-center relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -250,7 +230,7 @@ function EmptyEventsState() {
         >
           {/* Decorative icon */}
           <motion.div
-            className="mb-8 inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30"
+            className="mb-8 inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20"
             animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
@@ -292,7 +272,7 @@ function EmptyEventsState() {
                 disabled={isSubmitted || isLoading}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold whitespace-nowrap hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-semibold whitespace-nowrap hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitted ? "Subscribed!" : isLoading ? "..." : "Subscribe"}
               </motion.button>

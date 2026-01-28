@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { MessageCircle, Instagram, Mail, ArrowRight, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { FaDiscord, FaInstagram } from "react-icons/fa";
 
 const footerLinks = {
   events: [
@@ -98,7 +99,7 @@ export default function Footer() {
                     disabled={isSubscribed || isLoading}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-50"
+                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all disabled:opacity-50"
                   >
                     {isSubscribed ? "✓" : isLoading ? "..." : "Subscribe"}
                   </motion.button>
@@ -118,8 +119,8 @@ export default function Footer() {
               {/* Social Links */}
               <div className="flex gap-3">
                 {[
-                  { icon: MessageCircle, href: "https://discord.gg/tp3CM47tRM", label: "Discord", color: "from-indigo-500 to-blue-500", glow: "rgba(79, 70, 229, 0.5)" },
-                  { icon: Instagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500", glow: "rgba(236, 72, 153, 0.5)" },
+                  { icon: FaDiscord, href: "https://discord.gg/tp3CM47tRM", label: "Discord", color: "from-indigo-500 to-blue-500", glow: "rgba(79, 70, 229, 0.5)" },
+                  { icon: FaInstagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500", glow: "rgba(236, 72, 153, 0.5)" },
                 ].map((social, index) => {
                   const Icon = social.icon;
                   return (

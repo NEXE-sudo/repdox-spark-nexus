@@ -2,7 +2,6 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { Zap, Target, Heart, Lightbulb } from "lucide-react";
 import { useRef } from "react";
 import { useInView } from "react-intersection-observer";
-import Particles from "@/components/Particles";
 
 const features = [
   {
@@ -53,19 +52,6 @@ export default function About() {
         className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(120,119,198,0.1),transparent_50%)]"
       />
       
-      <div className="absolute inset-0 z-0 opacity-50">
-        <Particles
-          particleColors={['#ffffff', '#ffffff']}
-          particleCount={200}
-          particleSpread={10}
-          speed={0.1}
-          particleBaseSize={100}
-          moveParticlesOnHover={true}
-          alphaParticles={false}
-          disableRotation={false}
-          className="h-full w-full"
-        />
-      </div>
       
       <div ref={ref} className="max-w-6xl mx-auto relative z-10">
         <motion.div
@@ -73,18 +59,7 @@ export default function About() {
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.8 }}
           className="text-center mb-20"
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.6 }}
-            className="inline-block mb-6"
-          >
-            <span className="text-sm font-semibold px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 text-purple-400">
-              About Repdox
-            </span>
-          </motion.div>
-          
+        >          
           <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
             About Repdox
           </h2>

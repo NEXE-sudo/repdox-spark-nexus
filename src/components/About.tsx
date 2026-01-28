@@ -72,7 +72,7 @@ export default function About() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1, duration: 0.5 }}
-                whileHover={{ y: -12, scale: 1.03 }}
+                whileHover={{ y: -8, scale: 1.02 }}
                 onHoverStart={() => setIsHovered(true)}
                 onHoverEnd={() => setIsHovered(false)}
                 className="group"
@@ -81,25 +81,28 @@ export default function About() {
                   className="bg-card rounded-lg p-6 h-full border border-border/50 transition-all duration-300"
                   animate={{
                     boxShadow: isHovered
-                      ? `0 0 20px ${glowColor}, 0 0 40px rgba(59, 130, 246, 0.2)`
+                      ? `0 10px 30px -10px ${glowColor.replace('0.4', '0.2')}`
                       : "0 0 0 rgba(0, 0, 0, 0)",
                   }}
                   transition={{ duration: 0.3 }}
                 >
                   <motion.div
-                    className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br ${feature.gradient} mb-6 transition-all duration-300`}
+                    className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient.replace('500', '500/10')} border border-white/5 mb-6 transition-all duration-300`}
+                    style={{
+                      background: `linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05))`
+                    }}
                     whileHover={{
-                      scale: 1.15,
-                      rotate: 5,
+                      scale: 1.05,
+                      rotate: 2,
                     }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Icon className="h-9 w-9 text-white" />
+                    <Icon className="h-7 w-7 text-foreground/80" />
                   </motion.div>
                   <h3 className="text-xl font-semibold font-display mb-2 text-foreground">
                     {feature.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-muted-foreground leading-relaxed text-sm">
                     {feature.description}
                   </p>
                 </motion.div>
