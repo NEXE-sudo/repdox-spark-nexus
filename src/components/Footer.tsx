@@ -123,7 +123,7 @@ export default function Footer() {
               <div className="flex gap-3">
                 {[
                   { icon: FaDiscord, href: "https://discord.gg/TbAqDgy4cw", label: "Discord", color: "from-indigo-500 to-blue-500", glow: "rgba(79, 70, 229, 0.5)" },
-                  { icon: FaInstagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500", glow: "rgba(236, 72, 153, 0.5)" },
+                  { icon: FaInstagram, href: "https://www.instagram.com/repdox.official", label: "Instagram", color: "from-pink-500 to-rose-500", glow: "rgba(236, 72, 153, 0.5)" },
                 ].map((social, index) => {
                   const Icon = social.icon;
                   return (

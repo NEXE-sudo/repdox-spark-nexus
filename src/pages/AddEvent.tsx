@@ -110,29 +110,24 @@ export default function AddEvent() {
   // Optional sections and enhanced draft state (for Live Preview & reordering)
   const [speakers, setSpeakers] = useState<Array<{ id: string; name: string; role?: string }>>([]);
   const [resources, setResources] = useState<Array<{ id: string; title: string; link?: string }>>([]);
-
-
-  const [sectionOrder, setSectionOrder] = useState<string[]>([]); // e.g. ['Agenda','Speakers','FAQs','Resources']
-
-  // Autosave draft
-  const draftKey = `event-draft:${slug ?? 'new'}`;
-  const [draft, setDraft] = useState<EventDraft>({ id: eventId ?? undefined, title: '', description: '', date: '', location: '', tags: [], sections: [] });
-  const { state: draftSaveState, load: loadDraft, manualSave: manualSaveDraft, clear: clearDraft } = useAutoSave<EventDraft>(draftKey, draft, { debounceMs: 700, enabled: canAutoSave });
-  const [savedDraftAvailable, setSavedDraftAvailable] = useState<{ payload?: EventDraft; savedAt?: number } | null>(null);
-  const [canAutoSave, setCanAutoSave] = useState(false);
-
-  // Roles text (organizer-defined roles) and preview toggle
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [rolesText, setRolesText] = useState<string>("");
   const [showPreview, setShowPreview] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<'split' | 'full'>('split');
-
-  // Publish later
   const [publishLater, setPublishLater] = useState(false);
   const [publish_date, setPublishDate] = useState('');
   const [publish_time, setPublishTime] = useState('09:00');
-
-  // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Autosave draft states
+  const [canAutoSave, setCanAutoSave] = useState(false);
+  const [savedDraftAvailable, setSavedDraftAvailable] = useState<{ payload?: EventDraft; savedAt?: number } | null>(null);
+
+  // Autosave draft hook
+  const draftKey = `event-draft:${slug ?? 'new'}`;
+  const [draft, setDraft] = useState<EventDraft>({ id: eventId ?? undefined, title: '', description: '', date: '', location: '', tags: [], sections: [] });
+  const { state: draftSaveState, load: loadDraft, manualSave: manualSaveDraft, clear: clearDraft } = useAutoSave<EventDraft>(draftKey, draft, { debounceMs: 700, enabled: canAutoSave });
+
 
   // Helpers for date/time constraints
   const todayStr = new Date().toISOString().split("T")[0];

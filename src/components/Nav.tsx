@@ -281,8 +281,8 @@ export default function Nav() {
       textColor: theme === 'dark' ? "#fff" : "#000",
       links: [
         { label: "Email", href: "/contact", ariaLabel: "Email us" },
-        { label: "Discord", href: "#", ariaLabel: "Join Discord" },
-        { label: "Instagram", href: "#", ariaLabel: "Follow on Instagram" },
+        { label: "Discord", href: "https://discord.gg/TbAqDgy4cw", ariaLabel: "Join Discord" },
+        { label: "Instagram", href: "https://www.instagram.com/repdox.official", ariaLabel: "Follow on Instagram" },
       ],
     },
   ];
