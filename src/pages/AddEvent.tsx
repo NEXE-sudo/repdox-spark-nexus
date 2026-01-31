@@ -22,6 +22,7 @@ import EventCardPreview from '@/components/EventBuilder/EventCardPreview';
 import useAutoSave from '@/hooks/useAutoSave';
 import type { EventDraft } from '@/components/EventBuilder/LivePreview';
 import { SelectTrigger, SelectValue, SelectItem, SelectContent, Select } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 // Suggested tags based on common event categories
 const SUGGESTED_TAGS = [
@@ -56,6 +57,7 @@ interface FAQ {
 export default function AddEvent() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isEditMode = !!slug;
 
   const [loading, setLoading] = useState(false);
@@ -115,8 +117,9 @@ export default function AddEvent() {
   // Autosave draft
   const draftKey = `event-draft:${slug ?? 'new'}`;
   const [draft, setDraft] = useState<EventDraft>({ id: eventId ?? undefined, title: '', description: '', date: '', location: '', tags: [], sections: [] });
-  const { state: draftSaveState, load: loadDraft, manualSave: manualSaveDraft, clear: clearDraft } = useAutoSave<EventDraft>(draftKey, draft, { debounceMs: 700 });
+  const { state: draftSaveState, load: loadDraft, manualSave: manualSaveDraft, clear: clearDraft } = useAutoSave<EventDraft>(draftKey, draft, { debounceMs: 700, enabled: canAutoSave });
   const [savedDraftAvailable, setSavedDraftAvailable] = useState<{ payload?: EventDraft; savedAt?: number } | null>(null);
+  const [canAutoSave, setCanAutoSave] = useState(false);
 
   // Roles text (organizer-defined roles) and preview toggle
   const [rolesText, setRolesText] = useState<string>("");
@@ -186,7 +189,11 @@ export default function AddEvent() {
           data: { user },
         } = await supabase.auth.getUser();
         if (event.created_by !== user?.id) {
-          alert("You don't have permission to edit this event");
+        toast({
+          title: "Permission Denied",
+          description: "You don't have permission to edit this event",
+          variant: "destructive",
+        });
           navigate("/events");
           return;
         }
@@ -290,7 +297,11 @@ export default function AddEvent() {
       } catch (err: unknown) {
         console.error("Failed to load event:", err);
         const message = err instanceof Error ? err.message : String(err);
-        alert("Failed to load event: " + message);
+        toast({
+          title: "Error Loading Event",
+          description: message,
+          variant: "destructive",
+        });
         navigate("/events");
       } finally {
         setLoadingEvent(false);
@@ -326,8 +337,9 @@ export default function AddEvent() {
       start_at: form.start_date,
       end_at: form.end_date,
       type: form.type,
-      registration_start: form.registration_start_date,
-      registration_end: form.registration_deadline_date,
+      format: form.format,
+      registration_start: form.registration_start_date && form.registration_start_time ? `${form.registration_start_date}T${form.registration_start_time}` : form.registration_start_date || '',
+      registration_end: form.registration_deadline_date && form.registration_deadline_time ? `${form.registration_deadline_date}T${form.registration_deadline_time}` : form.registration_deadline_date || '',
       tags,
       sections: secs,
     });
@@ -338,6 +350,9 @@ export default function AddEvent() {
     const existing = loadDraft();
     if (existing && existing.payload) {
       setSavedDraftAvailable(existing);
+    } else {
+      // If no draft exists, we can start autosaving fresh
+      setCanAutoSave(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -390,11 +405,15 @@ export default function AddEvent() {
     if (res.length) setResources(res);
     if (order.length) setSectionOrder(order);
 
-    // clear the saved-draft banner
+    // clear the saved-draft banner and enable autosave
     setSavedDraftAvailable(null);
+    setCanAutoSave(true);
   };
 
-  const dismissSavedDraft = () => setSavedDraftAvailable(null);
+  const dismissSavedDraft = () => {
+    setSavedDraftAvailable(null);
+    setCanAutoSave(true);
+  };
 
   // FAQ handlers
   const addFaq = () => {
@@ -459,7 +478,11 @@ export default function AddEvent() {
       (t) => t.toLowerCase() === trimmedTag.toLowerCase()
     );
     if (duplicate) {
-      alert(`"${duplicate}" already exists. Try a different tag.`);
+      toast({
+        title: "Duplicate Tag",
+        description: `"${duplicate}" already exists.`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -512,6 +535,11 @@ export default function AddEvent() {
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the highlighted errors before submitting.",
+        variant: "destructive",
+      });
       // focus first error if possible
       const first = Object.keys(nextErrors)[0];
       const el = document.getElementById(first === 'title' ? 'title' : first === 'location' ? 'location' : undefined);
@@ -550,7 +578,10 @@ export default function AddEvent() {
       if (isEditMode && eventId) {
         // Update existing event
         const updated = await eventService.updateEvent(eventId, payload);
-        alert("Event updated successfully!");
+        toast({
+          title: "Success",
+          description: "Event updated successfully!",
+        });
         if (updated?.slug) {
           navigate(`/events/${updated.slug}`);
         } else {
@@ -559,7 +590,10 @@ export default function AddEvent() {
       } else {
         // Create new event
         const created = await eventService.createEvent(payload);
-        alert("Event created successfully!");
+        toast({
+          title: "Success",
+          description: "Event created successfully!",
+        });
         if (created?.slug) {
           navigate(`/events/${created.slug}`);
         } else {
@@ -600,7 +634,11 @@ export default function AddEvent() {
       } catch (e) {
         message = String(err);
       }
-      alert(`Failed to ${isEditMode ? "update" : "create"} event: ` + message);
+      toast({
+        title: "Submission Failed",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -646,21 +684,6 @@ export default function AddEvent() {
               >
                 {mobilePane === 'fields' ? <Eye className="w-5 h-5" /> : <List className="w-5 h-5" />}
               </button>
-
-              <Button 
-                onClick={handleSubmit} 
-                disabled={loading}
-                className="rounded-full bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 shadow-lg shadow-purple-500/20"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    {isEditMode ? 'Update Event' : 'Publish Event'} 
-                    <Rocket className="w-4 h-4 ml-2" />
-                  </>
-                )}
-              </Button>
             </div>
             
             <div className="hidden lg:flex items-center gap-2 border-l border-border pl-4 ml-4">
@@ -689,7 +712,7 @@ export default function AddEvent() {
         {/* RIGHT COLUMN: Live Preview - Moved to appear first in DOM for proper flex order */}
         <div className={`
            shrink-0 transition-all duration-300 ease-in-out order-2 lg:order-2
-           ${viewMode === 'full' ? 'w-full max-w-5xl mx-auto' : 'w-full lg:w-[480px]'}
+           ${viewMode === 'full' ? 'w-full' : 'w-full lg:w-[480px]'}
            ${mobilePane === 'preview' ? 'block' : 'hidden lg:block'}
            ${viewMode === 'full' && mobilePane === 'fields' ? 'hidden lg:block' : ''} 
         `}>
@@ -709,10 +732,11 @@ export default function AddEvent() {
                  cover={draft.cover}
                  tags={draft.tags}
                  type={draft.type}
+                 format={draft.format}
                />
              ) : (
-               // Full Event Details Preview
-               <div className="border border-border rounded-3xl overflow-hidden shadow-2xl bg-background">
+               // Full Event Details Preview - Expanded version
+               <div className="w-full bg-background min-h-screen">
                   <LivePreview draft={draft} />
                </div>
              )}
@@ -722,6 +746,27 @@ export default function AddEvent() {
                  ? 'This card preview updates in real-time as you type' 
                  : 'Toggle to "Split" to see the compact card view'}
              </p>
+
+              {/* Action Button below Preview */}
+              <div className="pt-4">
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={loading}
+                  className="w-full rounded-2xl h-14 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-lg shadow-xl shadow-purple-500/20 group transition-all duration-300"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      {isEditMode ? 'Update Event' : 'Publish Event'} 
+                      <Rocket className="w-5 h-5 ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </>
+                  )}
+                </Button>
+                <p className="text-center text-[10px] text-muted-foreground mt-3 px-4">
+                  By publishing, you agree to our Terms of Service and Event Guidelines.
+                </p>
+              </div>
           </div>
         </div>
         
@@ -767,35 +812,58 @@ export default function AddEvent() {
                    {errors.title && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {errors.title}</p>}
                  </div>
 
-                 {/* Event Type */}
-                 <div className="grid sm:grid-cols-2 gap-4">
-                     <div className="space-y-2">
-                       <Label>Event Type</Label>
-                       <Select value={form.type} onValueChange={v => onChange('type', v)}>
-                          <SelectTrigger className="bg-card/50"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                             <SelectItem value="Hackathon">Hackathon</SelectItem>
-                             <SelectItem value="Workshop">Workshop</SelectItem>
-                             <SelectItem value="Conference">Conference</SelectItem>
-                             <SelectItem value="MUN">MUN</SelectItem>
-                             <SelectItem value="Meetup">Meetup</SelectItem>
-                             <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                       </Select>
-                     </div>
+                  {/* Event Type */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Event Type (Select multiple)</Label>
+                        <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-card/30 border border-border/50">
+                          {["Hackathon", "Workshop"].map((t) => {
+                            const isSelected = Array.isArray(form.type) ? form.type.includes(t) : form.type === t;
+                            return (
+                              <Badge
+                                key={t}
+                                variant={isSelected ? "default" : "outline"}
+                                className={`cursor-pointer transition-all ${isSelected ? "bg-purple-600 hover:bg-purple-700" : "hover:border-purple-400"}`}
+                                onClick={() => {
+                                  const current = Array.isArray(form.type) ? form.type : [form.type].filter(Boolean);
+                                  const next = current.includes(t)
+                                    ? current.filter((x) => x !== t)
+                                    : [...current, t];
+                                  onChange('type', next);
+                                }}
+                              >
+                                {t}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                     <div className="space-y-2">
-                       <Label>Format</Label>
-                       <Select value={form.format} onValueChange={v => onChange('format', v)}>
-                         <SelectTrigger className="bg-card/50"><SelectValue /></SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="Online">Online</SelectItem>
-                           <SelectItem value="Offline">Offline</SelectItem>
-                           <SelectItem value="Hybrid">Hybrid</SelectItem>
-                         </SelectContent>
-                       </Select>
-                     </div>
-                 </div>
+                      <div className="space-y-2">
+                        <Label>Format (Select multiple)</Label>
+                        <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-card/30 border border-border/50">
+                          {["Online", "Offline", "Hybrid"].map((f) => {
+                            const isSelected = Array.isArray(form.format) ? form.format.includes(f) : form.format === f;
+                            return (
+                              <Badge
+                                key={f}
+                                variant={isSelected ? "default" : "outline"}
+                                className={`cursor-pointer transition-all ${isSelected ? "bg-purple-600 hover:bg-purple-700" : "hover:border-purple-400"}`}
+                                onClick={() => {
+                                  const current = Array.isArray(form.format) ? form.format : [form.format].filter(Boolean);
+                                  const next = current.includes(f)
+                                    ? current.filter((x) => x !== f)
+                                    : [...current, f];
+                                  onChange('format', next);
+                                }}
+                              >
+                                {f}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                  </div>
 
                  {/* Slug */}
                  <div className="space-y-2">
@@ -880,6 +948,10 @@ export default function AddEvent() {
                             <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
                             <Input type="date" value={form.registration_start_date} onChange={e => onChange('registration_start_date', e.target.value)} className="pl-10 bg-transparent" />
                           </div>
+                          <div className="relative">
+                            <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                            <Input type="time" value={form.registration_start_time} onChange={e => onChange('registration_start_time', e.target.value)} className="pl-10 bg-transparent" />
+                          </div>
                       </div>
                     </div>
 
@@ -911,16 +983,20 @@ export default function AddEvent() {
               <div className="space-y-4">
                  <Label>Uploaded Files</Label>
                  <FileUpload 
-                  onFilesChange={(files) => {
+                  onFilesChange={(files: any[]) => {
                     if (files && files.length > 0) {
-                      const file = files[0];
-                      const localUrl = URL.createObjectURL(file);
-                      setCoverUrl(localUrl);
+                      const latest = files[files.length - 1];
+                      if (latest.preview) {
+                        setCoverUrl(latest.preview);
+                      }
+                    } else {
+                      setCoverUrl(null);
                     }
-                    setUploadedFiles((prev) => [
-                      ...prev,
-                      ...files.map((file) => ({ file, name: file.name })),
-                    ]);
+                    
+                    setUploadedFiles(files.map((f) => ({ 
+                      file: f.file, 
+                      name: f.file.name 
+                    })));
                   }}
                  />
 

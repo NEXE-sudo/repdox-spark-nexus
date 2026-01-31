@@ -205,7 +205,6 @@ export default function Profile() {
 
       // VIEWING ANOTHER USER'S PROFILE
       if (userId) {
-        console.log("[Profile] Loading profile for userId:", userId);
 
         const { data: profileData, error: profileError } = await supabase
           .from("user_profiles")
@@ -222,7 +221,6 @@ export default function Profile() {
         }
 
         if (profileData) {
-          console.log("[Profile] Loaded other user profile:", profileData);
           setProfile(profileData);
 
           // Populate form fields with the viewed user's data
@@ -240,7 +238,6 @@ export default function Profile() {
           setInstagramUrl(profileData.instagram_url || "");
           setPortfolioUrl(profileData.portfolio_url || "");
         } else {
-          console.log("[Profile] No profile found for userId:", userId);
           setError("Profile not found");
         }
 
@@ -269,7 +266,6 @@ export default function Profile() {
         return;
       }
 
-      console.log("[Profile] Loading own profile for user:", currentUser.id);
       setUser(currentUser);
 
       const { data: profileData, error: profileError } = await supabase
@@ -283,7 +279,6 @@ export default function Profile() {
       }
 
       if (profileData) {
-        console.log("[Profile] Loaded own profile:", profileData);
         setProfile(profileData);
         setFullName(profileData.full_name || "");
         setHandle(profileData.handle || "");
@@ -353,11 +348,9 @@ export default function Profile() {
 
   useEffect(() => {
     if (profile?.avatar_url) {
-      console.log("[Profile] Loading avatar from path:", profile.avatar_url);
 
       getAvatarSignedUrl(profile.avatar_url)
         .then((url) => {
-          console.log("[Profile] Avatar URL loaded:", url);
           setAvatarUrl(url);
         })
         .catch((err) => {
@@ -423,12 +416,9 @@ export default function Profile() {
       let avatarPath = profile?.avatar_url;
 
       if (avatarFile) {
-        console.log("[Profile] Uploading new avatar...");
         avatarPath = await uploadAvatarService(user.id, avatarFile);
-        console.log("[Profile] Avatar uploaded, path:", avatarPath);
       }
 
-      console.log("[Profile] Saving profile with avatar path:", avatarPath);
 
       const { error: upsertError } = await supabase
         .from("user_profiles")
@@ -510,8 +500,7 @@ export default function Profile() {
   };
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="flex h-screen">
+    <div className="flex h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)] bg-background overflow-hidden">
         {/* Sidebar */}
         <aside className="w-72 bg-card border-r border-border flex flex-col">
           <div className="p-6 border-b border-border">
@@ -543,65 +532,45 @@ export default function Profile() {
               </p>
             </div>
           </div>
-        </aside>
 
-        <nav className="flex-1 p-4">
-          <div className="space-y-1">
-            {sections
-              .filter((s) => {
-                // Hide dashboard and security sections when viewing other profiles
-                if (
-                  !isOwnProfile &&
-                  (s.id === "dashboard" ||
-                    s.id === "security" ||
-                    s.id === "preferences")
-                ) {
-                  return false;
-                }
-                return true;
-              })
-              .map((section) => {
-                const Icon = section.icon;
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => setActiveSection(section.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                      activeSection === section.id
-                        ? "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium"
-                        : "text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    {section.label}
-                  </button>
-                );
-              })}
-          </div>
-        </nav>
+          <nav className="flex-1 p-4 overflow-y-auto">
+            <div className="space-y-1">
+              {sections
+                .filter((s) => {
+                  // Hide dashboard and security sections when viewing other profiles
+                  if (
+                    !isOwnProfile &&
+                    (s.id === "dashboard" ||
+                      s.id === "security" ||
+                      s.id === "preferences")
+                  ) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => setActiveSection(section.id)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                        activeSection === section.id
+                          ? "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 font-medium"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      {section.label}
+                    </button>
+                  );
+                })}
+            </div>
+          </nav>
 
-        <div className="p-4 border-t border-border">
-          <Button
-            onClick={handleSignOut}
-            variant="outline"
-            className="w-full gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Button>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto p-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-cyan-50 rounded-lg border border-purple-200">
+          <div className="mb-6 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-lg font-medium text-gray-700">
                     Profile Completion
                   </span>
                   <span className="text-sm font-bold text-purple-600">
@@ -610,27 +579,10 @@ export default function Profile() {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div
-                    className="bg-gradient-to-r from-purple-600 to-cyan-600 h-2.5 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-purple-600 to-cyan h-2.5 rounded-full transition-all duration-500"
                     style={{ width: `${completionPercentage}%` }}
                   ></div>
                 </div>
-                {completionPercentage < 100 && missingFields.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text- xs text-gray-600 mb-2">
-                      Missing fields:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {missingFields.map((field) => (
-                        <span
-                          key={field}
-                          className="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full border border-amber-200"
-                        >
-                          {field}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 {completionPercentage === 100 && (
                   <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
                     <CheckCircle2 size={14} />
@@ -638,6 +590,27 @@ export default function Profile() {
                   </p>
                 )}
               </div>
+
+          <div className="p-4 border-t border-border mt-auto">
+            <Button
+              onClick={handleSignOut}
+              variant="outline"
+              className="w-full gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-8xl mx-auto p-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
               {/* Header */}
               <div className="mb-8">
                 <h1 className="text-4xl font-bold text-foreground mb-2">
@@ -1593,7 +1566,6 @@ export default function Profile() {
             </motion.div>
           </div>
         </div>
-      </div>
 
       {/* Delete Account Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1635,6 +1607,6 @@ export default function Profile() {
           }}
         />
       )}
-    </main>
+    </div>
   );
 }

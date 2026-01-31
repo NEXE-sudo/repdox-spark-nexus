@@ -54,7 +54,6 @@ export function getEventImage(imageUrl?: string | null): string | undefined {
   const { data } = supabase.storage.from("event-images").getPublicUrl(cleanPath);
   
   // Log for debugging
-  console.log('[getEventImage] Input:', imageUrl, '→ Output:', data.publicUrl);
   
   return data.publicUrl;
 }
@@ -97,7 +96,6 @@ export async function getEventImageUrl(
       .getPublicUrl(cleanPath);
     
     if (publicData?.publicUrl) {
-      console.log('[getEventImageUrl] Public URL:', publicData.publicUrl);
       return publicData.publicUrl;
     }
 
@@ -111,7 +109,6 @@ export async function getEventImageUrl(
       return undefined;
     }
 
-    console.log('[getEventImageUrl] Signed URL:', signedData?.signedUrl);
     return signedData?.signedUrl;
   } catch (error) {
     console.error('[getEventImageUrl] Exception:', error);

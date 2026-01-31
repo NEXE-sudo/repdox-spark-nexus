@@ -130,7 +130,7 @@ export default function EmailChangeModal({ currentEmail, onClose, onSuccess }: E
               <Button
                 onClick={handleEmailChange}
                 disabled={loading || !newEmail}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-cyan hover:from-purple-700 hover:to-cyan"
               >
                 {loading ? (
                   <>

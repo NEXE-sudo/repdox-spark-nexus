@@ -11,12 +11,14 @@ export interface CreateEventPayload {
   form: {
     title: string;
     slug?: string;
-    type?: string;
-    format?: string;
+    type?: string | string[];
+    format?: string | string[];
     start_date: string;
     start_time: string;
     end_date?: string;
     end_time?: string;
+    registration_start_date?: string;
+    registration_start_time?: string;
     registration_deadline_date?: string;
     registration_deadline_time?: string;
     location: string;
@@ -68,6 +70,10 @@ export async function createEvent(payload: CreateEventPayload) {
     form.end_date && form.end_time
       ? new Date(`${form.end_date}T${form.end_time}`)
       : new Date(startAt.getTime() + 8 * 60 * 60 * 1000);
+  const registrationStart = 
+    form.registration_start_date && form.registration_start_time
+      ? new Date(`${form.registration_start_date}T${form.registration_start_time}`)
+      : null;
   const registrationDeadline =
     form.registration_deadline_date && form.registration_deadline_time
       ? new Date(
@@ -81,6 +87,7 @@ export async function createEvent(payload: CreateEventPayload) {
     format: form.format || null,
     start_at: startAt.toISOString(),
     end_at: endAt.toISOString(),
+    registration_start: registrationStart ? registrationStart.toISOString() : null,
     registration_deadline: registrationDeadline.toISOString(),
     location: form.location,
     short_blurb: form.short_blurb ?? "",
@@ -109,7 +116,6 @@ export async function createEvent(payload: CreateEventPayload) {
     try {
       const file = uploadedFiles[0].file;
 
-      console.log("[eventService] Uploading file:", file.name);
 
       if (!file.type.startsWith("image/")) {
         throw new Error("Only image files are allowed");
@@ -141,7 +147,6 @@ export async function createEvent(payload: CreateEventPayload) {
         console.error("[eventService] Upload error:", uploadError);
         console.warn("Supabase upload error (continuing without image):", uploadError.message);
       } else {
-        console.log("[eventService] Upload successful:", uploadData);
         baseEvent.image_url = fileName;
       }
     } catch (err) {
@@ -166,7 +171,6 @@ export async function createEvent(payload: CreateEventPayload) {
       slug: candidateSlug,
     } as unknown as Database["public"]["Tables"]["events"]["Insert"];
 
-    console.log(`[eventService] Attempt ${attempt + 1}: Trying slug "${candidateSlug}"`);
 
     const { data, error } = await supabase
       .from("events")
@@ -176,7 +180,6 @@ export async function createEvent(payload: CreateEventPayload) {
 
     if (!error && data) {
       createdEvent = data as Database["public"]["Tables"]["events"]["Row"];
-      console.log("[eventService] Event created successfully:", createdEvent.id);
       break;
     }
 
@@ -198,7 +201,6 @@ export async function createEvent(payload: CreateEventPayload) {
       throw new Error(`Failed to create event after ${maxAttempts} attempts. Please try a different title or slug.`);
     }
 
-    console.log(`[eventService] Slug "${candidateSlug}" already exists, trying another...`);
   }
 
   if (!createdEvent) {
@@ -298,6 +300,10 @@ export async function updateEvent(
     form.end_date && form.end_time
       ? new Date(`${form.end_date}T${form.end_time}`)
       : new Date(startAt.getTime() + 8 * 60 * 60 * 1000);
+  const registrationStart = 
+    form.registration_start_date && form.registration_start_time
+      ? new Date(`${form.registration_start_date}T${form.registration_start_time}`)
+      : null;
   const registrationDeadline =
     form.registration_deadline_date && form.registration_deadline_time
       ? new Date(
@@ -311,6 +317,7 @@ export async function updateEvent(
     format: form.format || null,
     start_at: startAt.toISOString(),
     end_at: endAt.toISOString(),
+    registration_start: registrationStart ? registrationStart.toISOString() : null,
     registration_deadline: registrationDeadline.toISOString(),
     location: form.location,
     short_blurb: form.short_blurb ?? "",
@@ -460,7 +467,6 @@ export async function deleteEvent(eventId: string): Promise<void> {
           }
 
           await deleteFile(cleanPath, "event-images");
-          console.log(`[deleteEvent] Deleted image: ${cleanPath}`);
         } catch (imageError) {
           // Don't fail the entire deletion if image deletion fails
           console.error("[deleteEvent] Failed to delete image:", imageError);
@@ -478,7 +484,6 @@ export async function deleteEvent(eventId: string): Promise<void> {
       throw new Error(`Failed to delete event: ${deleteError.message}`);
     }
 
-    console.log(`[deleteEvent] Successfully deleted event: ${eventId}`);
   } catch (error) {
     console.error("[deleteEvent] Error:", error);
     throw error;

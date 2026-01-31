@@ -1,6 +1,7 @@
 import React from 'react';
 import { Calendar, MapPin, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { getEventImage } from '@/lib/eventImages';
 
 interface EventCardPreviewProps {
   title?: string;
@@ -10,6 +11,7 @@ interface EventCardPreviewProps {
   cover?: string;
   tags?: string[];
   type?: string;
+  format?: string | string[];
 }
 
 export default function EventCardPreview({ 
@@ -19,7 +21,8 @@ export default function EventCardPreview({
   location, 
   cover, 
   tags = [],
-  type 
+  type,
+  format
 }: EventCardPreviewProps) {
   return (
     <div className="group relative overflow-hidden rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
@@ -27,7 +30,7 @@ export default function EventCardPreview({
       <div className="relative h-48 overflow-hidden bg-muted">
         {cover ? (
           <img 
-            src={cover} 
+            src={/^blob:|https?:\/\//i.test(cover) ? cover : getEventImage(cover)} 
             alt={title || 'Event cover'} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -39,10 +42,18 @@ export default function EventCardPreview({
         
         {/* Type Badge */}
         {type && (
-          <div className="absolute top-3 left-3">
-            <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-0">
-              {type}
-            </Badge>
+          <div className="absolute top-3 left-3 flex flex-wrap gap-1">
+            {Array.isArray(type) ? (
+              type.map((t) => (
+                <Badge key={t} className="bg-purple-600 hover:bg-purple-700 text-white border-0 text-[10px] px-2 py-0.5">
+                  {t}
+                </Badge>
+              ))
+            ) : (
+              <Badge className="bg-purple-600 hover:bg-purple-700 text-white border-0">
+                {type}
+              </Badge>
+            )}
           </div>
         )}
       </div>
@@ -77,7 +88,14 @@ export default function EventCardPreview({
           {/* Location */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 flex-shrink-0" />
-            <span className="truncate">{location || 'Location not set'}</span>
+            <div className="flex flex-col">
+              <span className="truncate">{location || 'Location not set'}</span>
+              {format && (
+                <span className="text-[10px] text-purple-500 font-medium">
+                  {Array.isArray(format) ? format.join(", ") : String(format)}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

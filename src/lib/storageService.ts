@@ -17,7 +17,6 @@ export async function getSignedUrl(
   expiresIn: number = 3600
 ): Promise<string> {
   try {
-    console.log(`[getSignedUrl] Getting URL for: ${bucket}/${filePath}`);
 
     // Clean the path
     let cleanPath = filePath;
@@ -46,7 +45,6 @@ export async function getSignedUrl(
       throw new Error("No signed URL returned");
     }
 
-    console.log("[getSignedUrl] Signed URL created successfully");
     return data.signedUrl;
   } catch (error) {
     console.error("[getSignedUrl] Exception:", error);
@@ -112,7 +110,6 @@ export async function uploadFile(
       .toString(36)
       .substring(7)}.${fileExt}`;
 
-    console.log(`[uploadFile] Uploading to ${bucket}/${fileName}`);
 
     // Upload
     const { data, error } = await supabase.storage
@@ -127,7 +124,6 @@ export async function uploadFile(
       throw error;
     }
 
-    console.log("[uploadFile] Upload successful:", data);
     return fileName;
   } catch (error) {
     console.error("[uploadFile] Exception:", error);
@@ -149,7 +145,6 @@ export async function deleteFile(
     const { error } = await supabase.storage.from(bucket).remove([filePath]);
 
     if (error) throw error;
-    console.log(`[deleteFile] Deleted: ${bucket}/${filePath}`);
   } catch (error) {
     console.error("[deleteFile] Error:", error);
     throw error;

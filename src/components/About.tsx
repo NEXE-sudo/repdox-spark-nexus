@@ -7,25 +7,29 @@ const features = [
     icon: Zap,
     title: "Energize Innovation",
     description: "Spark creativity through hands-on hackathons and collaborative workshops.",
-    gradient: "from-purple-500 to-pink-500",
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
+    glow: "rgba(245, 158, 11, 0.4)"
   },
   {
     icon: Target,
     title: "Build Skills",
     description: "Develop technical and leadership abilities in real-world scenarios.",
-    gradient: "from-cyan-500 to-blue-500",
+    gradient: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+    glow: "rgba(6, 182, 212, 0.4)"
   },
   {
     icon: Heart,
     title: "Foster Community",
     description: "Connect with like-minded students, mentors, and industry leaders.",
-    gradient: "from-pink-500 to-purple-500",
+    gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
+    glow: "rgba(236, 72, 153, 0.4)"
   },
   {
     icon: Lightbulb,
     title: "Drive Impact",
     description: "Transform ideas into solutions that make a difference.",
-    gradient: "from-yellow-500 to-orange-500",
+    gradient: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
+    glow: "rgba(168, 85, 247, 0.4)"
   },
 ];
 
@@ -56,15 +60,6 @@ export default function About() {
             const Icon = feature.icon;
             const [isHovered, setIsHovered] = useState(false);
 
-            // Determine glow color based on gradient
-            const glowColor = feature.gradient.includes("purple")
-              ? "rgba(168, 85, 247, 0.4)"
-              : feature.gradient.includes("cyan")
-              ? "rgba(34, 211, 238, 0.4)"
-              : feature.gradient.includes("pink")
-              ? "rgba(236, 72, 153, 0.4)"
-              : "rgba(251, 191, 36, 0.4)";
-
             return (
               <motion.div
                 key={index}
@@ -78,28 +73,31 @@ export default function About() {
                 className="group"
               >
                 <motion.div
-                  className="bg-card rounded-lg p-6 h-full border border-border/50 transition-all duration-300"
+                  className="bg-card rounded-lg p-6 h-full border border-border/50 transition-all duration-300 relative overflow-hidden"
                   animate={{
                     boxShadow: isHovered
-                      ? `0 10px 30px -10px ${glowColor.replace('0.4', '0.2')}`
+                      ? `0 10px 30px -10px ${feature.glow.replace('0.4', '0.2')}`
                       : "0 0 0 rgba(0, 0, 0, 0)",
                   }}
                   transition={{ duration: 0.3 }}
                 >
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none" 
+                    style={{ background: feature.gradient }}
+                  />
+                  
                   <motion.div
-                    className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.gradient.replace('500', '500/10')} border border-white/5 mb-6 transition-all duration-300`}
-                    style={{
-                      background: `linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.05))`
-                    }}
+                    className="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 shadow-lg transition-all duration-300"
+                    style={{ background: feature.gradient }}
                     whileHover={{
-                      scale: 1.05,
+                      scale: 1.1,
                       rotate: 2,
                     }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Icon className="h-7 w-7 text-foreground/80" />
+                    <Icon className="h-7 w-7 text-white" />
                   </motion.div>
-                  <h3 className="text-xl font-semibold font-display mb-2 text-foreground">
+                  <h3 className="text-xl font-semibold font-display mb-2 text-foreground group-hover:text-purple-500 transition-colors duration-300">
                     {feature.title}
                   </h3>
                   <p className="text-muted-foreground leading-relaxed text-sm">

@@ -11,7 +11,6 @@ export default function EventCheckIn() {
         eventId={eventId}
         supabaseClient={supabase}
         onCheckIn={(registration) => {
-          console.log('Checked in:', registration);
         }}
       />
     </div>

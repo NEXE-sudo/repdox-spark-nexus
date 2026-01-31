@@ -140,7 +140,7 @@ export default function AuthForm() {
       <div className="absolute inset-0 overflow-hidden opacity-40">
         <div className="absolute top-0 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
         <div
-          className="absolute top-0 -right-40 w-80 h-80 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"
+          className="absolute top-0 -right-40 w-80 h-80 bg-cyan rounded-full mix-blend-multiply filter blur-3xl animate-pulse"
           style={{ animationDelay: "2s" }}
         ></div>
         <div
@@ -155,7 +155,7 @@ export default function AuthForm() {
           <div className="bg-card rounded-2xl shadow-2xl overflow-hidden border border-border/50">
             <div className="grid md:grid-cols-2 gap-0">
               {/* Left side - Branding */}
-              <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 to-cyan-600 p-8 text-white">
+              <div className="hidden md:flex flex-col justify-center items-center bg-gradient-to-br from-purple-600 to-cyan p-8 text-white">
                 <div className="inline-flex items-center justify-center w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl mb-6">
                   <div className="text-white font-bold text-5xl">R</div>
                 </div>
@@ -173,7 +173,7 @@ export default function AuthForm() {
               <div className="p-6 md:p-10">
                 {/* Mobile header */}
                 <div className="text-center mb-6 md:hidden">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-cyan-600 rounded-xl mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-600 to-cyan rounded-xl mb-4">
                     <div className="text-white font-bold text-2xl">R</div>
                   </div>
                   <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -304,7 +304,7 @@ export default function AuthForm() {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-cyan-700 focus:ring-4 focus:ring-purple-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden shadow-lg hover:shadow-xl"
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-cyan text-white font-semibold rounded-lg hover:from-purple-700 hover:to-cyan focus:ring-4 focus:ring-purple-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden shadow-lg hover:shadow-xl"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">

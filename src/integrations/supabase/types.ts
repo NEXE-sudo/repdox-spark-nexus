@@ -21,7 +21,7 @@ export type Database = {
           discord_invite: string | null;
           end_at: string;
           faqs: Json | null;
-          format: Database["public"]["Enums"]["event_format"];
+          format: Json;
           id: string;
           image_url: string | null;
           instagram_handle: string | null;
@@ -41,7 +41,7 @@ export type Database = {
           start_at: string;
           tags: string[] | null;
           title: string;
-          type: Database["public"]["Enums"]["event_type"];
+          type: Json;
           updated_at: string | null;
         };
         Insert: {
@@ -50,7 +50,7 @@ export type Database = {
           discord_invite?: string | null;
           end_at: string;
           faqs?: Json | null;
-          format: Database["public"]["Enums"]["event_format"];
+          format: Json;
           id?: string;
           image_url?: string | null;
           instagram_handle?: string | null;
@@ -70,7 +70,7 @@ export type Database = {
           start_at: string;
           tags?: string[] | null;
           title: string;
-          type: Database["public"]["Enums"]["event_type"];
+          type: Json;
           updated_at?: string | null;
         };
         Update: {
@@ -79,7 +79,7 @@ export type Database = {
           discord_invite?: string | null;
           end_at?: string;
           faqs?: Json | null;
-          format?: Database["public"]["Enums"]["event_format"];
+          format?: Json;
           id?: string;
           image_url?: string | null;
           instagram_handle?: string | null;
@@ -99,7 +99,7 @@ export type Database = {
           start_at?: string;
           tags?: string[] | null;
           title?: string;
-          type?: Database["public"]["Enums"]["event_type"];
+          type?: Json;
           updated_at?: string | null;
         };
         Relationships: [];

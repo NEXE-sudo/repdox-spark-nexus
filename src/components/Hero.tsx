@@ -170,7 +170,7 @@ export default function Hero() {
                   Connect with innovators, builders, and creators on our Discord server.
                 </p>
                 <a
-                  href="https://discord.gg/repdox"
+                  href="https://discord.gg/TbAqDgy4cw"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg text-center font-semibold hover:bg-primary/90 transition-colors duration-300"

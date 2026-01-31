@@ -121,12 +121,17 @@ export function useFileUpload(
         if (error) {
           newErrors.push(error);
         } else {
-          const preview = URL.createObjectURL(file);
-          newFiles.push({
-            id: `${Date.now()}-${Math.random()}`,
-            file,
-            preview,
-          });
+          try {
+            const preview = URL.createObjectURL(file);
+            newFiles.push({
+              id: `${Date.now()}-${Math.random()}`,
+              file,
+              preview,
+            });
+          } catch (urlErr) {
+            console.error("[useFileUpload] Failed to create preview URL:", urlErr);
+            newErrors.push(`Could not create preview for "${file.name}".`);
+          }
         }
       });
 

@@ -374,7 +374,7 @@ export default function Nav() {
                     >
                       {link.label}
                       <motion.span
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 w-0 group-hover:w-full transition-all origin-center"
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan w-0 group-hover:w-full transition-all origin-center"
                     transition={{ duration: 0.4, ease: "easeOut" }}
                       />
                     </NavigationMenuLink>

@@ -249,7 +249,7 @@ useEffect(() => {
               <Button
                 onClick={handleResendVerification}
                 disabled={resending || !email || cooldownSeconds > 0}
-                className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 disabled:opacity-50"
+                className="w-full bg-gradient-to-r from-purple-600 to-cyan hover:from-purple-700 hover:to-cyan disabled:opacity-50"
               >
                 {resending ? (
                   <>

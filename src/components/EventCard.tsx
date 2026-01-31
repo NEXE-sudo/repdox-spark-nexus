@@ -32,8 +32,15 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
     async function resolve() {
       if (!event.image_url) return;
       if (/^https?:\/\//i.test(event.image_url)) return; // already absolute
-      const mapped = getEventImage(event.image_url);
-      if (mapped) return; // mapped to local asset
+      
+      // Check for known local assets
+      const isKnownAsset = event.image_url.includes('event-hackathon') || 
+                          event.image_url.includes('event-mun') || 
+                          event.image_url.includes('event-workshop') || 
+                          event.image_url.includes('event-gaming');
+      
+      if (isKnownAsset) return;
+
       try {
         const url = await getEventImageUrl(event.image_url);
         if (mounted && url) setImgSrc(url);
@@ -59,7 +66,19 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
               variant="secondary" 
               className="absolute top-2 right-2 bg-background/90 backdrop-blur-sm border-primary/30"
             >
-              {event.type}
+              {Array.isArray(event.type) ? (
+                <div className="flex flex-wrap gap-1">
+                  {event.type.map((t) => (
+                    <Badge key={t} className="bg-purple-600/90 hover:bg-purple-600 text-[10px] px-2 py-0">
+                      {t}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <Badge className="bg-purple-600/90 hover:bg-purple-600 text-[10px] px-2 py-0">
+                  {event.type}
+                </Badge>
+              )}
             </Badge>
           </div>
 
@@ -111,7 +130,17 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
           variant="secondary" 
           className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm border-primary/30"
         >
-          {event.type}
+          {Array.isArray(event.type) ? (
+            <div className="flex flex-wrap gap-1">
+              {event.type.map((t) => (
+                <Badge key={t} className="bg-purple-600 text-white border-0 text-[10px] px-2 py-0">
+                  {t}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            event.type
+          )}
         </Badge>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/90 to-transparent p-4">
           <div className="flex items-center gap-2 text-sm text-primary font-mono">
@@ -143,7 +172,7 @@ export default function EventCard({ event, compact = false }: EventCardProps) {
             <span>{event.location}</span>
           </div>
           <Badge variant="outline" className="text-xs">
-            {event.format}
+            {Array.isArray(event.format) ? event.format.join(", ") : String(event.format)}
           </Badge>
         </div>
 

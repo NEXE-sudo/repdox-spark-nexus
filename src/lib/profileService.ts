@@ -3,6 +3,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { generateRandomString } from "@/lib/utils";
 
+// Memory cache for avatar URLs to avoid redundant fetches
+const avatarCache = new Map<string, string>();
+
 /**
  * Upload avatar to Supabase Storage (private bucket)
  * @param userId - The user's ID
@@ -14,7 +17,6 @@ export async function uploadAvatar(
   file: File
 ): Promise<string> {
   try {
-    console.log("[uploadAvatar] Starting upload for user:", userId);
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
@@ -29,7 +31,6 @@ export async function uploadAvatar(
     const fileExt = file.name.split(".").pop();
     const fileName = `${userId}/avatar-${Date.now()}.${fileExt}`;
 
-    console.log("[uploadAvatar] Uploading to path:", fileName);
 
     // Clean up old avatars (optional)
     try {
@@ -40,7 +41,6 @@ export async function uploadAvatar(
       if (existingFiles && existingFiles.length > 0) {
         const filesToDelete = existingFiles.map((f) => `${userId}/${f.name}`);
         await supabase.storage.from("avatars").remove(filesToDelete);
-        console.log("[uploadAvatar] Cleaned up old avatars");
       }
     } catch (err) {
       console.warn("[uploadAvatar] Cleanup warning:", err);
@@ -59,7 +59,6 @@ export async function uploadAvatar(
       throw new Error(`Avatar upload failed: ${error.message}`);
     }
 
-    console.log("[uploadAvatar] Upload successful:", data);
     return fileName;
   } catch (error) {
     console.error("[uploadAvatar] Exception:", error);
@@ -79,7 +78,10 @@ export async function uploadAvatar(
  */
 export async function getAvatarSignedUrl(path: string): Promise<string> {
   try {
-    console.log("[getAvatarSignedUrl] Getting URL for path:", path);
+    // Check cache first
+    if (avatarCache.has(path)) {
+      return avatarCache.get(path)!;
+    }
 
     // Clean up the path - remove bucket name if it's included
     let cleanPath = path;
@@ -92,7 +94,6 @@ export async function getAvatarSignedUrl(path: string): Promise<string> {
     // Remove 'avatars/' prefix if it exists (common mistake)
     if (cleanPath.startsWith("avatars/")) {
       cleanPath = cleanPath.replace("avatars/", "");
-      console.log("[getAvatarSignedUrl] Cleaned path:", cleanPath);
     }
 
     // Check if user is authenticated
@@ -108,7 +109,9 @@ export async function getAvatarSignedUrl(path: string): Promise<string> {
     // The Supabase client automatically includes the JWT token
     const { data } = supabase.storage.from("avatars").getPublicUrl(cleanPath);
 
-    console.log("[getAvatarSignedUrl] URL generated:", data.publicUrl);
+    // Cache the result
+    avatarCache.set(path, data.publicUrl);
+
     return data.publicUrl;
   } catch (error) {
     console.error("[getAvatarSignedUrl] Error:", error);
@@ -128,7 +131,6 @@ export async function getAvatarSignedUrlTemporary(
   expiresIn: number = 3600
 ): Promise<string> {
   try {
-    console.log("[getAvatarSignedUrlTemporary] Creating signed URL for:", path);
 
     const { data, error } = await supabase.storage
       .from("avatars")
@@ -143,7 +145,6 @@ export async function getAvatarSignedUrlTemporary(
       throw new Error("No signed URL returned");
     }
 
-    console.log("[getAvatarSignedUrlTemporary] Signed URL created");
     return data.signedUrl;
   } catch (error) {
     console.error("[getAvatarSignedUrlTemporary] Exception:", error);
@@ -159,7 +160,6 @@ export async function deleteAvatar(path: string): Promise<void> {
     const { error } = await supabase.storage.from("avatars").remove([path]);
 
     if (error) throw error;
-    console.log("[deleteAvatar] Avatar deleted:", path);
   } catch (error) {
     console.error("[deleteAvatar] Error:", error);
     throw error;
@@ -264,11 +264,6 @@ export async function deleteUserAccount() {
   const userId = user.id;
 
   try {
-    console.log(
-      "[deleteUserAccount] Starting complete account deletion for user:",
-      userId
-    );
-
     // Call the Edge Function with proper authorization header
     const { data, error } = await supabase.functions.invoke(
       "delete-user-account",
@@ -279,10 +274,6 @@ export async function deleteUserAccount() {
         },
       }
     );
-
-    // Log the full response for debugging
-    console.log("[deleteUserAccount] Response data:", data);
-    console.log("[deleteUserAccount] Response error:", error);
 
     if (error) {
       console.error("[deleteUserAccount] Edge function error:", error);
@@ -297,7 +288,6 @@ export async function deleteUserAccount() {
       throw new Error(data.error);
     }
 
-    console.log("[deleteUserAccount] Account deletion successful:", data);
 
     // Sign out
     await supabase.auth.signOut();
@@ -367,7 +357,6 @@ export async function createVerification(
   }
 
   // For local/dev testing we log the token so devs can see it without an email/SMS backend
-  console.log(`[profileService] Verification token for ${type}:${contact} -> ${token} (sent=${sent})`);
 
   return { token, id: (data as any)?.[0]?.id, sent };
 }

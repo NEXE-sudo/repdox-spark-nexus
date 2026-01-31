@@ -3,10 +3,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 export default function useAutoSave<T extends Record<string, any>>(key: string, value: T, options?: {
+  enabled?: boolean;
   debounceMs?: number;
   minSaveInterval?: number;
   onSaved?: (payload: T) => void;
 }) {
+  const enabled = options?.enabled ?? true;
   const debounceMs = options?.debounceMs ?? 600;
   const minSaveInterval = options?.minSaveInterval ?? 1000;
   const onSaved = options?.onSaved;
@@ -31,6 +33,7 @@ export default function useAutoSave<T extends Record<string, any>>(key: string, 
   }, [key, onSaved]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (timerRef.current) window.clearTimeout(timerRef.current);
 
     const elapsed = Date.now() - lastSavedRef.current;
@@ -46,7 +49,7 @@ export default function useAutoSave<T extends Record<string, any>>(key: string, 
       if (timerRef.current) window.clearTimeout(timerRef.current);
       timerRef.current = null;
     };
-  }, [value, debounceMs, minSaveInterval, save]);
+  }, [value, debounceMs, minSaveInterval, save, enabled]);
 
   const load = useCallback((): { payload?: T; savedAt?: number } => {
     try {

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { MessageCircle, Instagram, Mail, ArrowRight, CheckCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { FaDiscord, FaInstagram } from "react-icons/fa";
 
@@ -22,6 +22,7 @@ const footerLinks = {
 };
 
 export default function Footer() {
+  const { pathname } = useLocation();
   const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -41,6 +42,8 @@ export default function Footer() {
       setIsLoading(false);
     }
   };
+
+  if (pathname.startsWith("/profile")) return null;
 
   return (
     <footer className="relative overflow-hidden border-t border-border/30 bg-background/80 backdrop-blur-sm">
@@ -119,7 +122,7 @@ export default function Footer() {
               {/* Social Links */}
               <div className="flex gap-3">
                 {[
-                  { icon: FaDiscord, href: "https://discord.gg/tp3CM47tRM", label: "Discord", color: "from-indigo-500 to-blue-500", glow: "rgba(79, 70, 229, 0.5)" },
+                  { icon: FaDiscord, href: "https://discord.gg/TbAqDgy4cw", label: "Discord", color: "from-indigo-500 to-blue-500", glow: "rgba(79, 70, 229, 0.5)" },
                   { icon: FaInstagram, href: "#", label: "Instagram", color: "from-pink-500 to-rose-500", glow: "rgba(236, 72, 153, 0.5)" },
                 ].map((social, index) => {
                   const Icon = social.icon;

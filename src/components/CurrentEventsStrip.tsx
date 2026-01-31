@@ -231,8 +231,8 @@ function EmptyEventsState() {
           {/* Decorative icon */}
           <motion.div
             className="mb-8 inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20"
-            animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            // animate={{ scale: [1, 1.05, 1], rotate: [0, 5, 0] }}
+            // transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           >
             <Mail className="w-10 h-10 text-purple-400" />
           </motion.div>

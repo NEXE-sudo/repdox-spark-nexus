@@ -205,23 +205,9 @@ const App = () => {
                       <Route path="/verify-email" element={<VerifyEmail />} />
                       <Route path="/auth/callback" element={<AuthCallback />} />
 
-                      {/* Protected Routes - Require Authentication + Email Verification */}
-                      <Route
-                        path="/profile"
-                        element={
-                          <ProtectedRoute>
-                            <Profile />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/profile/:userId"
-                        element={
-                          <ProtectedRoute>
-                            <Profile />
-                          </ProtectedRoute>
-                        }
-                      />
+                      {/* Profile Routes - Public Access (own profile requires auth internally) */}
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/profile/:userId" element={<Profile />} />
                       <Route
                         path="/events/new"
                         element={

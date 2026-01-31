@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Calendar, MapPin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { getEventImage } from '@/lib/eventImages';
 
 interface RecentEvent {
@@ -22,12 +23,30 @@ export default function RecentlyViewedEvents() {
     loadRecentEvents();
   }, []);
 
-  const loadRecentEvents = () => {
+  const loadRecentEvents = async () => {
     try {
       const stored = localStorage.getItem('recentlyViewedEvents');
       if (stored) {
-        const events = JSON.parse(stored);
-        setRecentEvents(events.slice(0, 5));
+        const events: RecentEvent[] = JSON.parse(stored);
+        
+        // Filter out events that no longer exist in DB
+        const ids = events.map(e => e.id);
+        const { data: existingEvents, error } = await supabase
+          .from('events')
+          .select('id')
+          .in('id', ids);
+
+        if (error) throw error;
+
+        const existingIds = new Set(existingEvents?.map(e => e.id));
+        const filtered = events.filter(e => existingIds.has(e.id));
+
+        // Update localStorage if some were removed
+        if (filtered.length !== events.length) {
+          localStorage.setItem('recentlyViewedEvents', JSON.stringify(filtered));
+        }
+
+        setRecentEvents(filtered.slice(0, 5));
       }
     } catch (err) {
       console.error('Error loading recent events:', err);

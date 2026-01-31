@@ -164,7 +164,8 @@ export default function EventDetail() {
       setDeleteDialogOpen(false);
     }
   };
-  const activeTab = searchParams.get("tab") || "details";
+  const rawTab = searchParams.get("tab") || "details";
+  const activeTab = (rawTab === "registrations" && !isOwner) ? "details" : rawTab;
 
   const setTab = (tab: string) => {
     const p = new URLSearchParams(searchParams);
@@ -222,28 +223,43 @@ useEffect(() => {
         return;
       }
 
-      const mapped = getEventImage(event.image_url);
-      if (mapped) {
-        if (mounted) setHeroImageSrc(mapped);
+      // 1. Check if it's an absolute URL
+      if (/^https?:\/\//i.test(event.image_url)) {
+        if (mounted) setHeroImageSrc(event.image_url);
         return;
       }
 
-      // If image_url isn't an absolute URL, try to get a signed URL for private bucket
-      if (!/^https?:\/\//i.test(event.image_url)) {
-        try {
-          const signed = await getSignedUrl(event.image_url, "event-images");
-          if (mounted) setHeroImageSrc(signed);
-          return;
-        } catch (e) {
+      // 2. Check if it's a known local asset mapping
+      const mapped = getEventImage(event.image_url);
+      // getEventImage returns the mapped asset if found, OR the publicUrl if not.
+      // We only want to 'return' here if it's a local asset (not a publicUrl from storage).
+      // Local assets in filenameMap don't have 'supabase' or 'storage' in their string usually.
+      // But a better way is to check the filenameMap directly if we had access, 
+      // or just assume if it doesn't look like a storage path.
+      
+      const isKnownAsset = event.image_url.includes('event-hackathon') || 
+                          event.image_url.includes('event-mun') || 
+                          event.image_url.includes('event-workshop') || 
+                          event.image_url.includes('event-gaming') ||
+                          !event.image_url.includes('.'); // internal vite assets often have hashes but maybe not extensions in some cases? No, usually they do.
 
-          // fallback to the raw path (may not load if private)
-          if (mounted) setHeroImageSrc(event.image_url);
-          return;
-        }
+      if (isKnownAsset && mounted) {
+        setHeroImageSrc(mapped);
+        return;
       }
 
-      // absolute URL
-      if (mounted) setHeroImageSrc(event.image_url);
+      // 3. Try signed URL for private bucket
+      try {
+        const signed = await getSignedUrl(event.image_url, "event-images");
+        if (mounted) {
+          setHeroImageSrc(signed);
+          return;
+        }
+      } catch (e) {
+        console.warn("[EventDetail] Failed to get signed URL, falling back to public URL", e);
+        // 4. Fallback to public URL via getEventImage
+        if (mounted) setHeroImageSrc(mapped);
+      }
     })();
 
     return () => {
@@ -397,14 +413,14 @@ useEffect(() => {
     startDate: event.start_at,
     endDate: event.end_at || undefined,
     eventAttendanceMode:
-      event.format === "Online"
+      (Array.isArray(event.format) ? event.format.includes("Online") : event.format === "Online")
         ? "https://schema.org/OnlineEventAttendanceMode"
         : "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: event.is_active
       ? "https://schema.org/EventScheduled"
       : "https://schema.org/EventCancelled",
     location:
-      event.format === "Online"
+      (Array.isArray(event.format) ? event.format.includes("Online") : event.format === "Online")
         ? {
             "@type": "VirtualLocation",
             url: event.registration_link || window.location.href,
@@ -413,6 +429,7 @@ useEffect(() => {
     image: event.image_url ? [event.image_url] : undefined,
     description: event.short_blurb || event.overview || event.long_description,
     organizer: event.organisers || undefined,
+    keywords: Array.isArray(event.type) ? event.type.join(", ") : event.type,
     offers: event.registration_link
       ? { "@type": "Offer", url: event.registration_link }
       : undefined,
@@ -470,9 +487,19 @@ useEffect(() => {
             </div>
 
             <div className="mb-6">
-              <Badge className="bg-accent text-accent-foreground border-0 px-3 py-1 text-sm font-semibold">
-                {event.type}
-              </Badge>
+              {Array.isArray(event.type) ? (
+                <div className="flex flex-wrap gap-2">
+                  {event.type.map((t) => (
+                    <span key={t} className="bg-purple-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <Badge className="bg-accent text-accent-foreground border-0 px-3 py-1 text-sm font-semibold">
+                  {event.type}
+                </Badge>
+              )}
             </div>
 
             <motion.h1
@@ -522,7 +549,7 @@ useEffect(() => {
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Local Event Schedule
+              Event Schedule
               </button>
               <button
                 onClick={() => setTab("teams")}
@@ -841,7 +868,7 @@ useEffect(() => {
                         {event.location}
                       </p>
                       <Badge variant="outline" className="mt-1 text-xs">
-                        {event.format}
+                        {Array.isArray(event.format) ? event.format.join(" / ") : String(event.format)}
                       </Badge>
                     </div>
                   </div>

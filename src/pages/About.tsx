@@ -8,25 +8,29 @@ const features = [
     icon: Zap,
     title: "Energize Innovation",
     description: "Spark creativity through hands-on hackathons and collaborative workshops.",
-    gradient: "from-yellow-400 to-orange-500"
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
+    glow: "rgba(245, 158, 11, 0.4)"
   },
   {
     icon: Target,
     title: "Build Skills",
     description: "Develop technical and leadership abilities in real-world scenarios.",
-    gradient: "from-blue-400 to-cyan-500"
+    gradient: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)",
+    glow: "rgba(6, 182, 212, 0.4)"
   },
   {
     icon: Heart,
     title: "Foster Community",
     description: "Connect with like-minded students, mentors, and industry leaders.",
-    gradient: "from-pink-400 to-rose-500"
+    gradient: "linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)",
+    glow: "rgba(236, 72, 153, 0.4)"
   },
   {
     icon: Lightbulb,
     title: "Drive Impact",
     description: "Transform ideas into solutions that make a difference.",
-    gradient: "from-purple-400 to-indigo-500"
+    gradient: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
+    glow: "rgba(168, 85, 247, 0.4)"
   },
 ];
 
@@ -49,9 +53,8 @@ export default function About() {
       {/* Animated background layers */}
       <motion.div 
         style={{ y }}
-        className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(120,119,198,0.1),transparent_50%)]"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(120,119,198,0.1),transparent_50%)] pointer-events-none"
       />
-      
       
       <div ref={ref} className="max-w-6xl mx-auto relative z-10">
         <motion.div
@@ -60,10 +63,10 @@ export default function About() {
           transition={{ duration: 0.8 }}
           className="text-center mb-20"
         >          
-          <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60">
+          <h2 className="text-5xl md:text-6xl font-bold mb-6 text-foreground">
             About Repdox
           </h2>
-          <p className="text-lg md:text-xl text-white/60 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             We're a youth-led movement empowering students and early-career professionals 
             through transformative events. From hackathons to Model UN conferences, 
             gaming tournaments to skill-building workshops—we create spaces where 
@@ -83,18 +86,24 @@ export default function About() {
                 whileHover={{ y: -10, scale: 1.05 }}
                 className="group relative"
               >
-                <div className="h-full bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-md rounded-2xl p-6 border border-white/10 overflow-hidden hover:border-white/20 transition-all duration-300">
+                <div className="h-full bg-card/50 backdrop-blur-md rounded-2xl p-6 border border-border/50 overflow-hidden hover:border-border transition-all duration-300">
                   {/* Gradient overlay on hover */}
-                  <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-br ${feature.gradient}`} />
+                  <div 
+                    className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500" 
+                    style={{ background: feature.gradient }}
+                  />
                   
-                  <div className={`relative inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                  <div 
+                    style={{ background: feature.gradient }}
+                    className="relative inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg"
+                  >
                     <Icon className="h-7 w-7 text-white" />
                   </div>
                   
-                  <h3 className="text-xl font-semibold mb-3 text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-pink-400 transition-all duration-300">
+                  <h3 className="text-xl font-semibold mb-3 text-foreground group-hover:text-purple-500 transition-colors duration-300">
                     {feature.title}
                   </h3>
-                  <p className="text-white/60 leading-relaxed text-sm">
+                  <p className="text-muted-foreground leading-relaxed text-sm">
                     {feature.description}
                   </p>
                 </div>
