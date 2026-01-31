@@ -219,9 +219,22 @@ export async function createEvent(payload: CreateEventPayload) {
       const start = parts[0] || null;
       const title = parts[1] || "Schedule Item";
       const description = parts[2] || null;
+
+      let isoStart = null;
+      if (start) {
+        try {
+          const d = new Date(start);
+          if (!isNaN(d.getTime())) {
+            isoStart = d.toISOString();
+          }
+        } catch (e) {
+          console.warn(`[eventService] Invalid schedule date: ${start}`);
+        }
+      }
+
       return {
         event_id: eventId,
-        start_at: start ? new Date(start).toISOString() : null,
+        start_at: isoStart,
         title,
         description,
       };
@@ -392,9 +405,23 @@ export async function updateEvent(
       .filter(Boolean);
     const scheduleInserts = lines.map((line) => {
       const parts = line.split("|").map((p) => p.trim());
+      const start = parts[0] || null;
+
+      let isoStart = null;
+      if (start) {
+        try {
+          const d = new Date(start);
+          if (!isNaN(d.getTime())) {
+            isoStart = d.toISOString();
+          }
+        } catch (e) {
+          console.warn(`[eventService] Invalid schedule date: ${start}`);
+        }
+      }
+
       return {
         event_id: eventId,
-        start_at: parts[0] ? new Date(parts[0]).toISOString() : null,
+        start_at: isoStart,
         title: parts[1] || "Schedule Item",
         description: parts[2] || null,
       };
