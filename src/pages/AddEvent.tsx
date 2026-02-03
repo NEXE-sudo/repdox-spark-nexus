@@ -7,21 +7,40 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, X, GripVertical, CalendarDays, 
-  Calendar, Clock, MapPin, Image as ImageIcon, 
-  FileText, List, HelpCircle, ChevronLeft, Save, 
-  Eye, Rocket, AlertCircle, CheckCircle2
+import {
+  Plus,
+  X,
+  GripVertical,
+  CalendarDays,
+  Calendar,
+  Clock,
+  MapPin,
+  Image as ImageIcon,
+  FileText,
+  List,
+  HelpCircle,
+  ChevronLeft,
+  Save,
+  Eye,
+  Rocket,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import eventService from "@/lib/eventService";
 import FileUpload from "@/components/ui/File_upload";
 
-import EventBuilderExtensions from '@/components/EventBuilder/EventBuilderExtensions';
-import LivePreview from '@/components/EventBuilder/LivePreview';
-import EventCardPreview from '@/components/EventBuilder/EventCardPreview';
-import useAutoSave from '@/hooks/useAutoSave';
-import type { EventDraft } from '@/components/EventBuilder/LivePreview';
-import { SelectTrigger, SelectValue, SelectItem, SelectContent, Select } from "@/components/ui/select";
+import EventBuilderExtensions from "@/components/EventBuilder/EventBuilderExtensions";
+import LivePreview from "@/components/EventBuilder/LivePreview";
+import EventCardPreview from "@/components/EventBuilder/EventCardPreview";
+import useAutoSave from "@/hooks/useAutoSave";
+import type { EventDraft } from "@/components/EventBuilder/LivePreview";
+import {
+  SelectTrigger,
+  SelectValue,
+  SelectItem,
+  SelectContent,
+  Select,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 // Suggested tags based on common event categories
@@ -108,33 +127,55 @@ export default function AddEvent() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
 
   // Optional sections and enhanced draft state (for Live Preview & reordering)
-  const [speakers, setSpeakers] = useState<Array<{ id: string; name: string; role?: string }>>([]);
-  const [resources, setResources] = useState<Array<{ id: string; title: string; link?: string }>>([]);
+  const [speakers, setSpeakers] = useState<
+    Array<{ id: string; name: string; role?: string }>
+  >([]);
+  const [resources, setResources] = useState<
+    Array<{ id: string; title: string; link?: string }>
+  >([]);
   const [sectionOrder, setSectionOrder] = useState<string[]>([]);
   const [rolesText, setRolesText] = useState<string>("");
   const [showPreview, setShowPreview] = useState<boolean>(true);
-  const [viewMode, setViewMode] = useState<'split' | 'full'>('split');
+  const [viewMode, setViewMode] = useState<"split" | "full">("split");
   const [publishLater, setPublishLater] = useState(false);
-  const [publish_date, setPublishDate] = useState('');
-  const [publish_time, setPublishTime] = useState('09:00');
+  const [publish_date, setPublishDate] = useState("");
+  const [publish_time, setPublishTime] = useState("09:00");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Autosave draft states
   const [canAutoSave, setCanAutoSave] = useState(false);
-  const [savedDraftAvailable, setSavedDraftAvailable] = useState<{ payload?: EventDraft; savedAt?: number } | null>(null);
+  const [savedDraftAvailable, setSavedDraftAvailable] = useState<{
+    payload?: EventDraft;
+    savedAt?: number;
+  } | null>(null);
 
   // Autosave draft hook
-  const draftKey = `event-draft:${slug ?? 'new'}`;
-  const [draft, setDraft] = useState<EventDraft>({ id: eventId ?? undefined, title: '', description: '', date: '', location: '', tags: [], sections: [] });
-  const { state: draftSaveState, load: loadDraft, manualSave: manualSaveDraft, clear: clearDraft } = useAutoSave<EventDraft>(draftKey, draft, { debounceMs: 700, enabled: canAutoSave });
-
+  const draftKey = `event-draft:${slug ?? "new"}`;
+  const [draft, setDraft] = useState<EventDraft>({
+    id: eventId ?? undefined,
+    title: "",
+    description: "",
+    date: "",
+    location: "",
+    tags: [],
+    sections: [],
+  });
+  const {
+    state: draftSaveState,
+    load: loadDraft,
+    manualSave: manualSaveDraft,
+    clear: clearDraft,
+  } = useAutoSave<EventDraft>(draftKey, draft, {
+    debounceMs: 700,
+    enabled: canAutoSave,
+  });
 
   // Helpers for date/time constraints
   const todayStr = new Date().toISOString().split("T")[0];
   const now = new Date();
-  const nowTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
-  const startTimeMin = form.start_date === todayStr ? nowTime : '00:00';
+  const startTimeMin = form.start_date === todayStr ? nowTime : "00:00";
   const endDateMin = form.start_date || todayStr;
   const regDateMin = todayStr;
   const regDateMax = form.start_date || undefined;
@@ -151,18 +192,18 @@ export default function AddEvent() {
       : undefined;
 
   // Mobile pane toggle: 'fields' or 'preview' (small screens)
-  const [mobilePane, setMobilePane] = useState<'fields' | 'preview'>('fields');
+  const [mobilePane, setMobilePane] = useState<"fields" | "preview">("fields");
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       // toggle only on small screens
       if (window.innerWidth >= 1024) return;
-      if (e.key.toLowerCase() === 'p') {
-        setMobilePane((m) => (m === 'preview' ? 'fields' : 'preview'));
+      if (e.key.toLowerCase() === "p") {
+        setMobilePane((m) => (m === "preview" ? "fields" : "preview"));
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   // Load event data if in edit mode
@@ -184,11 +225,11 @@ export default function AddEvent() {
           data: { user },
         } = await supabase.auth.getUser();
         if (event.created_by !== user?.id) {
-        toast({
-          title: "Permission Denied",
-          description: "You don't have permission to edit this event",
-          variant: "destructive",
-        });
+          toast({
+            title: "Permission Denied",
+            description: "You don't have permission to edit this event",
+            variant: "destructive",
+          });
           navigate("/events");
           return;
         }
@@ -229,11 +270,13 @@ export default function AddEvent() {
 
         // attempt to set cover image if event provides one (some events may use different property names)
         const getEventCover = (ev: unknown): string | null => {
-          if (!ev || typeof ev !== 'object') return null;
+          if (!ev || typeof ev !== "object") return null;
           const e = ev as Record<string, unknown>;
-          if (typeof e['cover_url'] === 'string') return e['cover_url'] as string;
-          if (typeof e['image_url'] === 'string') return e['image_url'] as string;
-          if (typeof e['cover'] === 'string') return e['cover'] as string;
+          if (typeof e["cover_url"] === "string")
+            return e["cover_url"] as string;
+          if (typeof e["image_url"] === "string")
+            return e["image_url"] as string;
+          if (typeof e["cover"] === "string") return e["cover"] as string;
           return null;
         };
         setCoverUrl(getEventCover(event));
@@ -245,7 +288,9 @@ export default function AddEvent() {
 
         // Set FAQs
         if (event.faqs && Array.isArray(event.faqs)) {
-          const loadedFaqs = (event.faqs as Array<{ question?: string; answer?: string }>).map((f, idx: number) => ({
+          const loadedFaqs = (
+            event.faqs as Array<{ question?: string; answer?: string }>
+          ).map((f, idx: number) => ({
             id: `faq-${idx}`,
             question: f?.question || "",
             answer: f?.answer || "",
@@ -254,7 +299,7 @@ export default function AddEvent() {
             setFaqs(loadedFaqs);
             setShowFaqs(true);
             // add to section order
-            setSectionOrder((s) => (s.includes('FAQs') ? s : [...s, 'FAQs']));
+            setSectionOrder((s) => (s.includes("FAQs") ? s : [...s, "FAQs"]));
           }
         }
 
@@ -273,7 +318,7 @@ export default function AddEvent() {
             return `${start} | ${s.title} | ${s.description || ""}`;
           });
           setScheduleText(scheduleLines.join("\n"));
-          setSectionOrder((s) => (s.includes('Agenda') ? s : [...s, 'Agenda']));
+          setSectionOrder((s) => (s.includes("Agenda") ? s : [...s, "Agenda"]));
         }
 
         // Load teams
@@ -285,7 +330,7 @@ export default function AddEvent() {
         if (teams && teams.length > 0) {
           const teamLines = teams.map(
             (t) =>
-              `${t.name} | ${t.description || ""} | ${t.contact_email || ""}`
+              `${t.name} | ${t.description || ""} | ${t.contact_email || ""}`,
           );
           setTeamsText(teamLines.join("\n"));
         }
@@ -306,39 +351,106 @@ export default function AddEvent() {
     loadEvent();
   }, [isEditMode, slug, navigate]);
 
-  const onChange = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }));
+  const onChange = (k: string, v: any) => setForm((s) => ({ ...s, [k]: v }));
 
   // keep `draft` in sync with the main form and extras (for preview / autosave)
   useEffect(() => {
     // Construct sections dynamically based on content
     const secs: EventDraft["sections"] = [];
-    
-    if (scheduleText) secs.push({ id: 'agenda', type: 'Agenda', title: 'Agenda', content: scheduleText });
-    if (speakers.length > 0) secs.push({ id: 'speakers', type: 'Speakers', title: 'Speakers', content: JSON.stringify(speakers) });
-    if (teamsText && form.type !== 'Hackathon') secs.push({ id: 'teams', type: 'Teams', title: 'Teams', content: teamsText });
-    if (committeesText && form.type === 'MUN') secs.push({ id: 'committees', type: 'Committees', title: 'Committees', content: committeesText });
-    if (prizeText) secs.push({ id: 'prizes', type: 'Prizes', title: 'Prizes & Awards', content: prizeText });
-    if (rolesText) secs.push({ id: 'roles', type: 'Roles', title: 'Participant Roles', content: rolesText });
-    if (faqs.length > 0) secs.push({ id: 'faqs', type: 'FAQs', title: 'FAQs', content: JSON.stringify(faqs) });
-    if (resources.length > 0) secs.push({ id: 'resources', type: 'Resources', title: 'Resources', content: JSON.stringify(resources) });
+
+    if (scheduleText)
+      secs.push({
+        id: "agenda",
+        type: "Agenda",
+        title: "Agenda",
+        content: scheduleText,
+      });
+    if (speakers.length > 0)
+      secs.push({
+        id: "speakers",
+        type: "Speakers",
+        title: "Speakers",
+        content: JSON.stringify(speakers),
+      });
+    if (teamsText && form.type !== "Hackathon")
+      secs.push({
+        id: "teams",
+        type: "Teams",
+        title: "Teams",
+        content: teamsText,
+      });
+    if (committeesText && form.type === "MUN")
+      secs.push({
+        id: "committees",
+        type: "Committees",
+        title: "Committees",
+        content: committeesText,
+      });
+    if (prizeText)
+      secs.push({
+        id: "prizes",
+        type: "Prizes",
+        title: "Prizes & Awards",
+        content: prizeText,
+      });
+    if (rolesText)
+      secs.push({
+        id: "roles",
+        type: "Roles",
+        title: "Participant Roles",
+        content: rolesText,
+      });
+    if (faqs.length > 0)
+      secs.push({
+        id: "faqs",
+        type: "FAQs",
+        title: "FAQs",
+        content: JSON.stringify(faqs),
+      });
+    if (resources.length > 0)
+      secs.push({
+        id: "resources",
+        type: "Resources",
+        title: "Resources",
+        content: JSON.stringify(resources),
+      });
 
     setDraft({
       id: eventId ?? undefined,
       title: form.title,
       description: form.short_blurb || form.overview || form.long_description,
-      date: form.start_date ? `${form.start_date}T${form.start_time}` : '',
+      date: form.start_date ? `${form.start_date}T${form.start_time}` : "",
       location: form.location,
       cover: coverUrl || draft?.cover,
       start_at: form.start_date,
       end_at: form.end_date,
       type: form.type,
       format: form.format,
-      registration_start: form.registration_start_date && form.registration_start_time ? `${form.registration_start_date}T${form.registration_start_time}` : form.registration_start_date || '',
-      registration_end: form.registration_deadline_date && form.registration_deadline_time ? `${form.registration_deadline_date}T${form.registration_deadline_time}` : form.registration_deadline_date || '',
+      registration_start:
+        form.registration_start_date && form.registration_start_time
+          ? `${form.registration_start_date}T${form.registration_start_time}`
+          : form.registration_start_date || "",
+      registration_end:
+        form.registration_deadline_date && form.registration_deadline_time
+          ? `${form.registration_deadline_date}T${form.registration_deadline_time}`
+          : form.registration_deadline_date || "",
       tags,
       sections: secs,
     });
-  }, [form, tags, scheduleText, faqs, speakers, resources, teamsText, prizeText, rolesText, committeesText, eventId, coverUrl]);
+  }, [
+    form,
+    tags,
+    scheduleText,
+    faqs,
+    speakers,
+    resources,
+    teamsText,
+    prizeText,
+    rolesText,
+    committeesText,
+    eventId,
+    coverUrl,
+  ]);
 
   // make saved draft available to restore (once)
   useEffect(() => {
@@ -366,28 +478,59 @@ export default function AddEvent() {
   const restoreDraft = () => {
     if (!savedDraftAvailable?.payload) return;
     const p = savedDraftAvailable.payload;
-    setForm((s) => ({ ...s, title: p.title || s.title, short_blurb: p.description || s.short_blurb, location: p.location || s.location }));
+    setForm((s) => ({
+      ...s,
+      title: p.title || s.title,
+      short_blurb: p.description || s.short_blurb,
+      location: p.location || s.location,
+    }));
     setTags(p.tags || []);
 
     // reconstruct extras
     const order: string[] = [];
     const sp: typeof speakers = [];
     const res: typeof resources = [];
-    let sched = '';
+    let sched = "";
     let fqs: FAQ[] = [];
 
     (p.sections || []).forEach((sec) => {
       order.push(sec.type);
       try {
-        if (sec.type === 'Agenda') sched = typeof sec.content === 'string' ? (sec.content as string) : '';
-        if (sec.type === 'FAQs') fqs = typeof sec.content === 'string' ? JSON.parse(sec.content) : sec.content || [];
-        if (sec.type === 'Speakers') {
-          const parsed = (typeof sec.content === 'string' ? JSON.parse(sec.content) : sec.content || []) as Array<{ name?: string; role?: string }>;
-          parsed.forEach((s, i: number) => sp.push({ id: `sp-${i}`, name: s?.name || '', role: s?.role || '' }));
+        if (sec.type === "Agenda")
+          sched =
+            typeof sec.content === "string" ? (sec.content as string) : "";
+        if (sec.type === "FAQs")
+          fqs =
+            typeof sec.content === "string"
+              ? JSON.parse(sec.content)
+              : sec.content || [];
+        if (sec.type === "Speakers") {
+          const parsed = (
+            typeof sec.content === "string"
+              ? JSON.parse(sec.content)
+              : sec.content || []
+          ) as Array<{ name?: string; role?: string }>;
+          parsed.forEach((s, i: number) =>
+            sp.push({
+              id: `sp-${i}`,
+              name: s?.name || "",
+              role: s?.role || "",
+            }),
+          );
         }
-        if (sec.type === 'Resources') {
-          const parsed = (typeof sec.content === 'string' ? JSON.parse(sec.content) : sec.content || []) as Array<{ title?: string; link?: string }>;
-          parsed.forEach((r, i: number) => res.push({ id: `r-${i}`, title: r?.title || '', link: r?.link || '' }));
+        if (sec.type === "Resources") {
+          const parsed = (
+            typeof sec.content === "string"
+              ? JSON.parse(sec.content)
+              : sec.content || []
+          ) as Array<{ title?: string; link?: string }>;
+          parsed.forEach((r, i: number) =>
+            res.push({
+              id: `r-${i}`,
+              title: r?.title || "",
+              link: r?.link || "",
+            }),
+          );
         }
       } catch (e) {
         // ignore parse errors
@@ -395,7 +538,10 @@ export default function AddEvent() {
     });
 
     if (sched) setScheduleText(sched);
-    if (fqs && fqs.length) { setFaqs(fqs); setShowFaqs(true); }
+    if (fqs && fqs.length) {
+      setFaqs(fqs);
+      setShowFaqs(true);
+    }
     if (sp.length) setSpeakers(sp);
     if (res.length) setResources(res);
     if (order.length) setSectionOrder(order);
@@ -424,7 +570,7 @@ export default function AddEvent() {
   const updateFaq = (
     id: string,
     field: "question" | "answer",
-    value: string
+    value: string,
   ) => {
     setFaqs(faqs.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
   };
@@ -456,7 +602,8 @@ export default function AddEvent() {
     if (value.trim()) {
       const filtered = SUGGESTED_TAGS.filter(
         (tag) =>
-          tag.toLowerCase().includes(value.toLowerCase()) && !tags.includes(tag)
+          tag.toLowerCase().includes(value.toLowerCase()) &&
+          !tags.includes(tag),
       );
       setFilteredSuggestions(filtered);
       setShowTagSuggestions(true);
@@ -470,7 +617,7 @@ export default function AddEvent() {
     if (!trimmedTag) return;
 
     const duplicate = tags.find(
-      (t) => t.toLowerCase() === trimmedTag.toLowerCase()
+      (t) => t.toLowerCase() === trimmedTag.toLowerCase(),
     );
     if (duplicate) {
       toast({
@@ -500,33 +647,39 @@ export default function AddEvent() {
   const handleSubmit = async () => {
     // Run validation
     const nextErrors: Record<string, string> = {};
-    if (!form.title || !form.title.trim()) nextErrors.title = 'Please enter an event title.';
-    if (!form.start_date || !form.start_time) nextErrors.start = 'Start date and time are required.';
+    if (!form.title || !form.title.trim())
+      nextErrors.title = "Please enter an event title.";
+    if (!form.start_date || !form.start_time)
+      nextErrors.start = "Start date and time are required.";
 
     // Date/time validation: start cannot be in the past
     try {
       const startAt = new Date(`${form.start_date}T${form.start_time}`);
       if (startAt.getTime() < Date.now()) {
-        nextErrors.start = 'Event start must be in the future.';
+        nextErrors.start = "Event start must be in the future.";
       }
 
       if (form.end_date && form.end_time) {
         const endAt = new Date(`${form.end_date}T${form.end_time}`);
         if (endAt.getTime() <= startAt.getTime()) {
-          nextErrors.end = 'End time must be after start time.';
+          nextErrors.end = "End time must be after start time.";
         }
       }
 
       if (form.registration_deadline_date && form.registration_deadline_time) {
-        const regDead = new Date(`${form.registration_deadline_date}T${form.registration_deadline_time}`);
+        const regDead = new Date(
+          `${form.registration_deadline_date}T${form.registration_deadline_time}`,
+        );
         if (regDead.getTime() >= startAt.getTime()) {
-          nextErrors.registration_deadline = 'Registration deadline must be before the event start.';
+          nextErrors.registration_deadline =
+            "Registration deadline must be before the event start.";
         }
       }
     } catch (err) {
       // ignore parse errors here; other validations will catch
     }
-    if (!form.location || !form.location.trim()) nextErrors.location = 'Venue or platform is required.';
+    if (!form.location || !form.location.trim())
+      nextErrors.location = "Venue or platform is required.";
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
@@ -537,7 +690,13 @@ export default function AddEvent() {
       });
       // focus first error if possible
       const first = Object.keys(nextErrors)[0];
-      const el = document.getElementById(first === 'title' ? 'title' : first === 'location' ? 'location' : undefined);
+      const el = document.getElementById(
+        first === "title"
+          ? "title"
+          : first === "location"
+            ? "location"
+            : undefined,
+      );
       el?.focus();
       return;
     }
@@ -550,8 +709,8 @@ export default function AddEvent() {
             .map((l) => l.trim())
             .filter(Boolean)
             .map((line) => {
-              const [name, cap] = line.split('|').map((p) => p.trim());
-              return { name, capacity: cap ? (parseInt(cap, 10) || null) : null };
+              const [name, cap] = line.split("|").map((p) => p.trim());
+              return { name, capacity: cap ? parseInt(cap, 10) || null : null };
             })
         : null;
 
@@ -566,9 +725,15 @@ export default function AddEvent() {
         roles: parsedRoles && parsedRoles.length ? parsedRoles : null,
       };
 
-      const payload = publishLater && publish_date
-        ? { ...payloadBase, publish_at: new Date(`${publish_date}T${publish_time}`).toISOString() }
-        : payloadBase;
+      const payload =
+        publishLater && publish_date
+          ? {
+              ...payloadBase,
+              publish_at: new Date(
+                `${publish_date}T${publish_time}`,
+              ).toISOString(),
+            }
+          : payloadBase;
 
       if (isEditMode && eventId) {
         // Update existing event
@@ -601,16 +766,25 @@ export default function AddEvent() {
     } catch (err: unknown) {
       console.error(
         isEditMode ? "Update event failed" : "Create event failed",
-        err
+        err,
       );
       let message = "Unknown error";
       try {
         if (err instanceof Error) {
           try {
             const parsed = JSON.parse((err as Error).message);
-            if (parsed && typeof parsed === 'object' && 'message' in (parsed as Record<string, unknown>)) {
-              const maybeMessage = (parsed as Record<string, unknown>)['message'];
-              message = typeof maybeMessage === 'string' ? maybeMessage : (err as Error).message;
+            if (
+              parsed &&
+              typeof parsed === "object" &&
+              "message" in (parsed as Record<string, unknown>)
+            ) {
+              const maybeMessage = (parsed as Record<string, unknown>)[
+                "message"
+              ];
+              message =
+                typeof maybeMessage === "string"
+                  ? maybeMessage
+                  : (err as Error).message;
             } else {
               message = (err as Error).message;
             }
@@ -652,458 +826,602 @@ export default function AddEvent() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-purple-500/30">
-      
       {/* Top Navigation Bar */}
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-[1600px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => navigate('/my-events')}
-                className="p-2 -ml-2 rounded-full hover:bg-accent/10 transition-colors"
-                title="Back"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-lg font-semibold flex items-center gap-2">
-                {isEditMode ? 'Edit Event' : 'Create New Event'}
-                {draftSaveState === 'saving' && <span className="text-xs font-normal text-muted-foreground animate-pulse">Saving...</span>}
-                {draftSaveState === 'saved' && <span className="text-xs font-normal text-muted-foreground flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/>Saved</span>}
-              </h1>
-            </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/my-events")}
+              className="p-2 -ml-2 rounded-full hover:bg-accent/10 transition-colors"
+              title="Back"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-semibold flex items-center gap-2">
+              {isEditMode ? "Edit Event" : "Create New Event"}
+              {draftSaveState === "saving" && (
+                <span className="text-xs font-normal text-muted-foreground animate-pulse">
+                  Saving...
+                </span>
+              )}
+              {draftSaveState === "saved" && (
+                <span className="text-xs font-normal text-muted-foreground flex items-center">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Saved
+                </span>
+              )}
+            </h1>
+          </div>
 
-            <div className="flex items-center gap-3">
-              {/* Mobile Preview Toggle */}
-              <button 
-                onClick={() => setMobilePane(m => m === 'fields' ? 'preview' : 'fields')}
-                className="lg:hidden p-2 rounded-full hover:bg-accent/10 transition-colors"
+          <div className="flex items-center gap-3">
+            {/* Mobile Preview Toggle */}
+            <button
+              onClick={() =>
+                setMobilePane((m) => (m === "fields" ? "preview" : "fields"))
+              }
+              className="lg:hidden p-2 rounded-full hover:bg-accent/10 transition-colors"
+            >
+              {mobilePane === "fields" ? (
+                <Eye className="w-5 h-5" />
+              ) : (
+                <List className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+
+          <div className="hidden lg:flex items-center gap-2 border-l border-border pl-4 ml-4">
+            <span className="text-sm font-medium text-muted-foreground">
+              View:
+            </span>
+            <div className="flex bg-muted p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode("split")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${viewMode === "split" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               >
-                {mobilePane === 'fields' ? <Eye className="w-5 h-5" /> : <List className="w-5 h-5" />}
+                Split
+              </button>
+              <button
+                onClick={() => setViewMode("full")}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${viewMode === "full" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Full Preview
               </button>
             </div>
-            
-            <div className="hidden lg:flex items-center gap-2 border-l border-border pl-4 ml-4">
-                 <span className="text-sm font-medium text-muted-foreground">View:</span>
-                 <div className="flex bg-muted p-1 rounded-lg">
-                    <button 
-                      onClick={() => setViewMode('split')}
-                      className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${viewMode === 'split' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                      Split
-                    </button>
-                    <button 
-                       onClick={() => setViewMode('full')}
-                       className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${viewMode === 'full' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                      Full Preview
-                    </button>
-                 </div>
-            </div>
-
+          </div>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row max-w-[1600px] mx-auto w-full p-4 lg:p-6 gap-8 relative">
-        
         {/* RIGHT COLUMN: Live Preview - Moved to appear first in DOM for proper flex order */}
-        <div className={`
+        <div
+          className={`
            shrink-0 transition-all duration-300 ease-in-out order-2 lg:order-2
-           ${viewMode === 'full' ? 'w-full' : 'w-full lg:w-[480px]'}
-           ${mobilePane === 'preview' ? 'block' : 'hidden lg:block'}
-           ${viewMode === 'full' && mobilePane === 'fields' ? 'hidden lg:block' : ''} 
-        `}>
+           ${viewMode === "full" ? "w-full" : "w-full lg:w-[480px]"}
+           ${mobilePane === "preview" ? "block" : "hidden lg:block"}
+           ${viewMode === "full" && mobilePane === "fields" ? "hidden lg:block" : ""} 
+        `}
+        >
           <div className="lg:sticky lg:top-24 space-y-4">
-             <div className="bg-muted px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground uppercase tracking-widest text-center">
-               {viewMode === 'full' ? 'Full Event Preview' : 'Event Card Preview'}
-             </div>
-             
-             {/* Conditional Preview - Card or Full */}
-             {viewMode === 'split' ? (
-               // Event Card Preview (compact)
-               <EventCardPreview 
-                 title={draft.title}
-                 description={draft.description}
-                 date={draft.date}
-                 location={draft.location}
-                 cover={draft.cover}
-                 tags={draft.tags}
-                 type={draft.type}
-                 format={draft.format}
-               />
-             ) : (
-               // Full Event Details Preview - Expanded version
-               <div className="w-full bg-background min-h-screen">
-                  <LivePreview draft={draft} />
-               </div>
-             )}
-             
-             <p className="text-center text-xs text-muted-foreground">
-               {viewMode === 'split' 
-                 ? 'This card preview updates in real-time as you type' 
-                 : 'Toggle to "Split" to see the compact card view'}
-             </p>
+            <div className="bg-muted px-4 py-2 rounded-lg text-xs font-medium text-muted-foreground uppercase tracking-widest text-center">
+              {viewMode === "full"
+                ? "Full Event Preview"
+                : "Event Card Preview"}
+            </div>
 
-              {/* Action Button below Preview */}
-              <div className="pt-4">
-                <Button 
-                  onClick={handleSubmit} 
-                  disabled={loading}
-                  className="w-full rounded-2xl h-14 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-lg shadow-xl shadow-purple-500/20 group transition-all duration-300"
-                >
-                  {loading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      {isEditMode ? 'Update Event' : 'Publish Event'} 
-                      <Rocket className="w-5 h-5 ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </>
-                  )}
-                </Button>
-                <p className="text-center text-[10px] text-muted-foreground mt-3 px-4">
-                  By publishing, you agree to our Terms of Service and Event Guidelines.
-                </p>
-              </div>
-          </div>
-        </div>
-        
-        {/* LEFT COLUMN: Input Fields */}
-        <div className={`flex-1 min-w-0 space-y-8 pb-32 lg:pb-0 order-1 lg:order-1 ${mobilePane === 'preview' ? 'hidden lg:block' : 'block'} ${viewMode === 'full' ? 'hidden lg:hidden' : ''}`}>
-            
-            {/* Banner for Saved Draft */}
-            {savedDraftAvailable && (
-              <div className="rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800 p-4 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
-                    <Save className="w-5 h-5 text-purple-600 dark:text-purple-300" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">Unsaved draft found</h3>
-                    <p className="text-xs text-purple-700 dark:text-purple-300">We found a draft from a previous session.</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" onClick={dismissSavedDraft}>Dismiss</Button>
-                  <Button size="sm" variant="secondary" onClick={restoreDraft}>Restore</Button>
-                </div>
+            {/* Conditional Preview - Card or Full */}
+            {viewMode === "split" ? (
+              // Event Card Preview (compact)
+              <EventCardPreview
+                title={draft.title}
+                description={draft.description}
+                date={draft.date}
+                location={draft.location}
+                cover={draft.cover}
+                tags={draft.tags}
+                type={draft.type}
+                format={draft.format}
+              />
+            ) : (
+              // Full Event Details Preview - Expanded version
+              <div className="w-full bg-background min-h-screen">
+                <LivePreview draft={draft} />
               </div>
             )}
 
-            {/* SECTION: Basic Info */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
-                <FileText className="w-4 h-4" />
-                <span className="text-sm font-medium uppercase tracking-wider">Basic Details</span>
-              </div>
-              
-              <div className="grid gap-6">
-                 {/* Title */}
-                 <div className="space-y-2">
-                   <Label className="text-base font-semibold">Event Title</Label>
-                   <Input 
-                     value={form.title} 
-                     onChange={e => onChange('title', e.target.value)} 
-                     placeholder="e.g. Annual Tech Summit 2024"
-                     className="h-12 text-lg bg-card/50 backdrop-blur-sm border-border/50 focus:bg-card transition-all"
-                   />
-                   {errors.title && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {errors.title}</p>}
-                 </div>
+            <p className="text-center text-xs text-muted-foreground">
+              {viewMode === "split"
+                ? "This card preview updates in real-time as you type"
+                : 'Toggle to "Split" to see the compact card view'}
+            </p>
 
-                  {/* Event Type */}
-                  <div className="grid sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Event Type (Select multiple)</Label>
-                        <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-card/30 border border-border/50">
-                          {["Hackathon", "Workshop"].map((t) => {
-                            const isSelected = Array.isArray(form.type) ? form.type.includes(t) : form.type === t;
-                            return (
-                              <Badge
-                                key={t}
-                                variant={isSelected ? "default" : "outline"}
-                                className={`cursor-pointer transition-all ${isSelected ? "bg-purple-600 hover:bg-purple-700" : "hover:border-purple-400"}`}
-                                onClick={() => {
-                                  const current = Array.isArray(form.type) ? form.type : [form.type].filter(Boolean);
-                                  const next = current.includes(t)
-                                    ? current.filter((x) => x !== t)
-                                    : [...current, t];
-                                  onChange('type', next);
-                                }}
-                              >
-                                {t}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Format (Select multiple)</Label>
-                        <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-card/30 border border-border/50">
-                          {["Online", "Offline", "Hybrid"].map((f) => {
-                            const isSelected = Array.isArray(form.format) ? form.format.includes(f) : form.format === f;
-                            return (
-                              <Badge
-                                key={f}
-                                variant={isSelected ? "default" : "outline"}
-                                className={`cursor-pointer transition-all ${isSelected ? "bg-purple-600 hover:bg-purple-700" : "hover:border-purple-400"}`}
-                                onClick={() => {
-                                  const current = Array.isArray(form.format) ? form.format : [form.format].filter(Boolean);
-                                  const next = current.includes(f)
-                                    ? current.filter((x) => x !== f)
-                                    : [...current, f];
-                                  onChange('format', next);
-                                }}
-                              >
-                                {f}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      </div>
-                  </div>
-
-                 {/* Slug */}
-                 <div className="space-y-2">
-                      <Label>URL Slug</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3 text-muted-foreground text-sm">/events/</span>
-                        <Input 
-                          value={form.slug} 
-                          onChange={e => onChange('slug', e.target.value)}
-                          placeholder="my-event-slug"
-                          className="pl-16 bg-card/50"
-                        />
-                      </div>
-                 </div>
-
-                 {/* Location */}
-                 <div className="space-y-2">
-                   <Label>Location / Platform</Label>
-                   <div className="relative">
-                     <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                     <Input 
-                       value={form.location} 
-                       onChange={e => onChange('location', e.target.value)}
-                       className="pl-10 bg-card/50"
-                       placeholder="e.g. San Francisco Convention Center or Zoom Link"
-                     />
-                   </div>
-                   {errors.location && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> {errors.location}</p>}
-                 </div>
-              </div>
-            </section>
-
-            {/* SECTION: Date & Time */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
-                <Calendar className="w-4 h-4" />
-                <span className="text-sm font-medium uppercase tracking-wider">Schedule</span>
-              </div>
-
-               <div className="grid sm:grid-cols-2 gap-6">
-                  {/* Start */}
-                  <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
-                    <Label className="font-semibold text-purple-600 dark:text-purple-400">Starts</Label>
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                        <Input type="date" value={form.start_date} onChange={e => onChange('start_date', e.target.value)} className="pl-10 bg-transparent" min={todayStr} />
-                      </div>
-                      <div className="relative">
-                        <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                        <Input type="time" value={form.start_time} onChange={e => onChange('start_time', e.target.value)} className="pl-10 bg-transparent" />
-                      </div>
-                    </div>
-                    {errors.start && <p className="text-xs text-red-500">{errors.start}</p>}
-                  </div>
-
-                  {/* End */}
-                  <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
-                    <Label className="font-semibold text-muted-foreground">Ends</Label>
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                        <Input type="date" value={form.end_date} onChange={e => onChange('end_date', e.target.value)} className="pl-10 bg-transparent" min={form.start_date}/>
-                      </div>
-                      <div className="relative">
-                         <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                         <Input type="time" value={form.end_time} onChange={e => onChange('end_time', e.target.value)} className="pl-10 bg-transparent" />
-                      </div>
-                    </div>
-                  </div>
-               </div>
-               
-               {/* Registration Dates */}
-               <div className="pt-4 border-t border-border/50">
-                 <Label className="mb-3 block font-semibold text-muted-foreground">Registration Period</Label>
-                 <div className="grid sm:grid-cols-2 gap-6">
-                    {/* Reg Start */}
-                    <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
-                        <Label className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Opens</Label>
-                        <div className="space-y-3">
-                          <div className="relative">
-                            <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                            <Input type="date" value={form.registration_start_date} onChange={e => onChange('registration_start_date', e.target.value)} className="pl-10 bg-transparent" />
-                          </div>
-                          <div className="relative">
-                            <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                            <Input type="time" value={form.registration_start_time} onChange={e => onChange('registration_start_time', e.target.value)} className="pl-10 bg-transparent" />
-                          </div>
-                      </div>
-                    </div>
-
-                    {/* Reg End */}
-                    <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
-                       <Label className="font-medium text-xs uppercase tracking-wide text-muted-foreground">Closes</Label>
-                        <div className="space-y-3">
-                          <div className="relative">
-                            <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                            <Input type="date" value={form.registration_deadline_date} onChange={e => onChange('registration_deadline_date', e.target.value)} className="pl-10 bg-transparent" />
-                          </div>
-                           <div className="relative">
-                            <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                            <Input type="time" value={form.registration_deadline_time} onChange={e => onChange('registration_deadline_time', e.target.value)} className="pl-10 bg-transparent" />
-                          </div>
-                      </div>
-                    </div>
-                 </div>
-               </div>
-            </section>
-
-            {/* SECTION: Media */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
-                 <ImageIcon className="w-4 h-4" />
-                 <span className="text-sm font-medium uppercase tracking-wider">Media</span>
-              </div>
-              
-              <div className="space-y-4">
-                 <Label>Uploaded Files</Label>
-                 <FileUpload 
-                  onFilesChange={(files: any[]) => {
-                    if (files && files.length > 0) {
-                      const latest = files[files.length - 1];
-                      if (latest.preview) {
-                        setCoverUrl(latest.preview);
-                      }
-                    } else {
-                      setCoverUrl(null);
-                    }
-                    
-                    setUploadedFiles(files.map((f) => ({ 
-                      file: f.file, 
-                      name: f.file.name 
-                    })));
-                  }}
-                 />
-
-                 <p className="text-xs text-muted-foreground">
-                   Recommended: 16:9 aspect ratio for cover images.
-                 </p>
-                 {/* File List */}
-                 {uploadedFiles.length > 0 && (
-                   <ul className="space-y-2">
-                     {uploadedFiles.map((file, idx) => (
-                       <li key={idx} className="flex items-center justify-between p-2 rounded bg-muted/50 text-sm">
-                         <span className="truncate">{file.name}</span>
-                         <button 
-                           onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
-                           className="text-red-500 hover:text-red-700 p-1"
-                         >
-                           <X className="w-4 h-4" />
-                         </button>
-                       </li>
-                     ))}
-                   </ul>
-                 )}
-              </div>
-            </section>
-
-             {/* SECTION: Description */}
-             <section className="space-y-4">
-              <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
-                 <List className="w-4 h-4" />
-                 <span className="text-sm font-medium uppercase tracking-wider">Details</span>
-              </div>
-
-               <div className="space-y-6">
-                 <div className="space-y-2">
-                   <Label>Short Blurb</Label>
-                   <Input 
-                     value={form.short_blurb} 
-                     onChange={e => onChange('short_blurb', e.target.value)} 
-                     placeholder="A catchy one-liner..."
-                     className="bg-card/50"
-                     maxLength={150}
-                   />
-                   <p className="text-xs text-right text-muted-foreground">{form.short_blurb.length}/150</p>
-                 </div>
-
-                 <div className="space-y-2">
-                   <div className="flex items-center justify-between">
-                     <Label>Long Description</Label>
-                     <span className="text-xs text-muted-foreground bg-accent/10 px-2 py-0.5 rounded">Markdown Supported</span>
-                   </div>
-                   <Textarea 
-                     value={form.long_description}
-                     onChange={e => onChange('long_description', e.target.value)}
-                     className="min-h-[200px] font-mono text-sm bg-card/50"
-                     placeholder="Describe your event in detail..."
-                   />
-                 </div>
-               </div>
-            </section>
-            
-            {/* Extended Sections (Agenda, FAQs, etc) */}
-            <EventBuilderExtensions
-              eventType={form.type}
-              scheduleText={scheduleText} setScheduleText={setScheduleText}
-              teamsText={teamsText} setTeamsText={setTeamsText}
-              committeesText={committeesText} setCommitteesText={setCommitteesText}
-              prizeText={prizeText} setPrizeText={setPrizeText}
-              faqs={faqs} setFaqs={setFaqs}
-              speakers={speakers} setSpeakers={setSpeakers}
-              resources={resources} setResources={setResources}
-              rolesText={rolesText} setRolesText={setRolesText}
-            />
-
-            {/* Tags */}
-            <section className="space-y-4 pt-4 border-t border-border">
-              <Label>Tags</Label>
-               <div className="bg-card/50 p-4 rounded-lg border border-border/50 space-y-3">
-                 <div className="flex flex-wrap gap-2">
-                    {tags.map(tag => (
-                      <Badge key={tag} variant="secondary" className="px-3 py-1 text-sm flex items-center gap-1">
-                        {tag}
-                        <button onClick={() => removeTag(tag)} className="ml-1 hover:text-red-500"><X className="w-3 h-3"/></button>
-                      </Badge>
-                    ))}
-                 </div>
-                 <div className="relative">
-                    <Input 
-                      value={tagInput}
-                      onChange={e => handleTagInputChange(e.target.value)}
-                      onKeyDown={handleTagKeyDown}
-                      placeholder="Type a tag and press Enter..."
-                      className="bg-transparent"
-                    />
-                    {showTagSuggestions && (
-                      <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                        {filteredSuggestions.map(tag => (
-                          <div 
-                            key={tag}
-                            className="px-4 py-2 hover:bg-accent cursor-pointer text-sm"
-                            onClick={() => addTag(tag)}
-                          >
-                            {tag}
-                          </div>
-                        ))}
-                       </div>
-                     )}
-                  </div>
-                </div>
-             </section>
-
+            {/* Action Button below Preview */}
+            <div className="pt-4">
+              <Button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="w-full rounded-2xl h-14 bg-purple-600 hover:bg-purple-700 text-white font-semibold text-lg shadow-xl shadow-purple-500/20 group transition-all duration-300"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    {isEditMode ? "Update Event" : "Publish Event"}
+                    <Rocket className="w-5 h-5 ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </>
+                )}
+              </Button>
+              <p className="text-center text-[10px] text-muted-foreground mt-3 px-4">
+                By publishing, you agree to our Terms of Service and Event
+                Guidelines.
+              </p>
+            </div>
+          </div>
         </div>
 
+        {/* LEFT COLUMN: Input Fields */}
+        <div
+          className={`flex-1 min-w-0 space-y-8 pb-32 lg:pb-0 order-1 lg:order-1 ${mobilePane === "preview" ? "hidden lg:block" : "block"} ${viewMode === "full" ? "hidden lg:hidden" : ""}`}
+        >
+          {/* Banner for Saved Draft */}
+          {savedDraftAvailable && (
+            <div className="rounded-xl bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-800 p-4 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                  <Save className="w-5 h-5 text-purple-600 dark:text-purple-300" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                    Unsaved draft found
+                  </h3>
+                  <p className="text-xs text-purple-700 dark:text-purple-300">
+                    We found a draft from a previous session.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={dismissSavedDraft}>
+                  Dismiss
+                </Button>
+                <Button size="sm" variant="secondary" onClick={restoreDraft}>
+                  Restore
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION: Basic Info */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+              <FileText className="w-4 h-4" />
+              <span className="text-sm font-medium uppercase tracking-wider">
+                Basic Details
+              </span>
+            </div>
+
+            <div className="grid gap-6">
+              {/* Title */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Event Title</Label>
+                <Input
+                  value={form.title}
+                  onChange={(e) => onChange("title", e.target.value)}
+                  placeholder="e.g. Annual Tech Summit 2024"
+                  className="h-12 text-lg bg-card/50 backdrop-blur-sm border-border/50 focus:bg-card transition-all"
+                />
+                {errors.title && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.title}
+                  </p>
+                )}
+              </div>
+
+              {/* Event Type */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Event Type (Select multiple)</Label>
+                  <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-card/30 border border-border/50">
+                    {["Hackathon", "Workshop"].map((t) => {
+                      const isSelected = Array.isArray(form.type)
+                        ? form.type.includes(t)
+                        : form.type === t;
+                      return (
+                        <Badge
+                          key={t}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`cursor-pointer transition-all ${isSelected ? "bg-purple-600 hover:bg-purple-700" : "hover:border-purple-400"}`}
+                          onClick={() => {
+                            const current = Array.isArray(form.type)
+                              ? form.type
+                              : [form.type].filter(Boolean);
+                            const next = current.includes(t)
+                              ? current.filter((x) => x !== t)
+                              : [...current, t];
+                            onChange("type", next);
+                          }}
+                        >
+                          {t}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Format (Select multiple)</Label>
+                  <div className="flex flex-wrap gap-2 p-2 rounded-lg bg-card/30 border border-border/50">
+                    {["Online", "Offline", "Hybrid"].map((f) => {
+                      const isSelected = Array.isArray(form.format)
+                        ? form.format.includes(f)
+                        : form.format === f;
+                      return (
+                        <Badge
+                          key={f}
+                          variant={isSelected ? "default" : "outline"}
+                          className={`cursor-pointer transition-all ${isSelected ? "bg-purple-600 hover:bg-purple-700" : "hover:border-purple-400"}`}
+                          onClick={() => {
+                            const current = Array.isArray(form.format)
+                              ? form.format
+                              : [form.format].filter(Boolean);
+                            const next = current.includes(f)
+                              ? current.filter((x) => x !== f)
+                              : [...current, f];
+                            onChange("format", next);
+                          }}
+                        >
+                          {f}
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Slug */}
+              <div className="space-y-2">
+                <Label>URL Slug</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-muted-foreground text-sm">
+                    /events/
+                  </span>
+                  <Input
+                    value={form.slug}
+                    onChange={(e) => onChange("slug", e.target.value)}
+                    placeholder="my-event-slug"
+                    className="pl-16 bg-card/50"
+                  />
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="space-y-2">
+                <Label>Location / Platform</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={form.location}
+                    onChange={(e) => onChange("location", e.target.value)}
+                    className="pl-10 bg-card/50"
+                    placeholder="e.g. San Francisco Convention Center or Zoom Link"
+                  />
+                </div>
+                {errors.location && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> {errors.location}
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* SECTION: Date & Time */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm font-medium uppercase tracking-wider">
+                Schedule
+              </span>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-6">
+              {/* Start */}
+              <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                <Label className="font-semibold text-purple-600 dark:text-purple-400">
+                  Starts
+                </Label>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={form.start_date}
+                      onChange={(e) => onChange("start_date", e.target.value)}
+                      className="pl-10 bg-transparent"
+                      min={todayStr}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="time"
+                      value={form.start_time}
+                      onChange={(e) => onChange("start_time", e.target.value)}
+                      className="pl-10 bg-transparent"
+                    />
+                  </div>
+                </div>
+                {errors.start && (
+                  <p className="text-xs text-red-500">{errors.start}</p>
+                )}
+              </div>
+
+              {/* End */}
+              <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                <Label className="font-semibold text-muted-foreground">
+                  Ends
+                </Label>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={form.end_date}
+                      onChange={(e) => onChange("end_date", e.target.value)}
+                      className="pl-10 bg-transparent"
+                      min={form.start_date}
+                    />
+                  </div>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="time"
+                      value={form.end_time}
+                      onChange={(e) => onChange("end_time", e.target.value)}
+                      className="pl-10 bg-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Registration Dates */}
+            <div className="pt-4 border-t border-border/50">
+              <Label className="mb-3 block font-semibold text-muted-foreground">
+                Registration Period
+              </Label>
+              <div className="grid sm:grid-cols-2 gap-6">
+                {/* Reg Start */}
+                <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                  <Label className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                    Opens
+                  </Label>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={form.registration_start_date}
+                        onChange={(e) =>
+                          onChange("registration_start_date", e.target.value)
+                        }
+                        className="pl-10 bg-transparent"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="time"
+                        value={form.registration_start_time}
+                        onChange={(e) =>
+                          onChange("registration_start_time", e.target.value)
+                        }
+                        className="pl-10 bg-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reg End */}
+                <div className="space-y-3 p-4 rounded-xl bg-card/30 border border-border/50">
+                  <Label className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                    Closes
+                  </Label>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <CalendarDays className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={form.registration_deadline_date}
+                        onChange={(e) =>
+                          onChange("registration_deadline_date", e.target.value)
+                        }
+                        className="pl-10 bg-transparent"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Clock className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        type="time"
+                        value={form.registration_deadline_time}
+                        onChange={(e) =>
+                          onChange("registration_deadline_time", e.target.value)
+                        }
+                        className="pl-10 bg-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* SECTION: Media */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+              <ImageIcon className="w-4 h-4" />
+              <span className="text-sm font-medium uppercase tracking-wider">
+                Media
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              <Label>Uploaded Files</Label>
+              <FileUpload
+                onFilesChange={(files: any[]) => {
+                  if (files && files.length > 0) {
+                    const latest = files[files.length - 1];
+                    if (latest.preview) {
+                      setCoverUrl(latest.preview);
+                    }
+                  } else {
+                    setCoverUrl(null);
+                  }
+
+                  setUploadedFiles(
+                    files.map((f) => ({
+                      file: f.file,
+                      name: f.file.name,
+                    })),
+                  );
+                }}
+              />
+
+              <p className="text-xs text-muted-foreground">
+                Recommended: 16:9 aspect ratio for cover images.
+              </p>
+              {/* File List */}
+              {uploadedFiles.length > 0 && (
+                <ul className="space-y-2">
+                  {uploadedFiles.map((file, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center justify-between p-2 rounded bg-muted/50 text-sm"
+                    >
+                      <span className="truncate">{file.name}</span>
+                      <button
+                        onClick={() =>
+                          setUploadedFiles((prev) =>
+                            prev.filter((_, i) => i !== idx),
+                          )
+                        }
+                        className="text-red-500 hover:text-red-700 p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+
+          {/* SECTION: Description */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-muted-foreground pb-2 border-b border-border">
+              <List className="w-4 h-4" />
+              <span className="text-sm font-medium uppercase tracking-wider">
+                Details
+              </span>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label>Short Blurb</Label>
+                <Input
+                  value={form.short_blurb}
+                  onChange={(e) => onChange("short_blurb", e.target.value)}
+                  placeholder="A catchy one-liner..."
+                  className="bg-card/50"
+                  maxLength={150}
+                />
+                <p className="text-xs text-right text-muted-foreground">
+                  {form.short_blurb.length}/150
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Long Description</Label>
+                  <span className="text-xs text-muted-foreground bg-accent/10 px-2 py-0.5 rounded">
+                    Markdown Supported
+                  </span>
+                </div>
+                <Textarea
+                  value={form.long_description}
+                  onChange={(e) => onChange("long_description", e.target.value)}
+                  className="min-h-[200px] font-mono text-sm bg-card/50"
+                  placeholder="Describe your event in detail..."
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Extended Sections (Agenda, FAQs, etc) */}
+          <EventBuilderExtensions
+            eventType={form.type}
+            scheduleText={scheduleText}
+            setScheduleText={setScheduleText}
+            teamsText={teamsText}
+            setTeamsText={setTeamsText}
+            committeesText={committeesText}
+            setCommitteesText={setCommitteesText}
+            prizeText={prizeText}
+            setPrizeText={setPrizeText}
+            faqs={faqs}
+            setFaqs={setFaqs}
+            speakers={speakers}
+            setSpeakers={setSpeakers}
+            resources={resources}
+            setResources={setResources}
+            rolesText={rolesText}
+            setRolesText={setRolesText}
+          />
+
+          {/* Tags */}
+          <section className="space-y-4 pt-4 border-t border-border">
+            <Label>Tags</Label>
+            <div className="bg-card/50 p-4 rounded-lg border border-border/50 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant="secondary"
+                    className="px-3 py-1 text-sm flex items-center gap-1"
+                  >
+                    {tag}
+                    <button
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 hover:text-red-500"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="relative">
+                <Input
+                  value={tagInput}
+                  onChange={(e) => handleTagInputChange(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  placeholder="Type a tag and press Enter..."
+                  className="bg-transparent"
+                />
+                {showTagSuggestions && (
+                  <div className="absolute z-10 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {filteredSuggestions.map((tag) => (
+                      <div
+                        key={tag}
+                        className="px-4 py-2 hover:bg-accent cursor-pointer text-sm"
+                        onClick={() => addTag(tag)}
+                      >
+                        {tag}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

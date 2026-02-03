@@ -137,27 +137,50 @@ const EnhancedAdminScanner = ({
 
   const handleQRCodeDetected = async (qrData) => {
     try {
-      // Extract user_id from profile URL
-      // Format: https://yourapp.com/profile/{user_id}
-      const url = new URL(qrData);
-      const pathParts = url.pathname.split('/');
-      const userId = pathParts[pathParts.length - 1];
-      
-      if (!userId) {
+      // Try to parse JSON first (event QR contains JSON with user_id/event_id/registration_id)
+      let userId = null;
+      let registrationId = null;
+      try {
+        const parsed = JSON.parse(qrData);
+        if (parsed) {
+          if (parsed.registration_id) registrationId = parsed.registration_id;
+          if (parsed.user_id) userId = parsed.user_id;
+        }
+      } catch (e) {
+        // not JSON, continue to treat as URL or raw string
+      }
+
+      // If we didn't get a registration/user id from JSON, try URL parsing (profile URL)
+      if (!registrationId && !userId) {
+        try {
+          const url = new URL(qrData);
+          const pathParts = url.pathname.split('/').filter(Boolean);
+          const last = pathParts[pathParts.length - 1];
+          if (last) userId = last;
+        } catch (e) {
+          // Not a URL either
+        }
+      }
+
+      if (!registrationId && !userId) {
         throw new Error('Invalid QR code format');
       }
-      
+
       // Stop scanning temporarily
       stopScanning();
-      
-      // Look up user registration for this event
-      await handleUserLookup(userId);
-      
+
+      // Prefer lookup by registration id (more specific), otherwise by user id
+      if (registrationId) {
+        await handleUserLookupByRegistration(registrationId);
+      } else {
+        await handleUserLookup(userId);
+      }
+
     } catch (error) {
       console.error('Invalid QR code format:', error);
       setScanResult({
         success: false,
-        message: 'Invalid QR code. Please scan a valid profile QR code.'
+        message: 'Invalid QR code. Please scan a valid profile or event QR code.'
       });
     }
   };

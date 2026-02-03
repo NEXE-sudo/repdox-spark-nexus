@@ -100,6 +100,7 @@ const roleTheme = useMemo(() => {
 }, [mode, eventRegistration]);
 
 const qrData = useMemo(() => {
+  // QR only used for event registration check-in. Do not expose profile URL via QR.
   if (mode === 'event' && eventRegistration) {
     return JSON.stringify({
       user_id: userData.user_id,
@@ -107,10 +108,8 @@ const qrData = useMemo(() => {
       registration_id: eventRegistration.registration_id,
       timestamp: new Date().toISOString()
     });
-  } else {
-    // For networking, use the public profile URL
-    return `${window.location.origin}/profile/${userData.user_id}`;
   }
+  return null;
 }, [mode, userData, eventRegistration, eventData]);
 
   const tiltEngine = useMemo(() => {
@@ -466,6 +465,14 @@ const renderEventCard = () => (
             <span className="value">{eventData?.title}</span>
             <span className="label" style={{ marginTop: '8px' }}>REG ID</span>
             <span className="value">{eventRegistration?.registration_id}</span>
+            {/* Render QR only for event registration */}
+            {qrData && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ width: 120, height: 120, marginTop: 8, background: 'white', padding: 8, borderRadius: 8 }}>
+                  <QRCode value={qrData} size={104} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </>

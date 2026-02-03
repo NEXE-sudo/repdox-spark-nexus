@@ -1421,13 +1421,12 @@ export default function Profile() {
                     <div className="grid md:grid-cols-2 gap-4 mt-8">
                       <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg">
                         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <Globe className="w-4 h-4" />
-                          Networking
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          Anyone can scan your QR code to view your public
-                          profile and connect with you via social links.
-                        </p>
+                            <Globe className="w-4 h-4" />
+                            Note
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            The QR on your card is used only for event check-in. It does not expose your public profile or social links.
+                          </p>
                       </div>
 
                       {userEvents.length > 0 && (

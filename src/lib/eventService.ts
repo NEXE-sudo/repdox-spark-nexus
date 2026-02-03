@@ -70,24 +70,37 @@ export async function createEvent(payload: CreateEventPayload) {
     form.end_date && form.end_time
       ? new Date(`${form.end_date}T${form.end_time}`)
       : new Date(startAt.getTime() + 8 * 60 * 60 * 1000);
-  const registrationStart = 
+  const registrationStart =
     form.registration_start_date && form.registration_start_time
-      ? new Date(`${form.registration_start_date}T${form.registration_start_time}`)
+      ? new Date(
+          `${form.registration_start_date}T${form.registration_start_time}`,
+        )
       : null;
   const registrationDeadline =
     form.registration_deadline_date && form.registration_deadline_time
       ? new Date(
-          `${form.registration_deadline_date}T${form.registration_deadline_time}`
+          `${form.registration_deadline_date}T${form.registration_deadline_time}`,
         )
       : new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
 
   const baseEvent: Record<string, unknown> = {
     title: form.title,
-    type: form.type || null,
-    format: form.format || null,
+    // store type/format as null when empty array to avoid DB type errors
+    type: Array.isArray(form.type)
+      ? form.type.length
+        ? form.type
+        : null
+      : form.type || null,
+    format: Array.isArray(form.format)
+      ? form.format.length
+        ? form.format
+        : null
+      : form.format || null,
     start_at: startAt.toISOString(),
     end_at: endAt.toISOString(),
-    registration_start: registrationStart ? registrationStart.toISOString() : null,
+    registration_start: registrationStart
+      ? registrationStart.toISOString()
+      : null,
     registration_deadline: registrationDeadline.toISOString(),
     location: form.location,
     short_blurb: form.short_blurb ?? "",
@@ -115,7 +128,6 @@ export async function createEvent(payload: CreateEventPayload) {
   if (uploadedFiles && uploadedFiles.length > 0) {
     try {
       const file = uploadedFiles[0].file;
-
 
       if (!file.type.startsWith("image/")) {
         throw new Error("Only image files are allowed");
@@ -145,13 +157,19 @@ export async function createEvent(payload: CreateEventPayload) {
 
       if (uploadError) {
         console.error("[eventService] Upload error:", uploadError);
-        console.warn("Supabase upload error (continuing without image):", uploadError.message);
+        console.warn(
+          "Supabase upload error (continuing without image):",
+          uploadError.message,
+        );
       } else {
         baseEvent.image_url = fileName;
       }
     } catch (err) {
       console.error("[eventService] Upload exception:", err);
-      console.warn("Failed to upload event image, continuing without image", err);
+      console.warn(
+        "Failed to upload event image, continuing without image",
+        err,
+      );
     }
   }
 
@@ -164,13 +182,14 @@ export async function createEvent(payload: CreateEventPayload) {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const candidateSlug =
-      attempt === 0 ? requestedSlug : `${requestedSlug}-${generateRandomString(4, "abcdefghijklmnopqrstuvwxyz0123456789")}`;
-    
+      attempt === 0
+        ? requestedSlug
+        : `${requestedSlug}-${generateRandomString(4, "abcdefghijklmnopqrstuvwxyz0123456789")}`;
+
     const eventPayload = {
       ...baseEvent,
       slug: candidateSlug,
     } as unknown as Database["public"]["Tables"]["events"]["Insert"];
-
 
     const { data, error } = await supabase
       .from("events")
@@ -186,7 +205,7 @@ export async function createEvent(payload: CreateEventPayload) {
     const errorObj = error as unknown as { message?: string; code?: string };
     const message = String(errorObj?.message ?? "");
     const code = String(errorObj?.code ?? "");
-    
+
     const isUniqueViolation =
       code === "23505" ||
       message.toLowerCase().includes("duplicate") ||
@@ -198,9 +217,10 @@ export async function createEvent(payload: CreateEventPayload) {
     }
 
     if (attempt === maxAttempts - 1) {
-      throw new Error(`Failed to create event after ${maxAttempts} attempts. Please try a different title or slug.`);
+      throw new Error(
+        `Failed to create event after ${maxAttempts} attempts. Please try a different title or slug.`,
+      );
     }
-
   }
 
   if (!createdEvent) {
@@ -281,7 +301,7 @@ export async function createEvent(payload: CreateEventPayload) {
  */
 export async function updateEvent(
   eventId: string,
-  payload: CreateEventPayload
+  payload: CreateEventPayload,
 ) {
   const {
     form,
@@ -313,24 +333,37 @@ export async function updateEvent(
     form.end_date && form.end_time
       ? new Date(`${form.end_date}T${form.end_time}`)
       : new Date(startAt.getTime() + 8 * 60 * 60 * 1000);
-  const registrationStart = 
+  const registrationStart =
     form.registration_start_date && form.registration_start_time
-      ? new Date(`${form.registration_start_date}T${form.registration_start_time}`)
+      ? new Date(
+          `${form.registration_start_date}T${form.registration_start_time}`,
+        )
       : null;
   const registrationDeadline =
     form.registration_deadline_date && form.registration_deadline_time
       ? new Date(
-          `${form.registration_deadline_date}T${form.registration_deadline_time}`
+          `${form.registration_deadline_date}T${form.registration_deadline_time}`,
         )
       : new Date(startAt.getTime() - 24 * 60 * 60 * 1000);
 
   const updateData: Record<string, unknown> = {
     title: form.title,
-    type: form.type || null,
-    format: form.format || null,
+    // normalize empty arrays to null to avoid DB type errors
+    type: Array.isArray(form.type)
+      ? form.type.length
+        ? form.type
+        : null
+      : form.type || null,
+    format: Array.isArray(form.format)
+      ? form.format.length
+        ? form.format
+        : null
+      : form.format || null,
     start_at: startAt.toISOString(),
     end_at: endAt.toISOString(),
-    registration_start: registrationStart ? registrationStart.toISOString() : null,
+    registration_start: registrationStart
+      ? registrationStart.toISOString()
+      : null,
     registration_deadline: registrationDeadline.toISOString(),
     location: form.location,
     short_blurb: form.short_blurb ?? "",
@@ -469,25 +502,25 @@ export async function deleteEvent(eventId: string): Promise<void> {
     // Delete the event image from storage if it exists and is a storage path
     if (event?.image_url) {
       // Only delete if it's a storage path (not an absolute URL or local asset)
-      const isStoragePath = 
-        event.image_url && 
-        !event.image_url.startsWith('http') && 
-        !event.image_url.startsWith('/assets/') &&
-        !event.image_url.includes('event-hackathon') &&
-        !event.image_url.includes('event-mun') &&
-        !event.image_url.includes('event-workshop') &&
-        !event.image_url.includes('event-gaming');
+      const isStoragePath =
+        event.image_url &&
+        !event.image_url.startsWith("http") &&
+        !event.image_url.startsWith("/assets/") &&
+        !event.image_url.includes("event-hackathon") &&
+        !event.image_url.includes("event-mun") &&
+        !event.image_url.includes("event-workshop") &&
+        !event.image_url.includes("event-gaming");
 
       if (isStoragePath) {
         try {
           // Clean the path
           let cleanPath = event.image_url;
-          
+
           // Remove leading slash
           if (cleanPath.startsWith("/")) {
             cleanPath = cleanPath.substring(1);
           }
-          
+
           // Remove 'event-images/' prefix if accidentally included
           if (cleanPath.startsWith("event-images/")) {
             cleanPath = cleanPath.replace("event-images/", "");
@@ -510,7 +543,6 @@ export async function deleteEvent(eventId: string): Promise<void> {
     if (deleteError) {
       throw new Error(`Failed to delete event: ${deleteError.message}`);
     }
-
   } catch (error) {
     console.error("[deleteEvent] Error:", error);
     throw error;
@@ -624,7 +656,10 @@ export async function registerForEvent(params: {
     p_phone: params.phone ?? null,
     p_message: params.message ?? null,
   };
-  const { data, error } = await (supabase as any).rpc("register_for_event", rpcParams);
+  const { data, error } = await (supabase as any).rpc(
+    "register_for_event",
+    rpcParams,
+  );
   if (error) throw error;
   return data;
 }
@@ -648,37 +683,56 @@ export function registrationsToCSV(rows: RegistrationRow[]) {
     const line = headers
       .map((h) => {
         const val = (r as any)[h] ?? "";
-        if (typeof val === "string") return `"${String(val).replace(/"/g, '""')}"`;
+        if (typeof val === "string")
+          return `"${String(val).replace(/"/g, '""')}"`;
         return `"${String(val ?? "")}"`;
       })
       .join(",");
     csv.push(line);
   }
   return csv.join("\n");
-} 
+}
 
 export function registrationsToMarkdown(rows: RegistrationRow[]) {
   if (!rows || rows.length === 0) return "";
-  const headers = ["id", "created_at", "name", "email", "phone", "role", "status"];
-  const table = ["| " + headers.join(" | ") + " |", "| " + headers.map(() => "---").join(" | ") + " |"];
+  const headers = [
+    "id",
+    "created_at",
+    "name",
+    "email",
+    "phone",
+    "role",
+    "status",
+  ];
+  const table = [
+    "| " + headers.join(" | ") + " |",
+    "| " + headers.map(() => "---").join(" | ") + " |",
+  ];
   for (const r of rows) {
     table.push(
-      "| " + headers.map((h) => (r as any)[h] ?? "").join(" | ") + " |"
+      "| " + headers.map((h) => (r as any)[h] ?? "").join(" | ") + " |",
     );
   }
   return table.join("\n");
 }
 
 export async function exportRegistrationsXLSX(eventId: string) {
-  const fnRes = await (supabase as any).functions.invoke("export-registrations-xlsx", {
-    body: JSON.stringify({ eventId }),
-  });
+  // include auth header so the edge function can verify the caller
+  const sessionRes = await supabase.auth.getSession();
+  const token = sessionRes?.data?.session?.access_token ?? null;
+  const invokeOptions: any = { body: JSON.stringify({ eventId }) };
+  if (token) invokeOptions.headers = { Authorization: `Bearer ${token}` };
+  const fnRes = await (supabase as any).functions.invoke(
+    "export-registrations-xlsx",
+    invokeOptions,
+  );
 
   if (fnRes?.error) throw fnRes.error;
 
   let parsed: any = null;
   try {
-    parsed = typeof fnRes.data === 'string' ? JSON.parse(fnRes.data) : fnRes.data;
+    parsed =
+      typeof fnRes.data === "string" ? JSON.parse(fnRes.data) : fnRes.data;
   } catch (e) {
     parsed = fnRes.data;
   }
@@ -686,17 +740,27 @@ export async function exportRegistrationsXLSX(eventId: string) {
   const filename = parsed?.filename || `registrations-${eventId}.xlsx`;
 
   if (parsed?.url) {
-    return { filename, url: parsed.url, storagePath: parsed.storagePath } as { filename: string; url: string; storagePath?: string };
+    return { filename, url: parsed.url, storagePath: parsed.storagePath } as {
+      filename: string;
+      url: string;
+      storagePath?: string;
+    };
   }
 
-  const b64 = parsed?.data;
-  if (!b64) throw new Error('No XLSX returned from server');
+  const b64 =
+    parsed?.data ||
+    (typeof fnRes.data === "string" && !fnRes.data.startsWith("{")
+      ? fnRes.data
+      : null);
+  if (!b64) throw new Error("No XLSX data returned from server");
 
   const binStr = atob(b64);
   const len = binStr.length;
   const u8 = new Uint8Array(len);
   for (let i = 0; i < len; i++) u8[i] = binStr.charCodeAt(i);
-  const blob = new Blob([u8], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const blob = new Blob([u8], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
   return { filename, blob };
 }
 
@@ -707,13 +771,15 @@ export async function registrationsToXLSX(rows: RegistrationRow[]) {
     const wb = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(wb, ws, "registrations");
     const wbout = xlsx.write(wb, { bookType: "xlsx", type: "array" });
-    return new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    return new Blob([wbout], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
   } catch (err) {
     throw new Error(
-      "XLSX export requires the 'xlsx' package. Install it with 'pnpm add xlsx' (or 'npm i xlsx') or use CSV/MD export instead."
+      "XLSX export requires the 'xlsx' package. Install it with 'pnpm add xlsx' (or 'npm i xlsx') or use CSV/MD export instead.",
     );
   }
-} 
+}
 
 export default {
   createEvent,

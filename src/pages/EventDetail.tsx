@@ -50,7 +50,7 @@ import { getEventImage } from "@/lib/eventImages";
 import type { Database } from "@/integrations/supabase/types";
 import { toast } from "@/hooks/use-toast";
 import AddToCalendar from "@/components/AddToCalendar";
-import RecentlyViewedEvents from '@/components/RecentlyViewedEvents';
+import RecentlyViewedEvents from "@/components/RecentlyViewedEvents";
 
 export default function EventDetail() {
   const navigate = useNavigate();
@@ -64,7 +64,11 @@ export default function EventDetail() {
     role: "",
   });
 
-  const { data: event, isLoading, error } = useQuery({
+  const {
+    data: event,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["event", slug],
     queryFn: async () => {
       const { data, error } = await eventService.getEventBySlug(slug);
@@ -73,16 +77,18 @@ export default function EventDetail() {
       // --- LOGIC START: EXPIRED ACCESS CONTROL ---
       const now = new Date();
       const isExpired = new Date(data.end_at) < now;
-      
+
       // Check if the current user is the owner
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       const isOwner = user && data.created_by === user.id;
 
       // If expired and NOT the owner, block access
       if (isExpired && !isOwner) {
         throw new Error("This event has ended and is no longer public.");
       }
-      
+
       // Block inactive events for non-owners (keep your existing logic)
       if (!data.is_active && !isOwner) {
         throw new Error("Event not found");
@@ -95,7 +101,9 @@ export default function EventDetail() {
   const countdown = useCountdown(event?.start_at || "");
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [user, setUser] = useState<import('@supabase/supabase-js').User | null>(null);
+  const [user, setUser] = useState<import("@supabase/supabase-js").User | null>(
+    null,
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [roleCounts, setRoleCounts] = useState<Record<string, number>>({});
 
@@ -131,10 +139,10 @@ export default function EventDetail() {
   }, [event?.id]);
 
   useEffect(() => {
-    if (window.location.hash === '#register') {
-      const element = document.getElementById('register');
+    if (window.location.hash === "#register") {
+      const element = document.getElementById("register");
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        element.scrollIntoView({ behavior: "smooth" });
       }
     }
   }, [event, isLoading]);
@@ -154,7 +162,8 @@ export default function EventDetail() {
       });
       navigate("/my-events");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to delete event";
+      const message =
+        err instanceof Error ? err.message : "Failed to delete event";
       toast({
         title: "Delete failed",
         description: message,
@@ -165,7 +174,7 @@ export default function EventDetail() {
     }
   };
   const rawTab = searchParams.get("tab") || "details";
-  const activeTab = (rawTab === "registrations" && !isOwner) ? "details" : rawTab;
+  const activeTab = rawTab === "registrations" && !isOwner ? "details" : rawTab;
 
   const setTab = (tab: string) => {
     const p = new URLSearchParams(searchParams);
@@ -183,38 +192,38 @@ export default function EventDetail() {
 
   // Resolve image for private storage paths when needed
   const [heroImageSrc, setHeroImageSrc] = useState<string | undefined>(
-    event?.image_url ? getEventImage(event.image_url) : undefined
+    event?.image_url ? getEventImage(event.image_url) : undefined,
   );
-useEffect(() => {
-  if (event) {
-    try {
-      const stored = localStorage.getItem('recentlyViewedEvents');
-      let recent: unknown[] = stored ? JSON.parse(stored) : [];
-      
-      // Remove if already exists
-      recent = recent.filter((e: any) => e.id !== event.id);
-      
-      // Add to front
-      recent.unshift({
-        id: event.id,
-        slug: event.slug,
-        title: event.title,
-        image_url: event.image_url,
-        start_at: event.start_at,
-        location: event.location,
-        type: event.type,
-        viewedAt: Date.now()
-      });
-      
-      // Keep only last 10
-      recent = recent.slice(0, 10);
-      
-      localStorage.setItem('recentlyViewedEvents', JSON.stringify(recent));
-    } catch (err) {
-      console.error('Error saving recent event:', err);
+  useEffect(() => {
+    if (event) {
+      try {
+        const stored = localStorage.getItem("recentlyViewedEvents");
+        let recent: unknown[] = stored ? JSON.parse(stored) : [];
+
+        // Remove if already exists
+        recent = recent.filter((e: any) => e.id !== event.id);
+
+        // Add to front
+        recent.unshift({
+          id: event.id,
+          slug: event.slug,
+          title: event.title,
+          image_url: event.image_url,
+          start_at: event.start_at,
+          location: event.location,
+          type: event.type,
+          viewedAt: Date.now(),
+        });
+
+        // Keep only last 10
+        recent = recent.slice(0, 10);
+
+        localStorage.setItem("recentlyViewedEvents", JSON.stringify(recent));
+      } catch (err) {
+        console.error("Error saving recent event:", err);
+      }
     }
-  }
-}, [event]);
+  }, [event]);
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -234,14 +243,15 @@ useEffect(() => {
       // getEventImage returns the mapped asset if found, OR the publicUrl if not.
       // We only want to 'return' here if it's a local asset (not a publicUrl from storage).
       // Local assets in filenameMap don't have 'supabase' or 'storage' in their string usually.
-      // But a better way is to check the filenameMap directly if we had access, 
+      // But a better way is to check the filenameMap directly if we had access,
       // or just assume if it doesn't look like a storage path.
-      
-      const isKnownAsset = event.image_url.includes('event-hackathon') || 
-                          event.image_url.includes('event-mun') || 
-                          event.image_url.includes('event-workshop') || 
-                          event.image_url.includes('event-gaming') ||
-                          !event.image_url.includes('.'); // internal vite assets often have hashes but maybe not extensions in some cases? No, usually they do.
+
+      const isKnownAsset =
+        event.image_url.includes("event-hackathon") ||
+        event.image_url.includes("event-mun") ||
+        event.image_url.includes("event-workshop") ||
+        event.image_url.includes("event-gaming") ||
+        !event.image_url.includes("."); // internal vite assets often have hashes but maybe not extensions in some cases? No, usually they do.
 
       if (isKnownAsset && mounted) {
         setHeroImageSrc(mapped);
@@ -256,7 +266,10 @@ useEffect(() => {
           return;
         }
       } catch (e) {
-        console.warn("[EventDetail] Failed to get signed URL, falling back to public URL", e);
+        console.warn(
+          "[EventDetail] Failed to get signed URL, falling back to public URL",
+          e,
+        );
         // 4. Fallback to public URL via getEventImage
         if (mounted) setHeroImageSrc(mapped);
       }
@@ -331,9 +344,17 @@ useEffect(() => {
 
         // Check capacity if role selected
         if (formData.role) {
-          const allowed = await eventService.canRegister(event.id, formData.role);
+          const allowed = await eventService.canRegister(
+            event.id,
+            formData.role,
+          );
           if (!allowed) {
-            toast({ title: "Registration full", description: "The selected role is full. Please choose another role or contact the organizer.", variant: "destructive" });
+            toast({
+              title: "Registration full",
+              description:
+                "The selected role is full. Please choose another role or contact the organizer.",
+              variant: "destructive",
+            });
             return;
           }
         }
@@ -350,10 +371,9 @@ useEffect(() => {
 
         await eventService.registerForEvent(params);
 
+        // Notify success without mentioning verification emails
         toast({
           title: "Registration submitted!",
-          description:
-            "You are registered for this event. Check your email for confirmation.",
         });
         setFormData({ name: "", email: "", phone: "", message: "", role: "" });
       } catch (err: unknown) {
@@ -367,14 +387,19 @@ useEffect(() => {
 
         // Map server-side error keys to friendly messages
         if (msg?.includes("role_full")) {
-          msg = "The selected role is full. Please choose another role or contact the organizer.";
+          msg =
+            "The selected role is full. Please choose another role or contact the organizer.";
         } else if (msg?.includes("registration_closed")) {
           msg = "Registration for this event is closed.";
         } else if (msg?.includes("already_registered")) {
           msg = "You are already registered for this event.";
         }
 
-        toast({ title: "Registration failed", description: msg, variant: "destructive" });
+        toast({
+          title: "Registration failed",
+          description: msg,
+          variant: "destructive",
+        });
       }
     })();
   };
@@ -412,20 +437,26 @@ useEffect(() => {
     name: event.title,
     startDate: event.start_at,
     endDate: event.end_at || undefined,
-    eventAttendanceMode:
-      (Array.isArray(event.format) ? event.format.includes("Online") : event.format === "Online")
-        ? "https://schema.org/OnlineEventAttendanceMode"
-        : "https://schema.org/OfflineEventAttendanceMode",
+    eventAttendanceMode: (
+      Array.isArray(event.format)
+        ? event.format.includes("Online")
+        : event.format === "Online"
+    )
+      ? "https://schema.org/OnlineEventAttendanceMode"
+      : "https://schema.org/OfflineEventAttendanceMode",
     eventStatus: event.is_active
       ? "https://schema.org/EventScheduled"
       : "https://schema.org/EventCancelled",
-    location:
-      (Array.isArray(event.format) ? event.format.includes("Online") : event.format === "Online")
-        ? {
-            "@type": "VirtualLocation",
-            url: event.registration_link || window.location.href,
-          }
-        : { "@type": "Place", name: event.location },
+    location: (
+      Array.isArray(event.format)
+        ? event.format.includes("Online")
+        : event.format === "Online"
+    )
+      ? {
+          "@type": "VirtualLocation",
+          url: event.registration_link || window.location.href,
+        }
+      : { "@type": "Place", name: event.location },
     image: event.image_url ? [event.image_url] : undefined,
     description: event.short_blurb || event.overview || event.long_description,
     organizer: event.organisers || undefined,
@@ -436,11 +467,13 @@ useEffect(() => {
     url: window.location.href,
   };
 
-  const roles = ((event as unknown as { roles: unknown[] }).roles as unknown[] | undefined);
+  const roles = (event as unknown as { roles: unknown[] }).roles as
+    | unknown[]
+    | undefined;
 
   return (
     <div className="min-h-screen bg-background">
-          {/* Structured Data for SEO */}
+      {/* Structured Data for SEO */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -490,7 +523,10 @@ useEffect(() => {
               {Array.isArray(event.type) ? (
                 <div className="flex flex-wrap gap-2">
                   {event.type.map((t) => (
-                    <span key={t} className="bg-purple-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                    <span
+                      key={t}
+                      className="bg-purple-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                    >
                       {t}
                     </span>
                   ))}
@@ -549,7 +585,7 @@ useEffect(() => {
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
-              Event Schedule
+                Event Schedule
               </button>
               <button
                 onClick={() => setTab("teams")}
@@ -612,7 +648,7 @@ useEffect(() => {
                                 </div>
                               )}
                             </li>
-                          )
+                          ),
                         )}
                       </ul>
                     )}
@@ -652,7 +688,7 @@ useEffect(() => {
                                 </div>
                               )}
                             </div>
-                          )
+                          ),
                         )}
                       </div>
                     )}
@@ -781,26 +817,43 @@ useEffect(() => {
                             <select
                               id="role"
                               value={formData.role}
-                              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  role: e.target.value,
+                                })
+                              }
                               className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                             >
                               <option value="">Select a role (optional)</option>
-                              {(roles as unknown[]).map((r: unknown, i: number) => {
-                                const obj = r as Record<string, unknown>;
-                                const name = typeof r === 'string' ? (r as string) : typeof obj.name === 'string' ? (obj.name as string) : typeof obj.role === 'string' ? (obj.role as string) : `Role ${i + 1}`;
-                                const capacityNum = typeof obj.capacity === 'number' ? (obj.capacity as number) : null;
-                                let label = name;
-                                if (capacityNum != null) {
-                                  const used = roleCounts[name] || 0;
-                                  const remaining = capacityNum - used;
-                                  label = `${name} (cap ${capacityNum}${remaining <= 0 ? ", full" : `, ${remaining} remaining`})`;
-                                }
-                                return (
-                                  <option key={i} value={name}>
-                                    {label}
-                                  </option>
-                                );
-                              })}
+                              {(roles as unknown[]).map(
+                                (r: unknown, i: number) => {
+                                  const obj = r as Record<string, unknown>;
+                                  const name =
+                                    typeof r === "string"
+                                      ? (r as string)
+                                      : typeof obj.name === "string"
+                                        ? (obj.name as string)
+                                        : typeof obj.role === "string"
+                                          ? (obj.role as string)
+                                          : `Role ${i + 1}`;
+                                  const capacityNum =
+                                    typeof obj.capacity === "number"
+                                      ? (obj.capacity as number)
+                                      : null;
+                                  let label = name;
+                                  if (capacityNum != null) {
+                                    const used = roleCounts[name] || 0;
+                                    const remaining = capacityNum - used;
+                                    label = `${name} (cap ${capacityNum}${remaining <= 0 ? ", full" : `, ${remaining} remaining`})`;
+                                  }
+                                  return (
+                                    <option key={i} value={name}>
+                                      {label}
+                                    </option>
+                                  );
+                                },
+                              )}
                             </select>
                           </div>
                         )}
@@ -868,7 +921,9 @@ useEffect(() => {
                         {event.location}
                       </p>
                       <Badge variant="outline" className="mt-1 text-xs">
-                        {Array.isArray(event.format) ? event.format.join(" / ") : String(event.format)}
+                        {Array.isArray(event.format)
+                          ? event.format.join(" / ")
+                          : String(event.format)}
                       </Badge>
                     </div>
                   </div>
@@ -920,7 +975,7 @@ useEffect(() => {
                         <a
                           href={`https://instagram.com/${event.instagram_handle.replace(
                             "@",
-                            ""
+                            "",
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
